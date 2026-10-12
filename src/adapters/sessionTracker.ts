@@ -14,6 +14,8 @@ const PRIORITY: Record<AgentStatus, number> = {
 export interface SessionTimings {
   /** completed -> idle */
   completedHoldMs: number;
+  /** thinking with no further events -> idle */
+  thinkingTimeoutMs: number;
   /** error -> idle */
   errorHoldMs: number;
   /** thinking/working with no events for this long -> unknown */
@@ -23,7 +25,8 @@ export interface SessionTimings {
 }
 
 export const DEFAULT_TIMINGS: SessionTimings = {
-  completedHoldMs: 8_000,
+  completedHoldMs: 4_000,
+  thinkingTimeoutMs: 15_000,
   errorHoldMs: 30_000,
   staleMs: 15 * 60_000,
   forgetMs: 60 * 60_000,
@@ -87,7 +90,9 @@ export class SessionTracker {
       const age = now - s.update.timestamp;
       const st = s.update.status;
       if (st === 'completed' && age > t.completedHoldMs) {
-        s.update = { ...s.update, status: 'idle', detail: 'Last turn finished', completionKey: undefined, replay: undefined };
+        s.update = { ...s.update, status: 'idle', detail: 'Ready', completionKey: undefined, replay: undefined };
+      } else if (st === 'thinking' && age > t.thinkingTimeoutMs) {
+        s.update = { ...s.update, status: 'idle', detail: 'Ready', completionKey: undefined, replay: undefined };
       } else if (st === 'error' && age > t.errorHoldMs) {
         s.update = { ...s.update, status: 'idle', detail: 'Last turn ended with an error', replay: undefined };
       } else if (isActive(st) && age > t.staleMs) {

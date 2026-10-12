@@ -89,6 +89,10 @@ pub fn run() {
             if let Some(c) = app.get_webview_window(windows::COMPANION) {
                 let _ = c.set_always_on_top(true);
             }
+            let st = hook_install::status();
+            if st.installed && !st.up_to_date {
+                let _ = hook_install::install();
+            }
             Ok(())
         })
         .on_window_event(|window, event| {

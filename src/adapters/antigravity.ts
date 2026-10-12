@@ -6,8 +6,8 @@
  * PostInvocation and Stop; the hook CLI appends minimal JSONL records that the
  * Rust monitor tails and forwards here.
  *
- * Not available from hooks: "waiting for approval" (would require PreToolUse,
- * whose output controls permissions — deliberately not used).
+ * PreToolUse observes proposed tool calls (such as commands or questions awaiting
+ * approval) and outputs {} as a safe pass-through without blocking.
  */
 import type { RawSourceEvent, HookStatus } from '../types/events';
 import type { AgentStatus, AppDetection, IntegrationState, StatusUpdate } from '../types/status';
@@ -67,17 +67,26 @@ export function mapAntigravityRecord(r: AntigravityRecord): MappedStatus | null 
 
     case 'PreToolUse': {
       const tool = (r.toolName || '').toLowerCase();
-      // If the tool is asking user a question or requesting approval / input
-      if (
+      // If the tool is asking to allow something to execute or waiting for user interaction/approval:
+      const isApprovalOrExecution =
+        tool.includes('run_command') ||
+        tool.includes('command') ||
+        tool.includes('exec') ||
+        tool.includes('bash') ||
+        tool.includes('terminal') ||
+        tool.includes('shell') ||
         tool.includes('ask_question') ||
         tool.includes('question') ||
         tool.includes('confirm') ||
         tool.includes('approval') ||
-        tool.includes('permission')
-      ) {
+        tool.includes('permission');
+
+      if (isApprovalOrExecution) {
         return {
           status: 'waiting',
-          detail: 'Action needed: Approval / input required',
+          detail: tool.includes('ask_question') || tool.includes('question')
+            ? 'Action needed: Question waiting for reply'
+            : 'Allow execution in Antigravity to proceed',
         };
       }
       return {
@@ -95,7 +104,8 @@ export function mapAntigravityRecord(r: AntigravityRecord): MappedStatus | null 
       };
 
     case 'PostInvocation':
-      return { status: 'working', detail: 'Running tools...' };
+      // Invocation and its tool calls (if any) finished; do not falsely claim tools are running.
+      return null;
 
     case 'Stop': {
       const reason = (r.terminationReason ?? '').toLowerCase();
@@ -121,11 +131,6 @@ export function mapAntigravityRecord(r: AntigravityRecord): MappedStatus | null 
   }
 }
 
-function shortWorkspace(path: string | null): string {
-  if (!path) return '';
-  const parts = path.split(/[\\/]/).filter(Boolean);
-  return parts[parts.length - 1] ?? '';
-}
 
 export class AntigravityAdapter implements AgentAdapter {
   readonly id = 'antigravity' as const;
@@ -159,7 +164,6 @@ export class AntigravityAdapter implements AgentAdapter {
       return;
     }
 
-    const ws = shortWorkspace(rec.workspace);
     const update: StatusUpdate = {
       agentId: this.id,
       status: mapped.status,
@@ -167,7 +171,7 @@ export class AntigravityAdapter implements AgentAdapter {
       source: `antigravity hook: ${rec.event}`,
       method: 'lifecycle-hook',
       confidence: 'high',
-      detail: ws ? `${mapped.detail} · ${ws}` : mapped.detail,
+      detail: mapped.detail,
       completionKey: mapped.completionKey,
       replay: event.replay,
     };

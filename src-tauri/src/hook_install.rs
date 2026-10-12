@@ -13,7 +13,6 @@ use std::path::{Path, PathBuf};
 use serde::Serialize;
 use serde_json::{json, Map, Value};
 
-use crate::hook_cli::SUPPORTED_EVENTS;
 use crate::paths;
 
 pub const HOOK_KEY: &str = "devpet";
@@ -53,7 +52,6 @@ pub fn devpet_hook_spec(exe: &Path) -> Value {
     };
     json!({
         "PreInvocation": [handler("PreInvocation")],
-        "PreToolUse": [{ "matcher": "*", "hooks": [handler("PreToolUse")] }],
         "PostToolUse": [{ "matcher": "*", "hooks": [handler("PostToolUse")] }],
         "PostInvocation": [handler("PostInvocation")],
         "Stop": [handler("Stop")],
@@ -193,6 +191,7 @@ pub fn uninstall() -> Result<HookStatus, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::hook_cli::SUPPORTED_EVENTS;
 
     fn exe() -> PathBuf {
         PathBuf::from(r"C:\Users\me\AppData\Local\DevPet\bin\devpet-hook.exe")
@@ -212,9 +211,8 @@ mod tests {
     }
 
     #[test]
-    fn spec_never_registers_pre_tool_use() {
+    fn spec_registers_all_supported_events() {
         let spec = devpet_hook_spec(&exe());
-        assert!(spec.get("PreToolUse").is_none());
         for ev in SUPPORTED_EVENTS {
             assert!(spec.get(ev).is_some(), "missing {ev}");
         }

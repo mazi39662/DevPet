@@ -7,8 +7,14 @@
   >
     <!-- Speech bubble for status summary with smooth auto-hide transition -->
     <Transition name="bubble">
-      <div class="speech-bubble" v-if="showBubble && label && !mini" @click.stop="registerClick">
-        <span class="bubble-text">{{ label }}</span>
+      <div
+        class="speech-bubble"
+        :class="status"
+        v-if="showBubble && displayBubbleLabel && !mini"
+        @click.stop="registerClick"
+      >
+        <span v-if="status === 'waiting'" class="bubble-alert-badge">⏳</span>
+        <span class="bubble-text">{{ displayBubbleLabel }}</span>
       </div>
     </Transition>
 
@@ -29,9 +35,14 @@
         <span class="exclamation">!</span>
       </div>
 
-      <!-- Action Required / Waiting Approval Alert Badge -->
-      <div v-if="status === 'waiting'" class="waiting-alert-badge">
-        <span class="alert-icon">🔔</span>
+      <!-- Action Required / Waiting Approval Alert Badge & Floating Particles -->
+      <div v-if="status === 'waiting'" class="waiting-alert-badge" title="Waiting for your approval — click twice to focus agent">
+        <span class="alert-icon">⏳</span>
+        <span class="alert-radar"></span>
+      </div>
+      <div v-if="status === 'waiting'" class="waiting-particles">
+        <span class="particle w1">⏳</span>
+        <span class="particle w2">⚡</span>
       </div>
 
       <!-- Character Body: "Byte" the Cyber Slime Cat -->
@@ -82,11 +93,27 @@
           <rect x="31" y="38" width="2" height="2" fill="#1e272e" />
         </g>
 
-        <!-- WAITING (Wide sleepy blinking eyes) -->
-        <g v-else-if="status === 'waiting'">
-          <rect x="23" y="32" width="6" height="3" fill="#1e272e" />
-          <rect x="35" y="32" width="6" height="3" fill="#1e272e" />
-          <path d="M 29 38 H 35 V 39 H 29 Z" fill="#1e272e" />
+        <!-- WAITING: Alert expectant expression, looking side-to-side waiting for allow click -->
+        <g v-else-if="status === 'waiting'" class="waiting-face-group">
+          <!-- Eyebrows raised in anticipation -->
+          <rect x="22" y="24" width="7" height="2" fill="#1e272e" class="waiting-brow-left" />
+          <rect x="35" y="24" width="7" height="2" fill="#1e272e" class="waiting-brow-right" />
+          <!-- Eye sclera (large attentive eyes) -->
+          <rect x="22" y="27" width="8" height="9" fill="#ffffff" rx="1" />
+          <rect x="34" y="27" width="8" height="9" fill="#ffffff" rx="1" />
+          <!-- Pupils that scan/glance back and forth waiting for click -->
+          <g class="waiting-pupils-animated">
+            <rect x="24" y="29" width="4" height="6" fill="#1e272e" />
+            <rect x="36" y="29" width="4" height="6" fill="#1e272e" />
+            <!-- Eye gleam highlights -->
+            <rect x="24" y="29" width="2" height="2" fill="#ff7675" />
+            <rect x="36" y="29" width="2" height="2" fill="#ff7675" />
+          </g>
+          <!-- Open "o" mouth waiting for input -->
+          <path d="M 30 38 H 34 V 41 H 30 Z" fill="#1e272e" />
+          <!-- Subtle blush from excitement -->
+          <rect x="18" y="34" width="3" height="2" fill="#ff7675" opacity="0.8" />
+          <rect x="43" y="34" width="3" height="2" fill="#ff7675" opacity="0.8" />
         </g>
 
         <!-- COMPLETED (Happy closed arc eyes ^_^) -->
@@ -154,6 +181,14 @@ const props = withDefaults(
     mini: false,
   }
 );
+
+const displayBubbleLabel = computed(() => {
+  if (!props.label) return '';
+  return props.label
+    .replace(/\s*·\s*DevPet\b/gi, '')
+    .replace(/\s*·\s*[^\s·]+$/g, '')
+    .trim();
+});
 
 const primaryColor = computed(() => {
   switch (props.status) {
@@ -280,6 +315,28 @@ function onMouseUp(e: MouseEvent) {
   backdrop-filter: blur(8px);
   z-index: 10;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.speech-bubble.waiting {
+  border-color: rgba(243, 156, 18, 0.85);
+  box-shadow: 0 0 14px rgba(243, 156, 18, 0.4), 0 4px 12px rgba(0, 0, 0, 0.4);
+  background: rgba(28, 22, 16, 0.95);
+  animation: bubblePulse 1.2s ease-in-out infinite alternate;
+}
+@keyframes bubblePulse {
+  0% { box-shadow: 0 0 8px rgba(243, 156, 18, 0.3); }
+  100% { box-shadow: 0 0 18px rgba(243, 156, 18, 0.65); }
+}
+.bubble-alert-badge {
+  font-size: 11px;
+  animation: badgeWiggle 0.6s infinite alternate;
+}
+@keyframes badgeWiggle {
+  0% { transform: scale(0.9) rotate(-6deg); }
+  100% { transform: scale(1.15) rotate(6deg); }
 }
 
 /* Smooth fade & pop transition for speech bubble */
@@ -439,44 +496,110 @@ function onMouseUp(e: MouseEvent) {
 
 /* WAITING / ACTION NEEDED: Energetic attention-seeking bounce & alert */
 .pet-sprite.waiting {
-  animation: waitingAlertBounce 0.55s ease-in-out infinite alternate;
+  animation: waitingAlertBounce 0.48s ease-in-out infinite alternate;
 }
 @keyframes waitingAlertBounce {
   0% {
-    transform: translateY(0) scale(1, 0.96);
+    transform: translateY(0) scale(1, 0.95);
   }
   100% {
-    transform: translateY(-9px) scale(0.96, 1.05);
+    transform: translateY(-8px) scale(0.96, 1.05);
   }
+}
+
+/* Animated pupils scanning left and right waiting for user to click Allow */
+.waiting-pupils-animated {
+  animation: waitingEyeScan 1.6s ease-in-out infinite alternate;
+}
+@keyframes waitingEyeScan {
+  0%, 15% {
+    transform: translateX(-1.5px);
+  }
+  50% {
+    transform: translateX(0);
+  }
+  85%, 100% {
+    transform: translateX(1.5px);
+  }
+}
+
+.waiting-brow-left {
+  animation: browTwitch 1s infinite alternate;
+}
+.waiting-brow-right {
+  animation: browTwitch 1s 0.2s infinite alternate;
+}
+@keyframes browTwitch {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-1.5px); }
 }
 
 .waiting-alert-badge {
   position: absolute;
   top: -8px;
-  right: 12px;
-  background: #f39c12;
+  right: 10px;
+  background: linear-gradient(135deg, #f39c12, #e67e22);
   color: white;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
-  box-shadow: 0 0 14px rgba(243, 156, 18, 0.9);
-  animation: pulseBell 0.55s infinite alternate;
+  box-shadow: 0 0 16px rgba(243, 156, 18, 0.95);
+  animation: pulseWaitingBell 0.5s infinite alternate;
   z-index: 15;
+  cursor: pointer;
 }
 
-@keyframes pulseBell {
+.alert-radar {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid #f39c12;
+  animation: radarPing 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes radarPing {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2.0); opacity: 0; }
+}
+
+@keyframes pulseWaitingBell {
   0% {
-    transform: scale(0.88) rotate(-12deg);
-    box-shadow: 0 0 6px rgba(243, 156, 18, 0.6);
+    transform: scale(0.9) rotate(-10deg);
+    box-shadow: 0 0 8px rgba(243, 156, 18, 0.6);
   }
   100% {
-    transform: scale(1.18) rotate(12deg);
-    box-shadow: 0 0 18px rgba(243, 156, 18, 1);
+    transform: scale(1.15) rotate(10deg);
+    box-shadow: 0 0 20px rgba(243, 156, 18, 1);
   }
+}
+
+.waiting-particles {
+  position: absolute;
+  inset: -6px;
+  pointer-events: none;
+}
+.w1 {
+  position: absolute;
+  top: -10px;
+  left: 6px;
+  font-size: 13px;
+  animation: floatWaiting 1.2s ease-in-out infinite alternate;
+}
+.w2 {
+  position: absolute;
+  bottom: 8px;
+  right: -2px;
+  font-size: 12px;
+  animation: floatWaiting 1.4s 0.3s ease-in-out infinite alternate;
+}
+@keyframes floatWaiting {
+  0% { transform: translateY(0) scale(0.85); opacity: 0.7; }
+  100% { transform: translateY(-5px) scale(1.15); opacity: 1; }
 }
 
 /* UNKNOWN: Sleeping or confused */

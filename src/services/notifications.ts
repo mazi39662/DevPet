@@ -36,6 +36,21 @@ class NotificationService {
     }
   }
 
+  public async notifyActionRequired(agentName: string, settings: Settings, taskDetail?: string): Promise<void> {
+    if (!settings.notificationsEnabled) return;
+
+    if (this.hasPermission) {
+      try {
+        sendNotification({
+          title: `DevPet — Action Required (${agentName})`,
+          body: taskDetail ? taskDetail : `Antigravity is waiting for you to allow execution.`,
+        });
+      } catch (err) {
+        console.error('Failed to dispatch alert notification:', err);
+      }
+    }
+  }
+
   public playChime(): void {
     try {
       const AudioContextClass =

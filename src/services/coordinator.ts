@@ -152,15 +152,15 @@ export class MonitoringCoordinator {
   }
 
   private evaluateActiveAgent(): void {
-    // If the currently selected agent is working or thinking, keep it
+    // If the currently selected agent is waiting, working, or thinking, keep it
     const current = this.statuses.get(this.activeAgentId);
-    if (current && (current.status === 'working' || current.status === 'thinking')) {
+    if (current && (current.status === 'waiting' || current.status === 'working' || current.status === 'thinking')) {
       return;
     }
 
-    // Otherwise, check if any other agent has high-priority status (working/thinking)
+    // Otherwise, check if any other agent has high-priority status (waiting/working/thinking)
     for (const [id, st] of this.statuses.entries()) {
-      if (st.status === 'working' || st.status === 'thinking') {
+      if (st.status === 'waiting' || st.status === 'working' || st.status === 'thinking') {
         this.setActiveAgentId(id);
         return;
       }

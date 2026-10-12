@@ -46,6 +46,18 @@ const state = ref<CompanionState>({
 const settings = ref<Settings>({ ...DEFAULT_SETTINGS });
 const showBubble = ref(false);
 let bubbleTimer: ReturnType<typeof setTimeout> | null = null;
+let completionTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleCompletedToIdle(delayMs = 4000) {
+  if (completionTimer) clearTimeout(completionTimer);
+  completionTimer = setTimeout(() => {
+    if (state.value.status === 'completed') {
+      state.value.status = 'idle';
+      state.value.label = 'DevPet Ready';
+    }
+    completionTimer = null;
+  }, delayMs);
+}
 
 function triggerBubble(durationMs = 3000) {
   showBubble.value = true;
@@ -67,11 +79,22 @@ onMounted(async () => {
     const hasChanged = state.value.label !== newState.label || state.value.status !== newState.status;
     const wasWaiting = state.value.status === 'waiting';
     state.value = newState;
-    if (newState.status === 'waiting' && !wasWaiting && settings.value.soundEnabled) {
-      notificationService.playAlertChime();
+    if (newState.status === 'completed') {
+      scheduleCompletedToIdle(4000);
+    } else if (completionTimer) {
+      clearTimeout(completionTimer);
+      completionTimer = null;
     }
-    if (hasChanged || !showBubble.value) {
-      triggerBubble(newState.status === 'waiting' ? 5000 : 3000);
+    if (newState.status === 'waiting' && !wasWaiting) {
+      if (settings.value.soundEnabled) {
+        notificationService.playAlertChime();
+      }
+      if (settings.value.notificationsEnabled) {
+        notificationService.notifyActionRequired(newState.agentName || 'Antigravity', settings.value, newState.label);
+      }
+    }
+    if (hasChanged || !showBubble.value || newState.status === 'waiting') {
+      triggerBubble(newState.status === 'waiting' ? 10000 : 3000);
     }
   });
 
@@ -80,6 +103,7 @@ onMounted(async () => {
     state.value.status = 'completed';
     state.value.label = `${ev.agentName} Completed Task!`;
     triggerBubble(3500);
+    scheduleCompletedToIdle(4000);
     if (ev.playSound && settings.value.soundEnabled) {
       notificationService.playChime();
     }

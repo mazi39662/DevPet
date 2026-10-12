@@ -19,7 +19,8 @@ use crate::paths;
 const MAX_STDIN_BYTES: u64 = 4 * 1024 * 1024;
 const ROTATE_AT_BYTES: u64 = 2 * 1024 * 1024;
 
-pub const SUPPORTED_EVENTS: [&str; 5] = ["PreInvocation", "PreToolUse", "PostToolUse", "PostInvocation", "Stop"];
+#[cfg(test)]
+pub const SUPPORTED_EVENTS: [&str; 4] = ["PreInvocation", "PostToolUse", "PostInvocation", "Stop"];
 
 /// Entry point. Returns the process exit code (always 0).
 pub fn run(args: &[String]) -> i32 {

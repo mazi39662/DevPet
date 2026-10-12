@@ -15,7 +15,7 @@ describe('Antigravity Hook Adapter', () => {
     const mapped = mapAntigravityRecord(rec!);
     expect(mapped).not.toBeNull();
     expect(mapped?.status).toBe('thinking');
-    expect(mapped?.detail).toContain('Model call #3');
+    expect(mapped?.detail).toContain('Thinking #3');
   });
 
   it('correctly maps a PostToolUse event to working state', () => {
@@ -59,5 +59,62 @@ describe('Antigravity Hook Adapter', () => {
     const mapped = mapAntigravityRecord(rec!);
     expect(mapped?.status).toBe('error');
     expect(mapped?.detail).toContain('Tool execution crashed');
+  });
+
+  it('ignores PostInvocation so it does not falsely force working state', () => {
+    const raw = {
+      agent: 'antigravity',
+      event: 'PostInvocation',
+      ts: 1690000001500,
+      conversationId: 'conv-123',
+    };
+    const rec = parseAntigravityRecord(raw);
+    const mapped = mapAntigravityRecord(rec!);
+    expect(mapped).toBeNull();
+  });
+
+  it('maps PreToolUse with run_command to waiting state for user allow execution', () => {
+    const raw = {
+      agent: 'antigravity',
+      event: 'PreToolUse',
+      ts: 1690000001200,
+      conversationId: 'conv-123',
+      toolName: 'run_command',
+    };
+    const rec = parseAntigravityRecord(raw);
+    const mapped = mapAntigravityRecord(rec!);
+    expect(mapped).not.toBeNull();
+    expect(mapped?.status).toBe('waiting');
+    expect(mapped?.detail).toBe('Allow execution in Antigravity to proceed');
+  });
+
+  it('maps PreToolUse with ask_question to waiting state', () => {
+    const raw = {
+      agent: 'antigravity',
+      event: 'PreToolUse',
+      ts: 1690000001200,
+      conversationId: 'conv-123',
+      toolName: 'ask_question',
+    };
+    const rec = parseAntigravityRecord(raw);
+    const mapped = mapAntigravityRecord(rec!);
+    expect(mapped).not.toBeNull();
+    expect(mapped?.status).toBe('waiting');
+    expect(mapped?.detail).toBe('Action needed: Question waiting for reply');
+  });
+
+  it('maps PreToolUse with safe tool like view_file to working state', () => {
+    const raw = {
+      agent: 'antigravity',
+      event: 'PreToolUse',
+      ts: 1690000001200,
+      conversationId: 'conv-123',
+      toolName: 'view_file',
+    };
+    const rec = parseAntigravityRecord(raw);
+    const mapped = mapAntigravityRecord(rec!);
+    expect(mapped).not.toBeNull();
+    expect(mapped?.status).toBe('working');
+    expect(mapped?.detail).toBe('Running view_file');
   });
 });
