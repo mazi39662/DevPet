@@ -1,0 +1,5 @@
+[toolchain]
+# Tauri 2.12+ requires rustc >= 1.90. Pinned per-project so the global
+# default toolchain is left untouched.
+channel = "1.90.0"
+profile = "minimal"
