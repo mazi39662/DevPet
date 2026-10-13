@@ -2,7 +2,19 @@
   <div
     ref="containerRef"
     class="pomo-container"
-    :class="[state.phase, state.status, { mini, deepWork: isDeepWork, interactive }]"
+    :class="[
+      state.phase,
+      state.status,
+      {
+        mini,
+        deepWork: isDeepWork,
+        interactive,
+        scratching: isScratching,
+        blissful: isBlissful,
+        booped: isBooped,
+        'phase-morphing': isMorphing,
+      }
+    ]"
     @mousedown="onMouseDown"
     @mouseup="onMouseUp"
     @mousemove="onMouseMove"
@@ -13,67 +25,192 @@
       <div
         v-if="interactive && !mini && (bubbleVisible || isScratching || isBlissful)"
         class="speech-bubble"
-        :class="state.phase"
+        :class="[state.phase, { 'scratch-bubble': isScratching || isBlissful }]"
         @mousedown.stop
         @mouseup.stop
         @click.stop="togglePlay"
       >
+        <span v-if="isScratching || isBlissful" class="bubble-icon heart-bounce">💖</span>
+        <span v-else-if="isDeepWork" class="bubble-icon">🔥</span>
+        <span v-else-if="state.phase === 'break'" class="bubble-icon">☕</span>
+        <span v-else-if="state.status === 'paused'" class="bubble-icon">⏸️</span>
         <span class="bubble-text">{{ isScratching || isBlissful ? 'Purrrr~ 💖' : bubbleText }}</span>
       </div>
     </Transition>
 
-    <!-- Momo sprite -->
-    <div class="pet-sprite" :class="[state.phase, state.status, { deepWork: isDeepWork, booped: isBooped }]">
-      <svg viewBox="0 0 72 72" class="character-svg" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
-        <ellipse cx="36" cy="64" rx="22" ry="5" fill="rgba(0, 0, 0, 0.3)" />
+    <!-- Momo sprite with smooth transitions -->
+    <div
+      class="pet-sprite"
+      :class="[
+        state.phase,
+        state.status,
+        {
+          deepWork: isDeepWork,
+          booped: isBooped,
+          scratching: isScratching,
+          blissful: isBlissful,
+          'phase-morphing': isMorphing,
+        }
+      ]"
+    >
+      <!-- Affection particles when scratched or petted -->
+      <Transition name="particle-fade">
+        <div v-if="isScratching || isBlissful" class="scratch-particles">
+          <span class="heart-particle mh1">💖</span>
+          <span class="heart-particle mh2">💕</span>
+          <span class="heart-particle mh3">✨</span>
+          <span class="heart-particle mh4">🍅</span>
+        </div>
+      </Transition>
+
+      <!-- Deep work focus particles (fiery aura, coffee, energy sparks) -->
+      <Transition name="particle-fade">
+        <div v-if="isDeepWork" class="focus-particles-container">
+          <span class="particle fp1">🔥</span>
+          <span class="particle fp2">⚡</span>
+          <span class="particle fp3">☕</span>
+          <span class="particle fp4">✨</span>
+        </div>
+      </Transition>
+
+      <!-- Break time particles (musical notes, relaxation sparkles, tea steam) -->
+      <Transition name="particle-fade">
+        <div v-if="state.phase === 'break' && state.status === 'running'" class="break-particles-container">
+          <span class="particle bp1">🎵</span>
+          <span class="particle bp2">🎶</span>
+          <span class="particle bp3">🌸</span>
+          <span class="particle bp4">✨</span>
+        </div>
+      </Transition>
+
+      <!-- Paused time gentle snooze / wait particle -->
+      <Transition name="particle-fade">
+        <div v-if="state.status === 'paused'" class="paused-particles-container">
+          <span class="particle pp1">⏳</span>
+          <span class="particle pp2">💤</span>
+        </div>
+      </Transition>
+
+      <svg
+        viewBox="0 0 72 72"
+        class="character-svg"
+        xmlns="http://www.w3.org/2000/svg"
+        shape-rendering="crispEdges"
+      >
+        <!-- Dynamic Dropshadow -->
+        <ellipse
+          cx="36"
+          cy="64"
+          rx="22"
+          ry="5"
+          fill="rgba(0, 0, 0, 0.3)"
+          class="shadow-ellipse"
+          :class="[state.phase, state.status]"
+        />
+
+        <!-- Momo cute cat tail behind body -->
+        <path
+          d="M 52 48 Q 62 44 59 36"
+          :stroke="bodyColor"
+          stroke-width="3.5"
+          fill="none"
+          stroke-linecap="round"
+          class="momo-tail"
+          :class="[state.phase, state.status]"
+        />
+
+        <!-- Deep Work Focus Aura glow behind Momo -->
+        <ellipse
+          v-if="isDeepWork"
+          cx="36"
+          cy="42"
+          rx="24"
+          ry="20"
+          fill="rgba(235, 77, 75, 0.18)"
+          class="focus-aura-halo"
+        />
+
+        <!-- Break Time Soft Calm Aura behind Momo -->
+        <ellipse
+          v-if="state.phase === 'break' && state.status === 'running'"
+          cx="36"
+          cy="42"
+          rx="24"
+          ry="20"
+          fill="rgba(0, 206, 201, 0.16)"
+          class="break-aura-halo"
+        />
 
         <!-- Body -->
-        <path d="M 22 24 H 50 V 28 H 54 V 54 H 50 V 58 H 22 V 54 H 18 V 28 H 22 Z" :fill="bodyColor" />
+        <path
+          d="M 22 24 H 50 V 28 H 54 V 54 H 50 V 58 H 22 V 54 H 18 V 28 H 22 Z"
+          :fill="bodyColor"
+          class="momo-torso"
+          :class="[state.phase, state.status]"
+        />
+
         <!-- Ears -->
-        <path d="M 18 16 H 26 V 24 H 18 Z" :fill="bodyColor" />
-        <path d="M 46 16 H 54 V 24 H 46 Z" :fill="bodyColor" />
-        <path d="M 20 18 H 24 V 22 H 20 Z" fill="#fab1a0" />
-        <path d="M 48 18 H 52 V 22 H 48 Z" fill="#fab1a0" />
-        <!-- Tomato stem -->
-        <rect x="34" y="14" width="4" height="10" fill="#2ed573" />
-        <path d="M 28 17 H 34 V 21 H 28 Z" fill="#2ed573" />
-        <path d="M 38 17 H 44 V 21 H 38 Z" fill="#2ed573" />
+        <g class="momo-ears" :class="[state.phase, state.status, { 'ear-wiggle': isScratching }]">
+          <path d="M 18 16 H 26 V 24 H 18 Z" :fill="bodyColor" />
+          <path d="M 46 16 H 54 V 24 H 46 Z" :fill="bodyColor" />
+          <path d="M 20 18 H 24 V 22 H 20 Z" fill="#fab1a0" />
+          <path d="M 48 18 H 52 V 22 H 48 Z" fill="#fab1a0" />
+        </g>
+
+        <!-- Tomato stem & leaves (animated rhythmically) -->
+        <g class="tomato-stem-group" :class="[state.phase, state.status]">
+          <rect x="34" y="14" width="4" height="10" fill="#2ed573" />
+          <path d="M 28 17 H 34 V 21 H 28 Z" fill="#2ed573" class="leaf-left" />
+          <path d="M 38 17 H 44 V 21 H 38 Z" fill="#2ed573" class="leaf-right" />
+        </g>
+
         <!-- Gloss -->
         <rect x="24" y="28" width="4" height="4" fill="rgba(255, 255, 255, 0.45)" />
         <rect x="28" y="26" width="8" height="2" fill="rgba(255, 255, 255, 0.45)" />
 
-        <!-- Headphones during deep work -->
-        <g v-if="isDeepWork">
+        <!-- Headphones during deep work with pulsing RGB beat glow -->
+        <g v-if="isDeepWork" class="focus-headphones">
           <path d="M 15 32 C 15 15, 57 15, 57 32" stroke="#2d3436" stroke-width="3" fill="none" />
           <rect x="13" y="27" width="6" height="12" fill="#2d3436" rx="2" />
           <rect x="53" y="27" width="6" height="12" fill="#2d3436" rx="2" />
+          <!-- Animated beat ring on ear cups -->
+          <circle cx="16" cy="33" r="2" fill="#00cec9" class="headphone-beat" />
+          <circle cx="56" cy="33" r="2" fill="#00cec9" class="headphone-beat" />
         </g>
 
         <!-- Faces -->
+        <!-- SCRATCHING / BLISSFUL -->
         <g v-if="isScratching || isBlissful">
           <path d="M 25 35 Q 29 31 33 35" stroke="#1e272e" stroke-width="2.5" fill="none" stroke-linecap="round" />
           <path d="M 39 35 Q 43 31 47 35" stroke="#1e272e" stroke-width="2.5" fill="none" stroke-linecap="round" />
           <path d="M 31 42 Q 33 44 36 42 Q 39 44 41 42" stroke="#1e272e" stroke-width="1.8" fill="none" stroke-linecap="round" />
-          <rect x="21" y="38" width="5" height="3" fill="#ff7675" rx="1.5" />
-          <rect x="46" y="38" width="5" height="3" fill="#ff7675" rx="1.5" />
+          <rect x="21" y="38" width="5" height="3" fill="#ff7675" rx="1.5" class="blush-glow" />
+          <rect x="46" y="38" width="5" height="3" fill="#ff7675" rx="1.5" class="blush-glow" />
         </g>
-        <g v-else-if="isDeepWork">
-          <!-- Focused: brows down, eyes on the screen -->
+
+        <!-- DEEP WORK (Focused determination brow slant, intense glint) -->
+        <g v-else-if="isDeepWork" class="focus-face">
           <path d="M 24 31 L 33 34" stroke="#1e272e" stroke-width="2" stroke-linecap="round" />
           <path d="M 48 31 L 39 34" stroke="#1e272e" stroke-width="2" stroke-linecap="round" />
           <rect x="26" y="35" width="6" height="5" fill="#1e272e" rx="1" />
           <rect x="40" y="35" width="6" height="5" fill="#1e272e" rx="1" />
-          <rect x="27" y="37" width="2" height="2" fill="#00d2d3" />
-          <rect x="41" y="37" width="2" height="2" fill="#00d2d3" />
+          <rect x="27" y="37" width="2" height="2" fill="#00d2d3" class="screen-reflect" />
+          <rect x="41" y="37" width="2" height="2" fill="#00d2d3" class="screen-reflect" />
+          <!-- Determined dev mouth -->
+          <line x1="33" y1="44" x2="39" y2="44" stroke="#1e272e" stroke-width="1.5" stroke-linecap="round" />
         </g>
-        <g v-else-if="state.phase === 'break'">
+
+        <!-- BREAK (Happy content smile, rosy cheeks) -->
+        <g v-else-if="state.phase === 'break'" class="break-face">
           <path d="M 25 35 Q 29 32 33 35" stroke="#1e272e" stroke-width="2.2" fill="none" stroke-linecap="round" />
           <path d="M 39 35 Q 43 32 47 35" stroke="#1e272e" stroke-width="2.2" fill="none" stroke-linecap="round" />
           <path d="M 33 42 Q 36 45 39 42" stroke="#1e272e" stroke-width="2" fill="none" stroke-linecap="round" />
-          <rect x="22" y="38" width="4" height="3" fill="#ff9ff3" rx="1.5" />
-          <rect x="46" y="38" width="4" height="3" fill="#ff9ff3" rx="1.5" />
+          <rect x="22" y="38" width="4" height="3" fill="#ff9ff3" rx="1.5" class="blush-glow" />
+          <rect x="46" y="38" width="4" height="3" fill="#ff9ff3" rx="1.5" class="blush-glow" />
         </g>
-        <g v-else>
+
+        <!-- IDLE / PAUSED (Eye look tracking) -->
+        <g v-else class="normal-face">
           <g :style="{ transform: `translate(${eyeLookX}px, ${eyeLookY}px)` }">
             <rect x="26" y="34" width="5" height="7" fill="#1e272e" rx="1" />
             <rect x="41" y="34" width="5" height="7" fill="#1e272e" rx="1" />
@@ -83,15 +220,16 @@
           <rect x="34" y="44" width="4" height="2" fill="#1e272e" />
         </g>
 
-        <!-- Deep work: laptop + typing paws -->
+        <!-- Deep work: laptop + animated typing paws -->
         <g v-if="isDeepWork">
           <path d="M 18 54 H 54 L 56 62 H 16 Z" fill="#2d3436" />
           <rect x="22" y="55" width="28" height="4" fill="#1e272e" rx="0.5" />
           <path d="M 20 44 H 52 V 54 H 20 Z" fill="#1e272e" />
           <rect x="22" y="45" width="28" height="8" fill="#00cec9" class="glow-screen" />
-          <line x1="24" y1="47" x2="38" y2="47" stroke="#003b46" stroke-width="1" class="code-line l1" />
-          <line x1="24" y1="49" x2="46" y2="49" stroke="#003b46" stroke-width="1" class="code-line l2" />
-          <line x1="24" y1="51" x2="34" y2="51" stroke="#003b46" stroke-width="1" class="code-line l3" />
+          <line x1="24" y1="47" x2="38" y2="47" stroke="#003b46" stroke-width="1.2" class="code-line l1" />
+          <line x1="24" y1="49" x2="46" y2="49" stroke="#003b46" stroke-width="1.2" class="code-line l2" />
+          <line x1="24" y1="51" x2="34" y2="51" stroke="#003b46" stroke-width="1.2" class="code-line l3" />
+          <!-- Fast alternating typing paws -->
           <g class="typing-paw left-paw">
             <rect x="23" y="52" width="6" height="5" :fill="bodyColor" rx="2" stroke="#1e272e" stroke-width="0.8" />
           </g>
@@ -99,6 +237,24 @@
             <rect x="43" y="52" width="6" height="5" :fill="bodyColor" rx="2" stroke="#1e272e" stroke-width="0.8" />
           </g>
         </g>
+
+        <!-- Break time: Momo holding a steaming warm cup of tea/coffee -->
+        <g v-else-if="state.phase === 'break' && state.status === 'running'" class="break-coffee-cup">
+          <!-- Mug Body -->
+          <rect x="31" y="50" width="10" height="9" fill="#dfe6e9" rx="1.5" stroke="#1e272e" stroke-width="0.8" />
+          <!-- Mug handle -->
+          <path d="M 41 52 H 44 V 56 H 41" stroke="#1e272e" stroke-width="1" fill="none" />
+          <!-- Coffee / tea liquid -->
+          <rect x="32" y="51" width="8" height="2" fill="#d63031" />
+          <!-- Rising steam swirls -->
+          <path d="M 33 48 Q 35 45 33 42" stroke="rgba(255, 255, 255, 0.75)" stroke-width="1" fill="none" class="coffee-steam s1" />
+          <path d="M 38 48 Q 40 45 38 42" stroke="rgba(255, 255, 255, 0.75)" stroke-width="1" fill="none" class="coffee-steam s2" />
+          <!-- Cozy paws holding the mug -->
+          <ellipse cx="30" cy="54" rx="3" ry="2.5" :fill="bodyColor" stroke="#1e272e" stroke-width="0.8" />
+          <ellipse cx="42" cy="54" rx="3" ry="2.5" :fill="bodyColor" stroke="#1e272e" stroke-width="0.8" />
+        </g>
+
+        <!-- Normal resting paws -->
         <g v-else>
           <ellipse cx="28" cy="53" rx="4" ry="3" :fill="bodyColor" stroke="#1e272e" stroke-width="0.8" />
           <ellipse cx="44" cy="53" rx="4" ry="3" :fill="bodyColor" stroke="#1e272e" stroke-width="0.8" />
@@ -176,7 +332,6 @@ const props = withDefaults(
   defineProps<{
     mini?: boolean;
     soundEnabled?: boolean;
-    /** false = static preview in the dashboard (no drag, bubble or hover buttons) */
     interactive?: boolean;
   }>(),
   { mini: false, soundEnabled: true, interactive: true }
@@ -188,8 +343,24 @@ const containerRef = ref<HTMLElement | null>(null);
 const isScratching = ref(false);
 const isBlissful = ref(false);
 const isBooped = ref(false);
+const isMorphing = ref(false);
 const eyeLookX = ref(0);
 const eyeLookY = ref(0);
+
+// Smooth phase/status transition morphing
+let morphTimer: ReturnType<typeof setTimeout> | null = null;
+watch(
+  () => [state.value.phase, state.value.status],
+  () => {
+    isMorphing.value = true;
+    if (morphTimer) clearTimeout(morphTimer);
+    morphTimer = setTimeout(() => {
+      isMorphing.value = false;
+      morphTimer = null;
+    }, 340);
+    if (props.interactive) showBubble();
+  }
+);
 
 const bubbleVisible = ref(false);
 let bubbleTimer: ReturnType<typeof setTimeout> | null = null;
@@ -351,19 +522,11 @@ function onMouseUp(e: MouseEvent) {
   }
 }
 
-watch(
-  () => [state.value.phase, state.value.status],
-  () => {
-    if (props.interactive) showBubble();
-  }
-);
-
 onMounted(async () => {
   try {
     await onEvent(EVENTS.pomodoroState, (s: PomodoroState) => {
       state.value = s;
     });
-    // Ask the dashboard for the current timer state (pet may open mid-session).
     sendAction({ type: 'sync' });
   } catch {}
   if (props.interactive) showBubble();
@@ -382,6 +545,7 @@ onMounted(async () => {
   padding: 30px 4px 10px;
   box-sizing: border-box;
   user-select: none;
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
 .pomo-container.interactive {
   cursor: grab;
@@ -394,6 +558,7 @@ onMounted(async () => {
   padding: 4px;
 }
 
+/* Speech bubble */
 .speech-bubble {
   position: absolute;
   top: 6px;
@@ -411,9 +576,13 @@ onMounted(async () => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
   z-index: 10;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 .speech-bubble.break {
   border-color: rgba(0, 206, 201, 0.6);
+  background: rgba(14, 24, 28, 0.94);
 }
 .bubble-enter-active,
 .bubble-leave-active {
@@ -425,71 +594,374 @@ onMounted(async () => {
   transform: translateY(4px) scale(0.95);
 }
 
+.particle-fade-enter-active,
+.particle-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.particle-fade-enter-from,
+.particle-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.7);
+}
+
+/* Momo Sprite Container with smooth state transitions */
 .pet-sprite {
   width: 78px;
   height: 78px;
   flex-shrink: 0;
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transform-origin: 50% 85%;
+  transition: transform 0.38s cubic-bezier(0.25, 1, 0.5, 1), filter 0.35s ease;
 }
 .mini .pet-sprite {
   width: 58px;
   height: 58px;
 }
-.pet-sprite.booped {
-  transform: scale(0.92);
+.pet-sprite.phase-morphing {
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), filter 0.3s ease !important;
 }
 .character-svg {
   width: 100%;
   height: 100%;
   filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35));
+  overflow: visible;
 }
 
-/* Idle / break: gentle breathing */
-.pet-sprite:not(.deepWork) {
-  animation: breathe 3s ease-in-out infinite;
+/* ========================================================
+   ANIMATIONS PER STATE (A lot of animations unless in idle)
+   ======================================================== */
+
+/* 1. IDLE / STOPPED / NOT RUNNING: Calm gentle breathing */
+.pet-sprite:not(.deepWork):not(.break) {
+  animation: momoBreathe 3.2s ease-in-out infinite;
 }
-@keyframes breathe {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
+@keyframes momoBreathe {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  50% { transform: translateY(-3px) scale(0.98, 1.02); }
 }
 
-/* Deep work: typing bob + paws + screen */
+/* 2. DEEP WORK (FOCUS RUNNING): Intense Lo-fi Head Bop, Typing Flurry, Stem Sway */
 .pet-sprite.deepWork {
-  animation: focusBob 0.32s ease-in-out infinite alternate;
+  animation: focusLofiBop 0.42s ease-in-out infinite alternate;
 }
-@keyframes focusBob {
-  0% { transform: translateY(0) rotate(-0.5deg); }
-  100% { transform: translateY(-2px) rotate(0.5deg); }
+@keyframes focusLofiBop {
+  0% {
+    transform: translateY(0) rotate(-1.5deg) scale(1, 0.97);
+  }
+  50% {
+    transform: translateY(-2px) rotate(0deg) scale(0.98, 1.02);
+  }
+  100% {
+    transform: translateY(-4px) rotate(1.5deg) scale(1.02, 0.98);
+  }
 }
+
+.tomato-stem-group.focus {
+  animation: stemBeatSway 0.42s ease-in-out infinite alternate;
+  transform-origin: 36px 24px;
+}
+@keyframes stemBeatSway {
+  0% { transform: rotate(-5deg); }
+  100% { transform: rotate(5deg); }
+}
+
+.focus-headphones {
+  animation: headphoneBop 0.42s ease-in-out infinite alternate;
+  transform-origin: 36px 32px;
+}
+@keyframes headphoneBop {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-1.5px); }
+}
+
+.headphone-beat {
+  animation: beatGlow 0.42s infinite alternate;
+}
+@keyframes beatGlow {
+  0% { fill: #00cec9; r: 1.8; opacity: 0.7; }
+  100% { fill: #ff7675; r: 2.6; opacity: 1; filter: drop-shadow(0 0 3px #ff7675); }
+}
+
+.focus-aura-halo {
+  animation: auraPulse 1.2s ease-in-out infinite alternate;
+}
+@keyframes auraPulse {
+  0% { transform: scale(0.95); opacity: 0.5; }
+  100% { transform: scale(1.1); opacity: 0.9; }
+}
+
 .typing-paw.left-paw {
-  animation: pawType 0.16s ease-in-out infinite alternate;
+  animation: momoPawType 0.15s ease-in-out infinite alternate;
 }
 .typing-paw.right-paw {
-  animation: pawType 0.16s ease-in-out infinite alternate;
-  animation-delay: 0.08s;
+  animation: momoPawType 0.15s ease-in-out infinite alternate;
+  animation-delay: 0.075s;
 }
-@keyframes pawType {
+@keyframes momoPawType {
   0% { transform: translateY(0); }
-  100% { transform: translateY(-3px); }
-}
-.glow-screen {
-  animation: screenGlow 1.2s ease-in-out infinite alternate;
-}
-@keyframes screenGlow {
-  0% { fill: #00cec9; }
-  100% { fill: #55efc4; }
-}
-.code-line {
-  animation: codeType 0.5s infinite alternate;
-}
-.code-line.l2 { animation-duration: 0.7s; }
-.code-line.l3 { animation-duration: 0.6s; }
-@keyframes codeType {
-  0% { stroke-dasharray: 2 1; opacity: 0.6; }
-  100% { stroke-dasharray: 5 2; opacity: 1; }
+  100% { transform: translateY(-3.5px); }
 }
 
-/* Name + timer tag (spaced far away from the sprite) */
+.glow-screen {
+  animation: momoScreenGlow 1s ease-in-out infinite alternate;
+}
+@keyframes momoScreenGlow {
+  0% { fill: #00cec9; filter: drop-shadow(0 0 2px #00cec9); }
+  100% { fill: #55efc4; filter: drop-shadow(0 0 6px #55efc4); }
+}
+
+.code-line {
+  animation: momoCodeType 0.45s infinite alternate;
+}
+.code-line.l2 { animation-duration: 0.65s; animation-delay: 0.1s; }
+.code-line.l3 { animation-duration: 0.55s; animation-delay: 0.2s; }
+@keyframes momoCodeType {
+  0% { stroke-dasharray: 2 1; opacity: 0.5; }
+  100% { stroke-dasharray: 6 2; opacity: 1; stroke: #00cec9; }
+}
+
+.focus-particles-container {
+  position: absolute;
+  inset: -14px;
+  pointer-events: none;
+}
+.fp1 {
+  top: -10px;
+  left: 6px;
+  font-size: 13px;
+  animation: focusParticleFloat 1.1s ease-in-out infinite alternate;
+}
+.fp2 {
+  top: -12px;
+  right: 8px;
+  font-size: 12px;
+  animation: focusParticleFloat 1.3s 0.2s ease-in-out infinite alternate;
+}
+.fp3 {
+  bottom: 10px;
+  left: -6px;
+  font-size: 12px;
+  animation: focusParticleFloat 1s 0.3s ease-in-out infinite alternate;
+}
+.fp4 {
+  bottom: 8px;
+  right: -6px;
+  font-size: 11px;
+  animation: focusParticleFloat 1.2s 0.4s ease-in-out infinite alternate;
+}
+@keyframes focusParticleFloat {
+  0% { transform: translateY(0) scale(0.8); opacity: 0.6; }
+  100% { transform: translateY(-7px) scale(1.2); opacity: 1; }
+}
+
+/* 3. BREAK TIME RUNNING: Peaceful swaying float, tea steam, music notes */
+.pet-sprite.break.running {
+  animation: breakFloatSway 2.4s ease-in-out infinite;
+}
+@keyframes breakFloatSway {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-5px) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-2px) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-5px) rotate(3deg);
+  }
+}
+
+.break-aura-halo {
+  animation: breakAuraPulse 2s ease-in-out infinite alternate;
+}
+@keyframes breakAuraPulse {
+  0% { transform: scale(0.95); opacity: 0.4; }
+  100% { transform: scale(1.15); opacity: 0.8; }
+}
+
+.coffee-steam.s1 {
+  animation: steamRise 1s infinite;
+}
+.coffee-steam.s2 {
+  animation: steamRise 1.2s 0.3s infinite;
+}
+@keyframes steamRise {
+  0% { transform: translateY(0) scaleX(0.8); opacity: 0; }
+  50% { opacity: 0.8; }
+  100% { transform: translateY(-6px) scaleX(1.3); opacity: 0; }
+}
+
+.break-particles-container {
+  position: absolute;
+  inset: -14px;
+  pointer-events: none;
+}
+.bp1 {
+  top: -8px;
+  left: 6px;
+  font-size: 13px;
+  animation: breakNoteDrift 1.6s ease-in-out infinite alternate;
+}
+.bp2 {
+  top: -12px;
+  right: 8px;
+  font-size: 14px;
+  animation: breakNoteDrift 1.8s 0.3s ease-in-out infinite alternate;
+}
+.bp3 {
+  bottom: 12px;
+  left: -4px;
+  font-size: 12px;
+  animation: breakNoteDrift 1.5s 0.5s ease-in-out infinite alternate;
+}
+.bp4 {
+  top: 14px;
+  right: -6px;
+  font-size: 11px;
+  animation: breakNoteDrift 1.7s 0.2s ease-in-out infinite alternate;
+}
+@keyframes breakNoteDrift {
+  0% { transform: translateY(0) rotate(0deg) scale(0.8); opacity: 0.5; }
+  100% { transform: translateY(-8px) rotate(15deg) scale(1.15); opacity: 1; }
+}
+
+/* 4. PAUSED STATE: Expectant slow hover with floating hourglass */
+.pet-sprite.paused {
+  animation: pausedGentleHover 2.6s ease-in-out infinite alternate;
+}
+@keyframes pausedGentleHover {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-3.5px); }
+}
+
+.paused-particles-container {
+  position: absolute;
+  inset: -10px;
+  pointer-events: none;
+}
+.pp1 {
+  top: -10px;
+  right: 6px;
+  font-size: 13px;
+  animation: pausedFloat 1.2s ease-in-out infinite alternate;
+}
+.pp2 {
+  top: -6px;
+  left: 8px;
+  font-size: 13px;
+  animation: pausedFloat 1.5s 0.3s ease-in-out infinite alternate;
+}
+@keyframes pausedFloat {
+  0% { transform: translateY(0) scale(0.85); opacity: 0.6; }
+  100% { transform: translateY(-5px) scale(1.1); opacity: 0.95; }
+}
+
+/* 5. TAIL ANIMATION FOR MOMO */
+.momo-tail {
+  transform-origin: 52px 48px;
+  transition: transform 0.35s ease;
+}
+.momo-tail.focus.running {
+  animation: momoTailFastWag 0.28s ease-in-out infinite alternate;
+}
+@keyframes momoTailFastWag {
+  0% { transform: rotate(-14deg); }
+  100% { transform: rotate(14deg); }
+}
+.momo-tail.break {
+  animation: momoTailLazyWag 1.8s ease-in-out infinite alternate;
+}
+@keyframes momoTailLazyWag {
+  0% { transform: rotate(-8deg); }
+  100% { transform: rotate(8deg); }
+}
+
+/* 6. SHADOW DYNAMICS */
+.shadow-ellipse {
+  transform-origin: 36px 64px;
+  transition: transform 0.35s ease, opacity 0.35s ease;
+}
+.shadow-ellipse.break.running {
+  animation: momoShadowBreak 2.4s ease-in-out infinite;
+}
+@keyframes momoShadowBreak {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  25%, 75% { transform: scale(0.82); opacity: 0.2; }
+  50% { transform: scale(0.95); opacity: 0.28; }
+}
+
+/* 7. SCRATCHING / PURRING / BOOPING */
+.pet-sprite.scratching {
+  animation: momoPurrVibrate 0.14s ease-in-out infinite alternate !important;
+}
+@keyframes momoPurrVibrate {
+  0% { transform: translateY(0) scale(1.05, 0.95) rotate(-2deg); }
+  50% { transform: translateY(-2px) scale(0.96, 1.04) rotate(0deg); }
+  100% { transform: translateY(1px) scale(1.06, 0.94) rotate(2deg); }
+}
+
+.pet-sprite.blissful {
+  animation: momoBlissfulSway 1.2s ease-in-out infinite alternate !important;
+}
+@keyframes momoBlissfulSway {
+  0% { transform: translateY(0) scale(1.02, 0.98) rotate(-1deg); }
+  100% { transform: translateY(-4px) scale(0.98, 1.02) rotate(1deg); }
+}
+
+.pet-sprite.booped {
+  animation: momoBoopSquish 0.26s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+@keyframes momoBoopSquish {
+  0% { transform: scale(1, 1); }
+  40% { transform: scale(1.15, 0.82) translateY(4px); }
+  100% { transform: scale(1, 1); }
+}
+
+.ear-wiggle {
+  animation: momoEarTwitch 0.16s ease-in-out infinite alternate;
+  transform-origin: 36px 20px;
+}
+@keyframes momoEarTwitch {
+  0% { transform: rotate(-4deg); }
+  100% { transform: rotate(4deg); }
+}
+
+.blush-glow {
+  animation: momoBlushPulse 0.5s ease-in-out infinite alternate;
+}
+@keyframes momoBlushPulse {
+  0% { opacity: 0.8; }
+  100% { opacity: 1; filter: drop-shadow(0 0 2px #fd79a8); }
+}
+
+/* Scratch particles */
+.scratch-particles {
+  position: absolute;
+  inset: -12px;
+  pointer-events: none;
+  z-index: 25;
+}
+.heart-particle {
+  position: absolute;
+  font-size: 15px;
+  animation: floatHeart 0.95s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+}
+.mh1 { top: -6px; left: 8px; animation-delay: 0s; }
+.mh2 { top: -14px; right: 10px; animation-delay: 0.22s; }
+.mh3 { top: 14px; right: -4px; animation-delay: 0.45s; }
+.mh4 { top: 10px; left: -2px; animation-delay: 0.68s; }
+@keyframes floatHeart {
+  0% { transform: translateY(6px) scale(0.4); opacity: 0; }
+  30% { opacity: 1; transform: translateY(-4px) scale(1.2); }
+  100% { transform: translateY(-22px) scale(0.85); opacity: 0; }
+}
+
+/* Name + timer tag */
 .name-tag {
   margin-top: 16px;
   background: rgba(15, 18, 26, 0.88);
@@ -504,6 +976,7 @@ onMounted(async () => {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   cursor: pointer;
   white-space: nowrap;
+  transition: transform 0.2s ease, border-color 0.3s ease;
 }
 .mini .name-tag {
   margin-top: 4px;
@@ -527,6 +1000,7 @@ onMounted(async () => {
   height: 6px;
   border-radius: 50%;
   background: #ff7675;
+  transition: background-color 0.3s ease;
 }
 .name-tag.break .dot {
   background: #00cec9;
