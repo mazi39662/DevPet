@@ -3,7 +3,7 @@
  * frontend goes through here so platform code stays isolated.
  */
 import { invoke } from '@tauri-apps/api/core';
-import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event';
+import { emit, emitTo, listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type { EventName, EventPayloads, HookStatus, MonitorInfo } from '../types/events';
 
 export const native = {
@@ -14,6 +14,9 @@ export const native = {
   setCompanionVisible: (visible: boolean) => invoke<boolean>('set_companion_visible', { visible }),
   isCompanionVisible: () => invoke<boolean>('is_companion_visible'),
   setCompanionMini: (mini: boolean) => invoke<void>('set_companion_mini', { mini }),
+  setPomodoroCompanionVisible: (visible: boolean) => invoke<boolean>('set_pomodoro_companion_visible', { visible }),
+  isPomodoroCompanionVisible: () => invoke<boolean>('is_pomodoro_companion_visible'),
+  setPomodoroCompanionMini: (mini: boolean) => invoke<void>('set_pomodoro_companion_mini', { mini }),
   showDashboard: () => invoke<void>('show_dashboard'),
   focusTargetApp: (agentId?: string | null) => invoke<boolean>('focus_target_app', { agentId: agentId || null }),
   playSystemSound: () => invoke<void>('play_system_sound'),
@@ -27,6 +30,17 @@ export function onEvent<E extends EventName>(
   return listen<EventPayloads[E]>(name, (e) => handler(e.payload));
 }
 
-export function emitEvent<E extends EventName>(name: E, payload: EventPayloads[E]): Promise<void> {
-  return emit(name, payload);
+export async function emitEvent<E extends EventName>(name: E, payload: EventPayloads[E]): Promise<void> {
+  try {
+    await emit(name, payload);
+  } catch {}
+  try {
+    await emitTo('main', name, payload);
+  } catch {}
+  try {
+    await emitTo('companion', name, payload);
+  } catch {}
+  try {
+    await emitTo('companion-pomodoro', name, payload);
+  } catch {}
 }

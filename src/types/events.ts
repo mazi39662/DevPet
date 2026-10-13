@@ -4,13 +4,17 @@
  */
 import type { AppDetection, CelebrationEvent, CompanionState } from './status';
 import type { Settings } from './settings';
+import type { PomodoroConfig, PomodoroPhase, PomodoroState } from './pomodoro';
 
 export const EVENTS = {
   rawEvents: 'devpet://raw-events',
   tick: 'devpet://tick',
   companionVisibility: 'devpet://companion-visibility',
-  // Frontend-only (dashboard coordinator <-> companion window)
+  pomodoroVisibility: 'devpet://pomodoro-companion-visibility',
+  // Frontend-only (dashboard coordinator <-> companion windows)
   companionState: 'devpet://companion-state',
+  pomodoroState: 'devpet://pomodoro-state',
+  pomodoroAction: 'devpet://pomodoro-action',
   companionReady: 'devpet://companion-ready',
   celebrate: 'devpet://celebrate',
   settings: 'devpet://settings',
@@ -54,11 +58,23 @@ export interface CompanionVisibility {
   visible: boolean;
 }
 
+export type PomodoroAction =
+  | { type: 'start' }
+  | { type: 'pause' }
+  | { type: 'reset' }
+  | { type: 'skip' }
+  | { type: 'sync' }
+  | { type: 'set-phase'; phase: PomodoroPhase }
+  | { type: 'update-config'; config: Partial<PomodoroConfig> };
+
 export interface EventPayloads {
   [EVENTS.rawEvents]: RawSourceEvent[];
   [EVENTS.tick]: TickPayload;
   [EVENTS.companionVisibility]: CompanionVisibility;
+  [EVENTS.pomodoroVisibility]: CompanionVisibility;
   [EVENTS.companionState]: CompanionState;
+  [EVENTS.pomodoroState]: PomodoroState;
+  [EVENTS.pomodoroAction]: PomodoroAction;
   [EVENTS.companionReady]: null;
   [EVENTS.celebrate]: CelebrationEvent;
   [EVENTS.settings]: Settings;

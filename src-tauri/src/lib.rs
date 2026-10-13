@@ -46,6 +46,21 @@ fn set_companion_mini(app: AppHandle, mini: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn set_pomodoro_companion_mini(app: AppHandle, mini: bool) -> Result<(), String> {
+    windows::set_pomodoro_companion_mini(&app, mini)
+}
+
+#[tauri::command]
+fn set_pomodoro_companion_visible(app: AppHandle, visible: bool) -> Result<bool, String> {
+    windows::set_pomodoro_companion_visible(&app, visible)
+}
+
+#[tauri::command]
+fn is_pomodoro_companion_visible(app: AppHandle) -> bool {
+    windows::is_pomodoro_companion_visible(&app)
+}
+
+#[tauri::command]
 fn show_dashboard(app: AppHandle) -> Result<(), String> {
     windows::show_dashboard(&app)
 }
@@ -79,6 +94,9 @@ pub fn run() {
             set_companion_visible,
             is_companion_visible,
             set_companion_mini,
+            set_pomodoro_companion_visible,
+            is_pomodoro_companion_visible,
+            set_pomodoro_companion_mini,
             show_dashboard,
             focus_target_app,
             play_system_sound,
@@ -88,6 +106,9 @@ pub fn run() {
             windows::build_tray(app.handle())?;
             if let Some(c) = app.get_webview_window(windows::COMPANION) {
                 let _ = c.set_always_on_top(true);
+            }
+            if let Some(p) = app.get_webview_window(windows::POMODORO_COMPANION) {
+                let _ = p.set_always_on_top(true);
             }
             let st = hook_install::status();
             if st.installed && !st.up_to_date {
@@ -103,6 +124,8 @@ pub fn run() {
                 let _ = window.hide();
                 if window.label() == windows::COMPANION {
                     let _ = windows::set_companion_visible(window.app_handle(), false);
+                } else if window.label() == windows::POMODORO_COMPANION {
+                    let _ = windows::set_pomodoro_companion_visible(window.app_handle(), false);
                 }
             }
         })

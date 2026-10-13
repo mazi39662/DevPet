@@ -10,7 +10,18 @@ function loadStored(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+      const parsed = JSON.parse(raw);
+      return {
+        ...DEFAULT_SETTINGS,
+        ...parsed,
+        pomodoroConfig: {
+          focusMinutes: parsed.pomodoroConfig?.focusMinutes ?? DEFAULT_SETTINGS.pomodoroConfig.focusMinutes,
+          breakMinutes:
+            parsed.pomodoroConfig?.breakMinutes ??
+            parsed.pomodoroConfig?.shortBreakMinutes ??
+            DEFAULT_SETTINGS.pomodoroConfig.breakMinutes,
+        },
+      };
     }
   } catch (e) {
     console.error('Failed to load settings:', e);

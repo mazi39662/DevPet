@@ -51,6 +51,34 @@ class NotificationService {
     }
   }
 
+  public async notifyPomodoroPhase(
+    title: string,
+    message: string,
+    settings: Settings,
+    phase: 'focus' | 'break'
+  ): Promise<void> {
+    if (!settings.notificationsEnabled) return;
+
+    if (this.hasPermission) {
+      try {
+        sendNotification({
+          title: `Momo — ${title}`,
+          body: message,
+        });
+      } catch (err) {
+        console.error('Failed to dispatch Pomodoro notification:', err);
+      }
+    }
+
+    if (settings.soundEnabled) {
+      if (phase === 'focus') {
+        this.playFocusStartChime();
+      } else {
+        this.playBreakBell();
+      }
+    }
+  }
+
   public playChime(): void {
     try {
       const AudioContextClass =
@@ -214,6 +242,91 @@ class NotificationService {
       chirp.stop(now + 0.17);
     } catch {
       // Audio optional / graceful fallback
+    }
+  }
+
+  /** Energizing rising chime for focus sprint start (F4 -> A4 -> C5 -> F5) */
+  public playFocusStartChime(): void {
+    try {
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!this.audioCtx || this.audioCtx.state === 'closed') {
+        this.audioCtx = new AudioContextClass();
+      }
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+      const ctx = this.audioCtx;
+      const now = ctx.currentTime;
+
+      const notes = [
+        { freq: 349.23, time: 0.0, dur: 0.22, gain: 0.16 }, // F4
+        { freq: 440.0, time: 0.08, dur: 0.22, gain: 0.18 }, // A4
+        { freq: 523.25, time: 0.16, dur: 0.26, gain: 0.22 }, // C5
+        { freq: 698.46, time: 0.24, dur: 0.65, gain: 0.24 }, // F5
+      ];
+
+      for (const n of notes) {
+        const start = now + n.time;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(n.freq, start);
+
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(n.gain, start + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + n.dur);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + n.dur + 0.02);
+      }
+    } catch {
+      import('./native').then(({ native }) => native.playSystemSound()).catch(() => {});
+    }
+  }
+
+  /** Relaxing zen / singing bowl resonant chime for break start */
+  public playBreakBell(): void {
+    try {
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!this.audioCtx || this.audioCtx.state === 'closed') {
+        this.audioCtx = new AudioContextClass();
+      }
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+      const ctx = this.audioCtx;
+      const now = ctx.currentTime;
+
+      // Resonant harmonic pair: fundamental 432Hz + warm 864Hz overtone with slow decay
+      const harmonics = [
+        { freq: 432.0, gain: 0.25, dur: 1.8 },
+        { freq: 864.0, gain: 0.12, dur: 1.2 },
+        { freq: 1296.0, gain: 0.05, dur: 0.8 },
+      ];
+
+      for (const h of harmonics) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(h.freq, now);
+
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(h.gain, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + h.dur);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + h.dur + 0.05);
+      }
+    } catch {
+      import('./native').then(({ native }) => native.playSystemSound()).catch(() => {});
     }
   }
 }

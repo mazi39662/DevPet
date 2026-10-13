@@ -8,7 +8,9 @@ use tauri::{AppHandle, Emitter, LogicalSize, Manager, Runtime, WebviewWindow};
 
 pub const DASHBOARD: &str = "main";
 pub const COMPANION: &str = "companion";
+pub const POMODORO_COMPANION: &str = "companion-pomodoro";
 pub const EVT_COMPANION_VISIBILITY: &str = "devpet://companion-visibility";
+pub const EVT_POMODORO_COMPANION_VISIBILITY: &str = "devpet://pomodoro-companion-visibility";
 
 const COMPANION_SIZE: (f64, f64) = (168.0, 184.0);
 const COMPANION_MINI_SIZE: (f64, f64) = (92.0, 100.0);
@@ -21,6 +23,10 @@ pub struct CompanionVisibility {
 
 fn companion<R: Runtime>(app: &AppHandle<R>) -> Result<WebviewWindow<R>, String> {
     app.get_webview_window(COMPANION).ok_or_else(|| "companion window not found".into())
+}
+
+fn pomodoro_companion<R: Runtime>(app: &AppHandle<R>) -> Result<WebviewWindow<R>, String> {
+    app.get_webview_window(POMODORO_COMPANION).ok_or_else(|| "pomodoro companion window not found".into())
 }
 
 pub fn set_companion_visible<R: Runtime>(app: &AppHandle<R>, visible: bool) -> Result<bool, String> {
@@ -45,6 +51,38 @@ pub fn set_companion_mini<R: Runtime>(app: &AppHandle<R>, mini: bool) -> Result<
     companion(app)?.set_size(LogicalSize::new(w, h)).map_err(|e| e.to_string())
 }
 
+pub fn set_pomodoro_companion_visible<R: Runtime>(app: &AppHandle<R>, visible: bool) -> Result<bool, String> {
+    let win = pomodoro_companion(app)?;
+    if visible {
+        // If main companion is visible, offset pomodoro companion to the left so they don't overlap
+        if let Ok(main_win) = companion(app) {
+            if let Ok(main_pos) = main_win.outer_position() {
+                if let Ok(cur_pos) = win.outer_position() {
+                    // If at the exact same spot, offset pomodoro companion by 180px to the left
+                    if (cur_pos.x - main_pos.x).abs() < 10 && (cur_pos.y - main_pos.y).abs() < 10 {
+                        let _ = win.set_position(tauri::PhysicalPosition::new(main_pos.x - 180, main_pos.y));
+                    }
+                }
+            }
+        }
+        win.show().map_err(|e| e.to_string())?;
+        let _ = win.set_always_on_top(true);
+    } else {
+        win.hide().map_err(|e| e.to_string())?;
+    }
+    let _ = app.emit(EVT_POMODORO_COMPANION_VISIBILITY, CompanionVisibility { visible });
+    Ok(visible)
+}
+
+pub fn is_pomodoro_companion_visible<R: Runtime>(app: &AppHandle<R>) -> bool {
+    pomodoro_companion(app).ok().and_then(|w| w.is_visible().ok()).unwrap_or(false)
+}
+
+pub fn set_pomodoro_companion_mini<R: Runtime>(app: &AppHandle<R>, mini: bool) -> Result<(), String> {
+    let (w, h) = if mini { COMPANION_MINI_SIZE } else { COMPANION_SIZE };
+    pomodoro_companion(app)?.set_size(LogicalSize::new(w, h)).map_err(|e| e.to_string())
+}
+
 pub fn show_dashboard<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     let win = app.get_webview_window(DASHBOARD).ok_or("dashboard window not found")?;
     let _ = win.unminimize();
@@ -54,10 +92,11 @@ pub fn show_dashboard<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
 
 pub fn build_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let show = MenuItem::with_id(app, "show_dashboard", "Open Dashboard", true, None::<&str>)?;
-    let toggle = MenuItem::with_id(app, "toggle_companion", "Show / Hide Companion", true, None::<&str>)?;
+    let toggle_agent = MenuItem::with_id(app, "toggle_agent", "Toggle Codi (Coding Pet)", true, None::<&str>)?;
+    let toggle_pomo = MenuItem::with_id(app, "toggle_pomo", "Toggle Momo (Pomodoro Pet)", true, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
     let quit = MenuItem::with_id(app, "quit", "Quit DevPet", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&show, &toggle, &sep, &quit])?;
+    let menu = Menu::with_items(app, &[&show, &toggle_agent, &toggle_pomo, &sep, &quit])?;
 
     let mut builder = TrayIconBuilder::with_id("devpet-tray")
         .tooltip("DevPet")
@@ -67,9 +106,13 @@ pub fn build_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
             "show_dashboard" => {
                 let _ = show_dashboard(app);
             }
-            "toggle_companion" => {
+            "toggle_agent" => {
                 let visible = is_companion_visible(app);
                 let _ = set_companion_visible(app, !visible);
+            }
+            "toggle_pomo" => {
+                let visible = is_pomodoro_companion_visible(app);
+                let _ = set_pomodoro_companion_visible(app, !visible);
             }
             "quit" => app.exit(0),
             _ => {}

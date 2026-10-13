@@ -16,6 +16,7 @@
         :class="[status, { 'scratch-bubble': isScratching || isBlissful }]"
         v-if="((showBubble && displayBubbleLabel && !mini) || isScratching || isBlissful)"
         @click.stop="registerClick"
+        @mousedown.stop
       >
         <span v-if="isScratching || isBlissful" class="bubble-alert-badge heart-bounce">💖</span>
         <span v-else-if="status === 'waiting'" class="bubble-alert-badge">⏳</span>
@@ -179,14 +180,19 @@
 
         <!-- Keyboard / Coding Laptop when working -->
         <g v-if="status === 'working'" class="mini-laptop">
-          <rect x="22" y="44" width="20" height="10" fill="#2d3436" rx="2" />
-          <rect x="24" y="46" width="16" height="6" fill="#00cec9" class="laptop-screen" />
+          <rect x="20" y="44" width="24" height="10" fill="#2d3436" rx="2" />
+          <rect x="22" y="45" width="20" height="7" fill="#00cec9" class="laptop-screen" />
+          <line x1="24" y1="47" x2="34" y2="47" stroke="#003b46" stroke-width="1" class="agent-code-line c1" />
+          <line x1="24" y1="49" x2="38" y2="49" stroke="#003b46" stroke-width="1" class="agent-code-line c2" />
+          <!-- Animated typing paws -->
+          <ellipse cx="23" cy="51" rx="2.5" ry="2" :fill="primaryColor" stroke="#1e272e" stroke-width="0.7" class="agent-paw left" />
+          <ellipse cx="41" cy="51" rx="2.5" ry="2" :fill="primaryColor" stroke="#1e272e" stroke-width="0.7" class="agent-paw right" />
         </g>
       </svg>
     </div>
 
-    <!-- Active Agent Mini Badge -->
-    <div class="agent-tag" v-if="agentName && !mini">
+    <!-- Active Agent Mini Badge (Codi) -->
+    <div class="agent-tag" v-if="agentName && !mini" @mousedown.stop>
       <span class="dot" :class="status"></span>
       <span class="name">{{ agentName }}</span>
     </div>
@@ -211,7 +217,7 @@ const props = withDefaults(
   {
     status: 'idle',
     label: '',
-    agentName: 'DevPet',
+    agentName: 'Codi',
     showBubble: true,
     mini: false,
     soundEnabled: true,
@@ -416,6 +422,9 @@ function registerClick() {
 
 function onMouseDown(e: MouseEvent) {
   if (e.button === 0) {
+    if ((e.target as HTMLElement).closest('.agent-tag, .speech-bubble, button, .icon-btn, input, label')) {
+      return;
+    }
     startX = e.screenX;
     startY = e.screenY;
     if (isScratching.value) {
@@ -457,7 +466,8 @@ function onMouseUp(e: MouseEvent) {
   position: relative;
   width: 100%;
   height: 100%;
-  padding: 4px;
+  padding: 30px 4px 10px;
+  box-sizing: border-box;
 }
 
 .pet-container:active {
@@ -467,7 +477,7 @@ function onMouseUp(e: MouseEvent) {
 /* Speech bubble */
 .speech-bubble {
   position: absolute;
-  top: 4px;
+  top: 6px;
   background: rgba(20, 24, 33, 0.92);
   color: #f1f2f6;
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -541,8 +551,8 @@ function onMouseUp(e: MouseEvent) {
 
 .pet-sprite {
   position: relative;
-  width: 96px;
-  height: 96px;
+  width: 78px;
+  height: 78px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -550,8 +560,8 @@ function onMouseUp(e: MouseEvent) {
 }
 
 .mini .pet-sprite {
-  width: 64px;
-  height: 64px;
+  width: 58px;
+  height: 58px;
 }
 
 .character-svg {
@@ -593,6 +603,33 @@ function onMouseUp(e: MouseEvent) {
 @keyframes screenBlink {
   0% { fill: #00cec9; }
   100% { fill: #81ecec; }
+}
+
+.agent-paw.left {
+  animation: agentPawLeft 0.18s ease-in-out infinite alternate;
+}
+.agent-paw.right {
+  animation: agentPawRight 0.18s ease-in-out infinite alternate;
+  animation-delay: 0.09s;
+}
+@keyframes agentPawLeft {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-2px); }
+}
+@keyframes agentPawRight {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-2px); }
+}
+
+.agent-code-line.c1 {
+  animation: agentCodeLine 0.5s infinite alternate;
+}
+.agent-code-line.c2 {
+  animation: agentCodeLine 0.7s infinite alternate;
+}
+@keyframes agentCodeLine {
+  0% { stroke-dasharray: 2 1; opacity: 0.6; }
+  100% { stroke-dasharray: 4 2; opacity: 1; }
 }
 
 /* THINKING: Gentle floating sway */
@@ -886,9 +923,9 @@ function onMouseUp(e: MouseEvent) {
   opacity: 0.85;
 }
 
-/* Agent tag badge */
+/* Agent tag badge (spaced far away from the sprite) */
 .agent-tag {
-  margin-top: 2px;
+  margin-top: 16px;
   background: rgba(15, 18, 26, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 2px 8px;

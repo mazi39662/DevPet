@@ -1,46 +1,64 @@
 <template>
   <div class="companion-window-root">
-    <CompanionPet
-      :status="state.status"
-      :label="state.label"
-      :agent-name="state.agentName"
-      :show-bubble="showBubble"
-      :mini="settings.companionMini"
-      :sound-enabled="settings.soundEnabled"
-      @open-dashboard="openDashboard"
-      @focus-app="focusAgentApp"
-      @peek-bubble="triggerBubble(3000)"
-    />
+    <!-- Pomodoro Companion Pet (Momo) -->
+    <template v-if="activePetType === 'pomodoro'">
+      <PomodoroPet
+        :mini="settings.companionMini"
+        :sound-enabled="settings.soundEnabled"
+        :interactive="true"
+        @open-dashboard="openDashboard"
+        @hide-pet="hideCompanion"
+      />
+    </template>
 
-    <!-- Quick action buttons on hover -->
-    <div class="hover-controls">
-      <button class="icon-btn" title="Focus AI App (2-click mascot)" @click.stop="focusAgentApp">
-        🚀
-      </button>
-      <button class="icon-btn" title="Open Settings / Dashboard (3-click mascot)" @click.stop="openDashboard">
-        ⚙️
-      </button>
-      <button class="icon-btn" title="Hide Companion" @click.stop="hideCompanion">
-        ✕
-      </button>
-    </div>
+    <!-- Coding Agent Companion Pet (Codi) -->
+    <template v-else>
+      <CompanionPet
+        :status="state.status"
+        :label="state.label"
+        :agent-name="state.agentName || 'Codi'"
+        :show-bubble="showBubble"
+        :mini="settings.companionMini"
+        :sound-enabled="settings.soundEnabled"
+        @open-dashboard="openDashboard"
+        @focus-app="focusAgentApp"
+        @peek-bubble="triggerBubble(3000)"
+      />
+
+      <!-- Quick action buttons on hover (Codi) -->
+      <div class="hover-controls" @mousedown.stop @mouseup.stop>
+        <button class="icon-btn" title="Focus AI App (2-click mascot)" @mousedown.stop @click.stop="focusAgentApp">
+          🚀
+        </button>
+        <button class="icon-btn" title="Open Dashboard (3-click mascot)" @mousedown.stop @click.stop="openDashboard">
+          ⚙️
+        </button>
+        <button class="icon-btn" title="Hide Codi" @mousedown.stop @click.stop="hideCompanion">
+          ✕
+        </button>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import CompanionPet from './components/CompanionPet.vue';
+import PomodoroPet from './components/PomodoroPet.vue';
 import type { CelebrationEvent, CompanionState } from './types/status';
 import type { Settings } from './types/settings';
 import { DEFAULT_SETTINGS } from './types/settings';
 import { EVENTS } from './types/events';
 import { native, onEvent } from './services/native';
 import { notificationService } from './services/notifications';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+
+const activePetType = ref<'agent' | 'pomodoro'>('agent');
 
 const state = ref<CompanionState>({
   status: 'idle',
-  label: 'DevPet Ready',
-  agentName: 'DevPet',
+  label: 'Codi Ready',
+  agentName: 'Codi',
   monitoring: true,
 });
 
@@ -54,7 +72,7 @@ function scheduleCompletedToIdle(delayMs = 4000) {
   completionTimer = setTimeout(() => {
     if (state.value.status === 'completed') {
       state.value.status = 'idle';
-      state.value.label = 'DevPet Ready';
+      state.value.label = 'Codi Ready';
     }
     completionTimer = null;
   }, delayMs);
@@ -72,6 +90,20 @@ function triggerBubble(durationMs = 3000) {
 }
 
 onMounted(async () => {
+  // Determine pet type from query param or window label
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const petParam = urlParams.get('pet');
+    if (petParam === 'pomodoro') {
+      activePetType.value = 'pomodoro';
+    } else {
+      const win = getCurrentWebviewWindow();
+      if (win.label.includes('pomodoro')) {
+        activePetType.value = 'pomodoro';
+      }
+    }
+  } catch {}
+
   // Show initial status for 3 seconds then auto-hide
   triggerBubble(3000);
 
@@ -79,7 +111,10 @@ onMounted(async () => {
   await onEvent(EVENTS.companionState, (newState: CompanionState) => {
     const hasChanged = state.value.label !== newState.label || state.value.status !== newState.status;
     const wasWaiting = state.value.status === 'waiting';
-    state.value = newState;
+    state.value = {
+      ...newState,
+      agentName: newState.agentName || 'Codi',
+    };
     if (newState.status === 'completed') {
       scheduleCompletedToIdle(4000);
     } else if (completionTimer) {
@@ -102,7 +137,7 @@ onMounted(async () => {
   // Listen for celebration events
   await onEvent(EVENTS.celebrate, (ev: CelebrationEvent) => {
     state.value.status = 'completed';
-    state.value.label = `${ev.agentName} Completed Task!`;
+    state.value.label = `${ev.agentName || 'Codi'} Completed Task!`;
     triggerBubble(3500);
     scheduleCompletedToIdle(4000);
     if (ev.playSound && settings.value.soundEnabled) {
@@ -125,7 +160,11 @@ async function focusAgentApp() {
 }
 
 async function hideCompanion() {
-  await native.setCompanionVisible(false);
+  if (activePetType.value === 'pomodoro') {
+    await native.setPomodoroCompanionVisible(false);
+  } else {
+    await native.setCompanionVisible(false);
+  }
 }
 </script>
 
@@ -138,6 +177,7 @@ async function hideCompanion() {
   align-items: center;
   justify-content: center;
   background: transparent;
+  overflow: hidden;
 }
 
 .hover-controls {
@@ -148,7 +188,7 @@ async function hideCompanion() {
   gap: 4px;
   opacity: 0;
   transition: opacity 0.2s ease;
-  z-index: 20;
+  z-index: 30;
 }
 
 .companion-window-root:hover .hover-controls {
@@ -156,7 +196,7 @@ async function hideCompanion() {
 }
 
 .icon-btn {
-  background: rgba(30, 39, 46, 0.85);
+  background: rgba(30, 39, 46, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: #d2dae2;
   border-radius: 4px;
