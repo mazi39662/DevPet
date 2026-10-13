@@ -2,8 +2,9 @@
 //!
 //! Contract (see Antigravity `hooks.md`): JSON context on stdin, JSON result on
 //! stdout. We only *observe*: every event gets `{}` back, which means "default
-//! behaviour" for PreInvocation / PostToolUse / PostInvocation / Stop. We never
-//! register PreToolUse because its output decides tool permissions.
+//! behaviour" for PreInvocation / PreToolUse / PostToolUse / PostInvocation / Stop.
+//! Returning `{}` on PreToolUse allows normal tool execution or default UI permission prompt
+//! without forcing any deny or silent bypass.
 //!
 //! This path must be fast and must never fail loudly: any error is swallowed so
 //! the agent loop is never blocked or broken by DevPet.
@@ -20,7 +21,7 @@ const MAX_STDIN_BYTES: u64 = 4 * 1024 * 1024;
 const ROTATE_AT_BYTES: u64 = 2 * 1024 * 1024;
 
 #[cfg(test)]
-pub const SUPPORTED_EVENTS: [&str; 4] = ["PreInvocation", "PostToolUse", "PostInvocation", "Stop"];
+pub const SUPPORTED_EVENTS: [&str; 5] = ["PreInvocation", "PreToolUse", "PostToolUse", "PostInvocation", "Stop"];
 
 /// Entry point. Returns the process exit code (always 0).
 pub fn run(args: &[String]) -> i32 {

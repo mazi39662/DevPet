@@ -85,7 +85,7 @@ describe('Antigravity Hook Adapter', () => {
     const mapped = mapAntigravityRecord(rec!);
     expect(mapped).not.toBeNull();
     expect(mapped?.status).toBe('waiting');
-    expect(mapped?.detail).toBe('Allow execution in Antigravity to proceed');
+    expect(mapped?.detail).toBe('Approval needed: Command waiting for run/allow');
   });
 
   it('maps PreToolUse with ask_question to waiting state', () => {

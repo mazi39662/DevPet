@@ -74,26 +74,35 @@
         </div>
       </Transition>
 
-      <!-- Working digital sparks & code particles -->
-      <Transition name="particle-fade">
-        <div v-if="status === 'working'" class="working-particles">
-          <span class="particle code-p1">{ }</span>
-          <span class="particle code-p2">&lt;/&gt;</span>
-          <span class="particle code-p3">⚡</span>
-          <span class="particle code-p4">✨</span>
-        </div>
-      </Transition>
+      <!-- Working & typing dynamic sparks / code particles shooting outward at random angles -->
+      <div class="burst-particles-layer">
+        <span
+          v-for="p in activeBurstParticles"
+          :key="p.id"
+          class="burst-particle"
+          :class="p.typeClass"
+          :style="{
+            '--dx': p.dx + 'px',
+            '--dy': p.dy + 'px',
+            '--rot': p.rot + 'deg',
+            '--size': p.size + 'px',
+            '--duration': p.duration + 'ms',
+            '--color': p.color
+          }"
+        >{{ p.text }}</span>
+      </div>
 
       <!-- Thinking floating curiosity particles & cyber orbit halo -->
       <Transition name="particle-fade">
         <div v-if="status === 'thinking'" class="thinking-particles-container">
           <div class="thinking-gear">
-            <span class="gear-icon">💡</span>
+            <span class="gear-icon">🧠</span>
             <span class="thought-aura"></span>
           </div>
-          <span class="particle think-p1">💭</span>
+          <span class="particle think-p1">💡</span>
           <span class="particle think-p2">✦</span>
-          <span class="particle think-p3">?</span>
+          <span class="particle think-p3"> ¿</span>
+          <span class="particle think-p4"> hmmm.. !</span>
         </div>
       </Transition>
 
@@ -364,9 +373,94 @@ const isUserTyping = ref(false);
 const eyeLookX = ref(0);
 const eyeLookY = ref(0);
 
+// Dynamic 360-degree burst particles for typing & working
+interface BurstParticle {
+  id: number;
+  text: string;
+  typeClass: string;
+  dx: number;
+  dy: number;
+  rot: number;
+  size: number;
+  duration: number;
+  color: string;
+}
+
+const activeBurstParticles = ref<BurstParticle[]>([]);
+let burstIdCounter = 0;
+
+const CODE_SNIPPETS = ['{ }', '</>', '[ ]', '=>', '!=', '===', '()', ';', 'fn()', 'return', 'let', 'ok'];
+const SPARK_SNIPPETS = ['✦', '✨', '⚡', '•', '✧'];
+const NEON_COLORS = ['#00cec9', '#55efc4', '#81ecec', '#a29bfe', '#ffeaa7', '#74b9ff'];
+
+function spawnBurst(count = 3, isCode = true) {
+  const now = Date.now();
+  for (let i = 0; i < count; i++) {
+    burstIdCounter++;
+    const currentId = burstIdCounter;
+    // Shoot in a full 360-degree random angle (all directions around the pet)
+    const angle = Math.random() * Math.PI * 2;
+    // Travel distance between 28px and 58px outward
+    const distance = 28 + Math.random() * 32;
+    const dx = Math.cos(angle) * distance;
+    const dy = Math.sin(angle) * distance;
+    const rot = -40 + Math.random() * 80;
+    const duration = 600 + Math.random() * 350;
+    const textList = isCode ? CODE_SNIPPETS : SPARK_SNIPPETS;
+    const text = textList[Math.floor(Math.random() * textList.length)];
+    const color = NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)];
+
+    activeBurstParticles.value.push({
+      id: currentId,
+      text,
+      typeClass: isCode ? 'burst-code' : 'burst-spark',
+      dx,
+      dy,
+      rot,
+      size: isCode ? (Math.random() > 0.5 ? 11 : 12) : (Math.random() > 0.5 ? 10 : 13),
+      duration,
+      color,
+    });
+
+    setTimeout(() => {
+      activeBurstParticles.value = activeBurstParticles.value.filter(p => p.id !== currentId);
+    }, duration);
+  }
+
+  // Cap max alive particles to avoid memory buildup
+  if (activeBurstParticles.value.length > 24) {
+    activeBurstParticles.value = activeBurstParticles.value.slice(-20);
+  }
+}
+
+// Continuous shooting particles while in 'working' status
+let workingParticleInterval: ReturnType<typeof setInterval> | null = null;
+watch(
+  () => props.status,
+  (newStatus) => {
+    if (newStatus === 'working') {
+      if (!workingParticleInterval) {
+        spawnBurst(2, true);
+        workingParticleInterval = setInterval(() => {
+          spawnBurst(Math.random() > 0.4 ? 2 : 1, Math.random() > 0.25);
+        }, 340);
+      }
+    } else {
+      if (workingParticleInterval) {
+        clearInterval(workingParticleInterval);
+        workingParticleInterval = null;
+      }
+    }
+  },
+  { immediate: true }
+);
+
 let userTypingTimer: ReturnType<typeof setTimeout> | null = null;
 function handleUserTypingPulse() {
   isUserTyping.value = true;
+  // Shoot 2-3 code & spark particles in random 360 directions on each keystroke
+  spawnBurst(2, Math.random() > 0.3);
+
   if (userTypingTimer) {
     clearTimeout(userTypingTimer);
   }
@@ -630,6 +724,10 @@ onUnmounted(() => {
   if (userTypingTimer) {
     clearTimeout(userTypingTimer);
     userTypingTimer = null;
+  }
+  if (workingParticleInterval) {
+    clearInterval(workingParticleInterval);
+    workingParticleInterval = null;
   }
 });
 </script>
@@ -903,44 +1001,54 @@ onUnmounted(() => {
   100% { opacity: 1; transform: scale(1.8); }
 }
 
-.working-particles {
+/* Dynamic 360-degree burst particles shooting at random angles */
+.burst-particles-layer {
   position: absolute;
-  inset: -14px;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
+  z-index: 30;
 }
-.code-p1 {
-  top: -8px;
-  left: 4px;
-  font-size: 11px;
-  font-family: monospace;
-  font-weight: bold;
-  color: #00cec9;
-  animation: codeFloat 1.2s ease-in-out infinite alternate;
+
+.burst-particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  user-select: none;
+  white-space: nowrap;
+  animation: burstShoot var(--duration, 700ms) cubic-bezier(0.12, 0.8, 0.32, 1) forwards;
+  will-change: transform, opacity;
 }
-.code-p2 {
-  top: -12px;
-  right: 6px;
-  font-size: 11px;
-  font-family: monospace;
-  font-weight: bold;
-  color: #55efc4;
-  animation: codeFloat 1.4s 0.3s ease-in-out infinite alternate;
+
+.burst-code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-weight: 700;
+  font-size: var(--size, 11px);
+  color: var(--color, #00cec9);
+  text-shadow: 0 0 6px var(--color, #00cec9);
 }
-.code-p3 {
-  bottom: 12px;
-  left: -6px;
-  font-size: 12px;
-  animation: codeFloat 1s 0.2s ease-in-out infinite alternate;
+
+.burst-spark {
+  font-size: var(--size, 12px);
+  color: var(--color, #ffeaa7);
+  filter: drop-shadow(0 0 5px var(--color, #ffeaa7));
 }
-.code-p4 {
-  bottom: 8px;
-  right: -6px;
-  font-size: 11px;
-  animation: codeFloat 1.1s 0.4s ease-in-out infinite alternate;
-}
-@keyframes codeFloat {
-  0% { transform: translateY(0) scale(0.85); opacity: 0.6; }
-  100% { transform: translateY(-7px) scale(1.15); opacity: 1; }
+
+@keyframes burstShoot {
+  0% {
+    transform: translate(-50%, -50%) scale(0.4) rotate(0deg);
+    opacity: 0.95;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.1) rotate(var(--rot));
+    opacity: 0;
+  }
 }
 
 /* 3. THINKING: Hypnotic levitation sway, orbiting thought aura & lightbulb */
@@ -960,15 +1068,6 @@ onUnmounted(() => {
   75% {
     transform: translateY(-6px) rotate(3.5deg);
   }
-}
-
-.cyber-orbit-ring {
-  animation: orbitSpin 3s linear infinite;
-  transform-origin: 32px 18px;
-}
-@keyframes orbitSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 
 .thinking-particles-container {
@@ -1019,6 +1118,13 @@ onUnmounted(() => {
   font-weight: bold;
   color: #a29bfe;
   animation: thinkDrift 1.6s 0.6s ease-in-out infinite alternate;
+}
+.think-p4 {
+  top: -10px;
+  right: -6px;
+  font-size: 11px;
+  color: #ffeaa7;
+  animation: thinkDrift 1.3s 0.45s ease-in-out infinite alternate;
 }
 @keyframes thinkDrift {
   0% { transform: translateY(0) scale(0.8); opacity: 0.5; }

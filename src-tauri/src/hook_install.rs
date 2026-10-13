@@ -44,7 +44,7 @@ fn hook_command(exe: &Path, event: &str) -> String {
     }
 }
 
-/// Builds DevPet's hook spec. PostToolUse uses the grouped (matcher) format,
+/// Builds DevPet's hook spec. PreToolUse and PostToolUse use the grouped (matcher) format,
 /// the invocation/stop events use the flat format, per Antigravity docs.
 pub fn devpet_hook_spec(exe: &Path) -> Value {
     let handler = |event: &str| {
@@ -52,6 +52,7 @@ pub fn devpet_hook_spec(exe: &Path) -> Value {
     };
     json!({
         "PreInvocation": [handler("PreInvocation")],
+        "PreToolUse": [{ "matcher": "*", "hooks": [handler("PreToolUse")] }],
         "PostToolUse": [{ "matcher": "*", "hooks": [handler("PostToolUse")] }],
         "PostInvocation": [handler("PostInvocation")],
         "Stop": [handler("Stop")],

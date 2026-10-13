@@ -67,26 +67,30 @@ export function mapAntigravityRecord(r: AntigravityRecord): MappedStatus | null 
 
     case 'PreToolUse': {
       const tool = (r.toolName || '').toLowerCase();
-      // If the tool is asking to allow something to execute or waiting for user interaction/approval:
-      const isApprovalOrExecution =
-        tool.includes('run_command') ||
-        tool.includes('command') ||
-        tool.includes('exec') ||
-        tool.includes('bash') ||
-        tool.includes('terminal') ||
-        tool.includes('shell') ||
-        tool.includes('ask_question') ||
-        tool.includes('question') ||
-        tool.includes('confirm') ||
-        tool.includes('approval') ||
-        tool.includes('permission');
+      // Detect tools requiring permission, approval, user confirmation, questions or command execution:
+      const isQuestion = tool.includes('ask_question') || tool.includes('question') || tool.includes('prompt');
+      const isCommand = tool.includes('run_command') || tool.includes('command') || tool.includes('exec') ||
+        tool.includes('bash') || tool.includes('terminal') || tool.includes('shell');
+      const isApprovalOrEdit = tool.includes('replace_file_content') || tool.includes('write_to_file') ||
+        tool.includes('multi_replace') || tool.includes('edit') || tool.includes('confirm') ||
+        tool.includes('approval') || tool.includes('permission');
 
-      if (isApprovalOrExecution) {
+      if (isQuestion) {
         return {
           status: 'waiting',
-          detail: tool.includes('ask_question') || tool.includes('question')
-            ? 'Action needed: Question waiting for reply'
-            : 'Allow execution in Antigravity to proceed',
+          detail: 'Action needed: Question waiting for reply',
+        };
+      }
+      if (isCommand) {
+        return {
+          status: 'waiting',
+          detail: 'Approval needed: Command waiting for run/allow',
+        };
+      }
+      if (isApprovalOrEdit) {
+        return {
+          status: 'waiting',
+          detail: 'Action needed: Waiting for approval or review',
         };
       }
       return {
