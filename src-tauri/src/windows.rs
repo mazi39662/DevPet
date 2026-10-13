@@ -11,6 +11,7 @@ pub const COMPANION: &str = "companion";
 pub const POMODORO_COMPANION: &str = "companion-pomodoro";
 pub const EVT_COMPANION_VISIBILITY: &str = "devpet://companion-visibility";
 pub const EVT_POMODORO_COMPANION_VISIBILITY: &str = "devpet://pomodoro-companion-visibility";
+pub const EVT_USER_TYPING: &str = "devpet://user-typing";
 
 const COMPANION_SIZE: (f64, f64) = (168.0, 184.0);
 const COMPANION_MINI_SIZE: (f64, f64) = (92.0, 100.0);
@@ -299,4 +300,112 @@ pub fn play_system_alert() {
         let _ = MessageBeep(0x00000040); // MB_ICONASTERISK (Notification chime)
     }
 }
+
+// ---------------------------------------------------------------------------
+// Global Windows Low-Level Keyboard Hook
+// ---------------------------------------------------------------------------
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct UserTypingPayload {
+    pub timestamp: u64,
+}
+
+#[cfg(target_os = "windows")]
+mod win_keyhook {
+    use super::*;
+    use std::sync::atomic::{AtomicI64, Ordering};
+    use std::sync::OnceLock;
+
+    type HHOOK = isize;
+    type HINSTANCE = isize;
+    type HOOKPROC = Option<unsafe extern "system" fn(code: i32, wparam: usize, lparam: isize) -> isize>;
+    type LRESULT = isize;
+    type WPARAM = usize;
+    type LPARAM = isize;
+    type BOOL = i32;
+    type DWORD = u32;
+
+    const WH_KEYBOARD_LL: i32 = 13;
+    const WM_KEYDOWN: usize = 0x0100;
+    const WM_SYSKEYDOWN: usize = 0x0104;
+
+    #[repr(C)]
+    struct MSG {
+        hwnd: isize,
+        message: u32,
+        w_param: usize,
+        l_param: isize,
+        time: u32,
+        pt_x: i32,
+        pt_y: i32,
+    }
+
+    extern "system" {
+        fn SetWindowsHookExW(
+            idHook: i32,
+            lpfn: HOOKPROC,
+            hmod: HINSTANCE,
+            dwThreadId: DWORD,
+        ) -> HHOOK;
+        fn UnhookWindowsHookEx(hhk: HHOOK) -> BOOL;
+        fn CallNextHookEx(hhk: HHOOK, nCode: i32, wParam: WPARAM, lParam: LPARAM) -> LRESULT;
+        fn GetMessageW(lpMsg: *mut MSG, hWnd: isize, wMsgFilterMin: u32, wMsgFilterMax: u32) -> BOOL;
+        fn TranslateMessage(lpMsg: *const MSG) -> BOOL;
+        fn DispatchMessageW(lpMsg: *const MSG) -> LRESULT;
+    }
+
+    static EMITTER: OnceLock<Box<dyn Fn(u64) + Send + Sync>> = OnceLock::new();
+    static LAST_EMIT_MS: AtomicI64 = AtomicI64::new(0);
+
+    unsafe extern "system" fn ll_keyboard_proc(code: i32, wparam: usize, lparam: isize) -> isize {
+        if code >= 0 && (wparam == WM_KEYDOWN || wparam == WM_SYSKEYDOWN) {
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_millis() as i64)
+                .unwrap_or(0);
+
+            let last = LAST_EMIT_MS.load(Ordering::Relaxed);
+            // Throttle emissions to at most one every 60ms to avoid flooding
+            if now - last >= 60 {
+                LAST_EMIT_MS.store(now, Ordering::Relaxed);
+                if let Some(emitter) = EMITTER.get() {
+                    emitter(now as u64);
+                }
+            }
+        }
+        CallNextHookEx(0, code, wparam, lparam)
+    }
+
+    pub fn start<R: Runtime>(app: &AppHandle<R>) {
+        let app_handle = app.clone();
+        let _ = EMITTER.set(Box::new(move |ts| {
+            let _ = app_handle.emit(EVT_USER_TYPING, UserTypingPayload { timestamp: ts });
+        }));
+
+        std::thread::Builder::new()
+            .name("keyboard-hook".into())
+            .spawn(|| unsafe {
+                let hook = SetWindowsHookExW(WH_KEYBOARD_LL, Some(ll_keyboard_proc), 0, 0);
+                if hook == 0 {
+                    return;
+                }
+
+                let mut msg: MSG = std::mem::zeroed();
+                while GetMessageW(&mut msg, 0, 0, 0) > 0 {
+                    TranslateMessage(&msg);
+                    DispatchMessageW(&msg);
+                }
+
+                UnhookWindowsHookEx(hook);
+            })
+            .ok();
+    }
+}
+
+pub fn start_keyboard_hook<R: Runtime>(app: &AppHandle<R>) {
+    #[cfg(target_os = "windows")]
+    win_keyhook::start(app);
+}
+
 

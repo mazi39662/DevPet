@@ -114,6 +114,7 @@ pub fn run() {
             if st.installed && !st.up_to_date {
                 let _ = hook_install::install();
             }
+            windows::start_keyboard_hook(app.handle());
             Ok(())
         })
         .on_window_event(|window, event| {

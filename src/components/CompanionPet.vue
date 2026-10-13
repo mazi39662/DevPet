@@ -10,6 +10,7 @@
         blissful: isBlissful,
         booped: isBooped,
         hovered: isHovered,
+        'user-typing': isUserTyping,
         'status-morphing': isMorphing,
       }
     ]"
@@ -47,6 +48,7 @@
           scratching: isScratching,
           blissful: isBlissful,
           booped: isBooped,
+          'user-typing': isUserTyping,
           'status-morphing': isMorphing,
         }
       ]"
@@ -200,17 +202,19 @@
           <path d="M 29 38 Q 32 40.5 35 38" stroke="#1e272e" stroke-width="1.8" fill="none" stroke-linecap="round" />
         </g>
 
-        <!-- IDLE (Calm, gentle look) -->
+        <!-- IDLE (Calm, gentle look, or energetic focus look when user is typing) -->
         <g v-else-if="status === 'idle'">
-          <g :style="{ transform: `translate(${eyeLookX}px, ${eyeLookY}px)` }" class="idle-eyes">
+          <!-- If user is typing in idle, eyes light up with purple/cyan screen reflections -->
+          <g :style="{ transform: `translate(${eyeLookX}px, ${eyeLookY}px)` }" class="idle-eyes" :class="{ 'typing-focus-eyes': isUserTyping }">
             <rect x="24" y="30" width="4" height="6" fill="#1e272e" />
             <rect x="36" y="30" width="4" height="6" fill="#1e272e" />
-            <!-- Eye glint -->
-            <rect x="24" y="30" width="2" height="2" fill="#ffffff" />
-            <rect x="36" y="30" width="2" height="2" fill="#ffffff" />
+            <!-- Eye glint (switches to neon sparkle reflection when typing) -->
+            <rect x="24" y="30" width="2" height="2" :fill="isUserTyping ? '#a29bfe' : '#ffffff'" :class="{ 'glint-pulse': isUserTyping }" />
+            <rect x="36" y="30" width="2" height="2" :fill="isUserTyping ? '#a29bfe' : '#ffffff'" :class="{ 'glint-pulse': isUserTyping }" />
           </g>
-          <!-- Cute mouth -->
-          <path d="M 30 38 H 34 V 40 H 30 Z" fill="#1e272e" />
+          <!-- Cute mouth: happy smile :3 when typing, calm dot when still -->
+          <path v-if="isUserTyping" d="M 29 38 Q 32 40.5 35 38" stroke="#1e272e" stroke-width="1.8" fill="none" stroke-linecap="round" />
+          <path v-else d="M 30 38 H 34 V 40 H 30 Z" fill="#1e272e" />
         </g>
 
         <!-- THINKING (Curious pondering eyes scanning up & around) -->
@@ -295,14 +299,14 @@
           <ellipse cx="48" cy="26" rx="3" ry="2.5" :fill="primaryColor" stroke="#d63031" stroke-width="0.8" class="flail-paw right" />
         </g>
 
-        <!-- Keyboard / Coding Laptop when working with streaming code & typing flurry -->
-        <g v-else-if="status === 'working'" class="mini-laptop">
+        <!-- Keyboard / Coding Laptop when working with streaming code OR user typing in idle -->
+        <g v-else-if="status === 'working' || (status === 'idle' && isUserTyping)" class="mini-laptop" :class="{ 'idle-user-typing': status === 'idle' && isUserTyping }">
           <rect x="18" y="44" width="28" height="12" fill="#2d3436" rx="2" />
-          <rect x="20" y="45" width="24" height="8" fill="#00cec9" class="laptop-screen" />
+          <rect x="20" y="45" width="24" height="8" :fill="status === 'idle' ? '#a29bfe' : '#00cec9'" class="laptop-screen" :class="{ 'idle-screen': status === 'idle' }" />
           <!-- Animated syntax code streams -->
-          <line x1="22" y1="47" x2="33" y2="47" stroke="#003b46" stroke-width="1.2" class="agent-code-line c1" />
-          <line x1="22" y1="49" x2="40" y2="49" stroke="#003b46" stroke-width="1.2" class="agent-code-line c2" />
-          <line x1="22" y1="51" x2="35" y2="51" stroke="#003b46" stroke-width="1.2" class="agent-code-line c3" />
+          <line x1="22" y1="47" x2="33" y2="47" :stroke="status === 'idle' ? '#2d3436' : '#003b46'" stroke-width="1.2" class="agent-code-line c1" />
+          <line x1="22" y1="49" x2="40" y2="49" :stroke="status === 'idle' ? '#2d3436' : '#003b46'" stroke-width="1.2" class="agent-code-line c2" />
+          <line x1="22" y1="51" x2="35" y2="51" :stroke="status === 'idle' ? '#2d3436' : '#003b46'" stroke-width="1.2" class="agent-code-line c3" />
           <!-- Keystroke sparks -->
           <circle cx="25" cy="51" r="1" fill="#fff" class="key-spark k1" />
           <circle cx="39" cy="51" r="1" fill="#fff" class="key-spark k2" />
@@ -322,10 +326,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import type { AgentStatus } from '../types/status';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { notificationService } from '../services/notifications';
+import { onEvent } from '../services/native';
+import { EVENTS } from '../types/events';
 
 const props = withDefaults(
   defineProps<{
@@ -354,8 +360,21 @@ const isBlissful = ref(false);
 const isBooped = ref(false);
 const isHovered = ref(false);
 const isMorphing = ref(false);
+const isUserTyping = ref(false);
 const eyeLookX = ref(0);
 const eyeLookY = ref(0);
+
+let userTypingTimer: ReturnType<typeof setTimeout> | null = null;
+function handleUserTypingPulse() {
+  isUserTyping.value = true;
+  if (userTypingTimer) {
+    clearTimeout(userTypingTimer);
+  }
+  userTypingTimer = setTimeout(() => {
+    isUserTyping.value = false;
+    userTypingTimer = null;
+  }, 1200);
+}
 
 // Smooth state transition watcher: seamlessly interpolates transforms across status changes
 let morphTimer: ReturnType<typeof setTimeout> | null = null;
@@ -585,6 +604,34 @@ function onMouseUp(e: MouseEvent) {
     }
   }
 }
+
+// Window local keyboard handler (when DevPet window has focus)
+function onWindowKeyDown() {
+  handleUserTypingPulse();
+}
+
+let unlistenTyping: (() => void) | null = null;
+
+onMounted(async () => {
+  window.addEventListener('keydown', onWindowKeyDown);
+  try {
+    unlistenTyping = await onEvent(EVENTS.userTyping, () => {
+      handleUserTypingPulse();
+    });
+  } catch {}
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onWindowKeyDown);
+  if (unlistenTyping) {
+    unlistenTyping();
+    unlistenTyping = null;
+  }
+  if (userTypingTimer) {
+    clearTimeout(userTypingTimer);
+    userTypingTimer = null;
+  }
+});
 </script>
 
 <style scoped>
@@ -725,9 +772,45 @@ function onMouseUp(e: MouseEvent) {
    ANIMATIONS PER STATE (A lot of animations unless in idle)
    ======================================================== */
 
-/* 1. IDLE: Calm, gentle breathing (minimal animation as instructed) */
-.pet-sprite.idle {
+/* 1. IDLE: Calm, gentle breathing (or fun companion typing bob when user is typing) */
+.pet-sprite.idle:not(.user-typing) {
   animation: idleBob 3.2s ease-in-out infinite;
+}
+.pet-sprite.idle.user-typing {
+  animation: idleTypingBop 0.34s ease-in-out infinite alternate;
+}
+@keyframes idleTypingBop {
+  0% {
+    transform: translateY(0) rotate(-1.2deg) scale(1, 0.98);
+  }
+  50% {
+    transform: translateY(-2px) rotate(0deg) scale(0.98, 1.02);
+  }
+  100% {
+    transform: translateY(-3px) rotate(1.2deg) scale(1.02, 0.98);
+  }
+}
+.pet-sprite.idle.user-typing .character-ears {
+  animation: idleTypingEarTwitch 0.24s ease-in-out infinite alternate;
+  transform-origin: 32px 18px;
+}
+@keyframes idleTypingEarTwitch {
+  0% { transform: rotate(-2.5deg); }
+  100% { transform: rotate(2.5deg); }
+}
+.laptop-screen.idle-screen {
+  animation: idleScreenBlink 0.5s infinite alternate;
+}
+@keyframes idleScreenBlink {
+  0% { fill: #a29bfe; filter: drop-shadow(0 0 2px #a29bfe); }
+  100% { fill: #d6a2e8; filter: drop-shadow(0 0 6px #fd79a8); }
+}
+.typing-focus-eyes {
+  animation: typingEyeBounce 0.34s ease-in-out infinite alternate;
+}
+@keyframes typingEyeBounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(0.5px); }
 }
 @keyframes idleBob {
   0%, 100% {

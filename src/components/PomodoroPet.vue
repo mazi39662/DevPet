@@ -12,6 +12,7 @@
         scratching: isScratching,
         blissful: isBlissful,
         booped: isBooped,
+        'user-typing': isUserTyping,
         'phase-morphing': isMorphing,
       }
     ]"
@@ -49,6 +50,7 @@
           booped: isBooped,
           scratching: isScratching,
           blissful: isBlissful,
+          'user-typing': isUserTyping,
           'phase-morphing': isMorphing,
         }
       ]"
@@ -220,15 +222,15 @@
           <rect x="34" y="44" width="4" height="2" fill="#1e272e" />
         </g>
 
-        <!-- Deep work: laptop + animated typing paws -->
-        <g v-if="isDeepWork">
+        <!-- Deep work OR user typing in idle: laptop + animated typing paws -->
+        <g v-if="isDeepWork || (state.status !== 'running' && isUserTyping)">
           <path d="M 18 54 H 54 L 56 62 H 16 Z" fill="#2d3436" />
           <rect x="22" y="55" width="28" height="4" fill="#1e272e" rx="0.5" />
           <path d="M 20 44 H 52 V 54 H 20 Z" fill="#1e272e" />
-          <rect x="22" y="45" width="28" height="8" fill="#00cec9" class="glow-screen" />
-          <line x1="24" y1="47" x2="38" y2="47" stroke="#003b46" stroke-width="1.2" class="code-line l1" />
-          <line x1="24" y1="49" x2="46" y2="49" stroke="#003b46" stroke-width="1.2" class="code-line l2" />
-          <line x1="24" y1="51" x2="34" y2="51" stroke="#003b46" stroke-width="1.2" class="code-line l3" />
+          <rect x="22" y="45" width="28" height="8" :fill="isDeepWork ? '#00cec9' : '#ff7675'" class="glow-screen" :class="{ 'idle-screen': !isDeepWork }" />
+          <line x1="24" y1="47" x2="38" y2="47" :stroke="isDeepWork ? '#003b46' : '#2d3436'" stroke-width="1.2" class="code-line l1" />
+          <line x1="24" y1="49" x2="46" y2="49" :stroke="isDeepWork ? '#003b46' : '#2d3436'" stroke-width="1.2" class="code-line l2" />
+          <line x1="24" y1="51" x2="34" y2="51" :stroke="isDeepWork ? '#003b46' : '#2d3436'" stroke-width="1.2" class="code-line l3" />
           <!-- Fast alternating typing paws -->
           <g class="typing-paw left-paw">
             <rect x="23" y="52" width="6" height="5" :fill="bodyColor" rx="2" stroke="#1e272e" stroke-width="0.8" />
@@ -320,7 +322,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import type { PomodoroState } from '../types/pomodoro';
 import { DEFAULT_POMODORO_STATE } from '../types/pomodoro';
 import { EVENTS, type PomodoroAction } from '../types/events';
@@ -344,8 +346,21 @@ const isScratching = ref(false);
 const isBlissful = ref(false);
 const isBooped = ref(false);
 const isMorphing = ref(false);
+const isUserTyping = ref(false);
 const eyeLookX = ref(0);
 const eyeLookY = ref(0);
+
+let userTypingTimer: ReturnType<typeof setTimeout> | null = null;
+function handleUserTypingPulse() {
+  isUserTyping.value = true;
+  if (userTypingTimer) {
+    clearTimeout(userTypingTimer);
+  }
+  userTypingTimer = setTimeout(() => {
+    isUserTyping.value = false;
+    userTypingTimer = null;
+  }, 1200);
+}
 
 // Smooth phase/status transition morphing
 let morphTimer: ReturnType<typeof setTimeout> | null = null;
@@ -522,7 +537,21 @@ function onMouseUp(e: MouseEvent) {
   }
 }
 
+// Window local keyboard handler (when window has focus)
+function onWindowKeyDown() {
+  handleUserTypingPulse();
+}
+
+let unlistenTyping: (() => void) | null = null;
+
 onMounted(async () => {
+  window.addEventListener('keydown', onWindowKeyDown);
+  try {
+    unlistenTyping = await onEvent(EVENTS.userTyping, () => {
+      handleUserTypingPulse();
+    });
+  } catch {}
+
   try {
     await onEvent(EVENTS.pomodoroState, (s: PomodoroState) => {
       state.value = s;
@@ -530,6 +559,18 @@ onMounted(async () => {
     sendAction({ type: 'sync' });
   } catch {}
   if (props.interactive) showBubble();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onWindowKeyDown);
+  if (unlistenTyping) {
+    unlistenTyping();
+    unlistenTyping = null;
+  }
+  if (userTypingTimer) {
+    clearTimeout(userTypingTimer);
+    userTypingTimer = null;
+  }
 });
 </script>
 
@@ -634,9 +675,38 @@ onMounted(async () => {
    ANIMATIONS PER STATE (A lot of animations unless in idle)
    ======================================================== */
 
-/* 1. IDLE / STOPPED / NOT RUNNING: Calm gentle breathing */
-.pet-sprite:not(.deepWork):not(.break) {
+/* 1. IDLE / STOPPED / NOT RUNNING: Calm gentle breathing (or fun companion typing bop when user types) */
+.pet-sprite:not(.deepWork):not(.break):not(.user-typing) {
   animation: momoBreathe 3.2s ease-in-out infinite;
+}
+.pet-sprite:not(.deepWork):not(.break).user-typing {
+  animation: momoIdleTypingBop 0.36s ease-in-out infinite alternate;
+}
+@keyframes momoIdleTypingBop {
+  0% {
+    transform: translateY(0) rotate(-1.2deg) scale(1, 0.98);
+  }
+  50% {
+    transform: translateY(-2px) rotate(0deg) scale(0.98, 1.02);
+  }
+  100% {
+    transform: translateY(-3.5px) rotate(1.2deg) scale(1.02, 0.98);
+  }
+}
+.pet-sprite:not(.deepWork):not(.break).user-typing .tomato-stem-group {
+  animation: momoIdleStemWiggle 0.36s ease-in-out infinite alternate;
+  transform-origin: 36px 24px;
+}
+@keyframes momoIdleStemWiggle {
+  0% { transform: rotate(-4deg); }
+  100% { transform: rotate(4deg); }
+}
+.glow-screen.idle-screen {
+  animation: momoIdleScreenBlink 0.5s infinite alternate;
+}
+@keyframes momoIdleScreenBlink {
+  0% { fill: #ff7675; filter: drop-shadow(0 0 2px #ff7675); }
+  100% { fill: #fab1a0; filter: drop-shadow(0 0 6px #ff7675); }
 }
 @keyframes momoBreathe {
   0%, 100% { transform: translateY(0) scale(1, 1); }

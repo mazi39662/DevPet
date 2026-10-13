@@ -18,6 +18,7 @@ export const EVENTS = {
   companionReady: 'devpet://companion-ready',
   celebrate: 'devpet://celebrate',
   settings: 'devpet://settings',
+  userTyping: 'devpet://user-typing',
 } as const;
 
 export type RawSourceName = 'antigravity-hook' | 'codex-rollout';
@@ -78,6 +79,7 @@ export interface EventPayloads {
   [EVENTS.companionReady]: null;
   [EVENTS.celebrate]: CelebrationEvent;
   [EVENTS.settings]: Settings;
+  [EVENTS.userTyping]: { timestamp: number };
 }
 
 export type EventName = keyof EventPayloads;
