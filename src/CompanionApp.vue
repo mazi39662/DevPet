@@ -6,6 +6,7 @@
       :agent-name="state.agentName"
       :show-bubble="showBubble"
       :mini="settings.companionMini"
+      :sound-enabled="settings.soundEnabled"
       @open-dashboard="openDashboard"
       @focus-app="focusAgentApp"
       @peek-bubble="triggerBubble(3000)"

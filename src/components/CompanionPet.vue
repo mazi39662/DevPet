@@ -1,25 +1,41 @@
 <template>
   <div
+    ref="containerRef"
     class="pet-container"
-    :class="[status, { mini }]"
+    :class="[status, { mini, scratching: isScratching, blissful: isBlissful, booped: isBooped, hovered: isHovered }]"
     @mousedown="onMouseDown"
     @mouseup="onMouseUp"
+    @mousemove="onMouseMove"
+    @mouseenter="onMouseEnter"
+    @mouseleave="onMouseLeave"
   >
-    <!-- Speech bubble for status summary with smooth auto-hide transition -->
+    <!-- Speech bubble for status summary or scratching affection -->
     <Transition name="bubble">
       <div
         class="speech-bubble"
-        :class="status"
-        v-if="showBubble && displayBubbleLabel && !mini"
+        :class="[status, { 'scratch-bubble': isScratching || isBlissful }]"
+        v-if="((showBubble && displayBubbleLabel && !mini) || isScratching || isBlissful)"
         @click.stop="registerClick"
       >
-        <span v-if="status === 'waiting'" class="bubble-alert-badge">⏳</span>
-        <span class="bubble-text">{{ displayBubbleLabel }}</span>
+        <span v-if="isScratching || isBlissful" class="bubble-alert-badge heart-bounce">💖</span>
+        <span v-else-if="status === 'waiting'" class="bubble-alert-badge">⏳</span>
+        <span class="bubble-text">{{ (isScratching || isBlissful) ? scratchQuip : displayBubbleLabel }}</span>
       </div>
     </Transition>
 
     <!-- Pixel Art Companion Character (SVG canvas) -->
-    <div class="pet-sprite" :class="status">
+    <div
+      class="pet-sprite"
+      :class="[status, { scratching: isScratching, blissful: isBlissful, booped: isBooped }]"
+    >
+      <!-- Affection particles when scratched or petted -->
+      <div v-if="isScratching || isBlissful" class="scratch-particles">
+        <span class="heart-particle h1">💖</span>
+        <span class="heart-particle h2">💕</span>
+        <span class="heart-particle h3">✨</span>
+        <span class="heart-particle h4">🐾</span>
+      </div>
+
       <!-- Particle effects for celebration, thinking, error -->
       <div v-if="status === 'completed'" class="celebration-particles">
         <span class="particle p1">✨</span>
@@ -62,23 +78,40 @@
         />
 
         <!-- Cat Ears -->
-        <path d="M 16 12 H 24 V 20 H 16 Z" :fill="primaryColor" />
-        <path d="M 40 12 H 48 V 20 H 40 Z" :fill="primaryColor" />
-        <path d="M 18 14 H 22 V 18 H 18 Z" fill="#ff7675" />
-        <path d="M 42 14 H 46 V 18 H 42 Z" fill="#ff7675" />
+        <g :class="{ 'ear-wiggle': isScratching }">
+          <path d="M 16 12 H 24 V 20 H 16 Z" :fill="primaryColor" />
+          <path d="M 40 12 H 48 V 20 H 40 Z" :fill="primaryColor" />
+          <path d="M 18 14 H 22 V 18 H 18 Z" fill="#ff7675" />
+          <path d="M 42 14 H 46 V 18 H 42 Z" fill="#ff7675" />
+        </g>
 
         <!-- Highlights (Gloss) -->
         <rect x="22" y="24" width="4" height="4" fill="rgba(255, 255, 255, 0.4)" />
         <rect x="26" y="22" width="6" height="2" fill="rgba(255, 255, 255, 0.4)" />
 
         <!-- Eyes & Face according to state -->
+        <!-- SCRATCHING / PETTING / BLISSFUL REACTION (Ecstatic closed happy eyes ^_^, glowing rosy blush cheeks, cute :3 cat smile) -->
+        <g v-if="isScratching || isBlissful" class="scratch-face">
+          <!-- Happy squinting curved arch eyes -->
+          <path d="M 22 31 Q 26 27 30 31" stroke="#1e272e" stroke-width="2.5" fill="none" stroke-linecap="round" />
+          <path d="M 34 31 Q 38 27 42 31" stroke="#1e272e" stroke-width="2.5" fill="none" stroke-linecap="round" />
+          <!-- Cute cat open smile :3 mouth -->
+          <path d="M 28 38 Q 30 40.5 32 38 Q 34 40.5 36 38" stroke="#1e272e" stroke-width="1.8" fill="none" stroke-linecap="round" />
+          <!-- Glowing rosy blush cheeks -->
+          <rect x="18" y="34" width="4" height="3" fill="#ff7675" rx="1.5" class="blush-glow" />
+          <rect x="42" y="34" width="4" height="3" fill="#ff7675" rx="1.5" class="blush-glow" />
+        </g>
+
         <!-- IDLE / WORKING -->
-        <g v-if="status === 'idle' || status === 'working'">
-          <rect x="24" y="30" width="4" height="6" fill="#1e272e" />
-          <rect x="36" y="30" width="4" height="6" fill="#1e272e" />
-          <!-- Eye glint -->
-          <rect x="24" y="30" width="2" height="2" fill="#ffffff" />
-          <rect x="36" y="30" width="2" height="2" fill="#ffffff" />
+        <g v-else-if="status === 'idle' || status === 'working'">
+          <!-- Pupil look-around group reacting to mouse hover -->
+          <g :style="{ transform: `translate(${eyeLookX}px, ${eyeLookY}px)` }">
+            <rect x="24" y="30" width="4" height="6" fill="#1e272e" />
+            <rect x="36" y="30" width="4" height="6" fill="#1e272e" />
+            <!-- Eye glint -->
+            <rect x="24" y="30" width="2" height="2" fill="#ffffff" />
+            <rect x="36" y="30" width="2" height="2" fill="#ffffff" />
+          </g>
           <!-- Cute mouth -->
           <path d="M 30 38 H 34 V 40 H 30 Z" fill="#1e272e" />
         </g>
@@ -161,9 +194,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import type { AgentStatus } from '../types/status';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { notificationService } from '../services/notifications';
 
 const props = withDefaults(
   defineProps<{
@@ -172,6 +206,7 @@ const props = withDefaults(
     agentName?: string | null;
     showBubble?: boolean;
     mini?: boolean;
+    soundEnabled?: boolean;
   }>(),
   {
     status: 'idle',
@@ -179,8 +214,45 @@ const props = withDefaults(
     agentName: 'DevPet',
     showBubble: true,
     mini: false,
+    soundEnabled: true,
   }
 );
+
+const containerRef = ref<HTMLElement | null>(null);
+
+// Interactive mouse reaction states
+const isScratching = ref(false);
+const isBlissful = ref(false);
+const isBooped = ref(false);
+const isHovered = ref(false);
+const eyeLookX = ref(0);
+const eyeLookY = ref(0);
+
+const SCRATCH_QUIPS = [
+  'Purrrrr~ ❤️',
+  '*happy purrs* ✨',
+  'Nyaaa~ that tickles! 🥰',
+  '*melts into puddle* 💕',
+  'Hehe scratchies! 🐾',
+  'Purrrfect! ❤️',
+  'Best dev ever! ✨',
+];
+const scratchQuip = ref(SCRATCH_QUIPS[0]);
+
+// Rapid mousemove tracking for scratch detection
+interface MouseSample {
+  x: number;
+  y: number;
+  time: number;
+}
+const mouseHistory: MouseSample[] = [];
+let scratchTimeout: ReturnType<typeof setTimeout> | null = null;
+let blissTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function pickScratchQuip() {
+  const idx = Math.floor(Math.random() * SCRATCH_QUIPS.length);
+  scratchQuip.value = SCRATCH_QUIPS[idx];
+}
 
 const displayBubbleLabel = computed(() => {
   if (!props.label) return '';
@@ -214,6 +286,7 @@ const emit = defineEmits<{
   (e: 'open-dashboard'): void;
   (e: 'focus-app'): void;
   (e: 'peek-bubble'): void;
+  (e: 'scratch'): void;
 }>();
 
 let clickCount = 0;
@@ -221,6 +294,94 @@ let clickTimer: ReturnType<typeof setTimeout> | null = null;
 let lastClickTime = 0;
 let startX = 0;
 let startY = 0;
+
+function startScratching() {
+  if (!isScratching.value) {
+    pickScratchQuip();
+    isScratching.value = true;
+    if (blissTimeout) {
+      clearTimeout(blissTimeout);
+      blissTimeout = null;
+    }
+    isBlissful.value = false;
+  }
+  emit('scratch');
+  if (props.soundEnabled) {
+    notificationService.playPurr();
+  }
+
+  if (scratchTimeout) clearTimeout(scratchTimeout);
+  scratchTimeout = setTimeout(() => {
+    stopScratching();
+  }, 280);
+}
+
+function stopScratching() {
+  if (scratchTimeout) {
+    clearTimeout(scratchTimeout);
+    scratchTimeout = null;
+  }
+  if (isScratching.value) {
+    isScratching.value = false;
+    isBlissful.value = true;
+    if (blissTimeout) clearTimeout(blissTimeout);
+    blissTimeout = setTimeout(() => {
+      isBlissful.value = false;
+      blissTimeout = null;
+    }, 1200);
+  }
+}
+
+function onMouseEnter() {
+  isHovered.value = true;
+}
+
+function onMouseLeave() {
+  isHovered.value = false;
+  eyeLookX.value = 0;
+  eyeLookY.value = 0;
+  mouseHistory.length = 0;
+  if (isScratching.value) {
+    stopScratching();
+  }
+}
+
+function onMouseMove(e: MouseEvent) {
+  isHovered.value = true;
+  const now = Date.now();
+
+  // 1. Subtle interactive eye look towards cursor
+  if (containerRef.value) {
+    const rect = containerRef.value.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    eyeLookX.value = Math.max(-2, Math.min(2, ((e.clientX - centerX) / (rect.width / 2)) * 2));
+    eyeLookY.value = Math.max(-1.5, Math.min(1.5, ((e.clientY - centerY) / (rect.height / 2)) * 1.5));
+  }
+
+  // 2. Rapid movement tracking (scratch reaction)
+  mouseHistory.push({ x: e.clientX, y: e.clientY, time: now });
+  // Prune samples older than 360ms
+  while (mouseHistory.length > 0 && now - mouseHistory[0].time > 360) {
+    mouseHistory.shift();
+  }
+
+  if (mouseHistory.length >= 4) {
+    let totalDist = 0;
+    for (let i = 1; i < mouseHistory.length; i++) {
+      totalDist += Math.hypot(
+        mouseHistory[i].x - mouseHistory[i - 1].x,
+        mouseHistory[i].y - mouseHistory[i - 1].y
+      );
+    }
+
+    const timeSpan = now - mouseHistory[0].time;
+    // Fast oscillation threshold: moved at least 110px back and forth in under 360ms
+    if (totalDist >= 110 && timeSpan >= 60) {
+      startScratching();
+    }
+  }
+}
 
 function registerClick() {
   const now = Date.now();
@@ -257,6 +418,9 @@ function onMouseDown(e: MouseEvent) {
   if (e.button === 0) {
     startX = e.screenX;
     startY = e.screenY;
+    if (isScratching.value) {
+      stopScratching();
+    }
     try {
       const appWin = getCurrentWebviewWindow();
       appWin.startDragging();
@@ -270,8 +434,12 @@ function onMouseUp(e: MouseEvent) {
   if (e.button === 0) {
     const dx = Math.abs(e.screenX - startX);
     const dy = Math.abs(e.screenY - startY);
-    // If movement was negligible, treat as an intentional click
+    // If movement was negligible, treat as an intentional click / poke boop
     if (dx <= 6 && dy <= 6) {
+      isBooped.value = true;
+      setTimeout(() => {
+        isBooped.value = false;
+      }, 260);
       registerClick();
     }
   }
@@ -337,6 +505,26 @@ function onMouseUp(e: MouseEvent) {
 @keyframes badgeWiggle {
   0% { transform: scale(0.9) rotate(-6deg); }
   100% { transform: scale(1.15) rotate(6deg); }
+}
+
+/* Scratch affection bubble */
+.speech-bubble.scratch-bubble {
+  border-color: rgba(253, 121, 168, 0.9);
+  box-shadow: 0 0 16px rgba(253, 121, 168, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4);
+  background: rgba(36, 18, 30, 0.96);
+  animation: scratchBubblePulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes scratchBubblePulse {
+  0% { box-shadow: 0 0 8px rgba(253, 121, 168, 0.35); }
+  100% { box-shadow: 0 0 20px rgba(253, 121, 168, 0.75); }
+}
+.heart-bounce {
+  font-size: 12px;
+  animation: heartBounce 0.35s ease-in-out infinite alternate;
+}
+@keyframes heartBounce {
+  0% { transform: scale(0.85); }
+  100% { transform: scale(1.28); }
 }
 
 /* Smooth fade & pop transition for speech bubble */
@@ -600,6 +788,96 @@ function onMouseUp(e: MouseEvent) {
 @keyframes floatWaiting {
   0% { transform: translateY(0) scale(0.85); opacity: 0.7; }
   100% { transform: translateY(-5px) scale(1.15); opacity: 1; }
+}
+
+/* SCRATCHING / PURRING: Ecstatic vibration & jiggle */
+.pet-sprite.scratching {
+  animation: purrVibrate 0.14s ease-in-out infinite alternate !important;
+}
+@keyframes purrVibrate {
+  0% {
+    transform: translateY(0) scale(1.05, 0.95) rotate(-2.5deg);
+  }
+  50% {
+    transform: translateY(-2px) scale(0.96, 1.04) rotate(0deg);
+  }
+  100% {
+    transform: translateY(1px) scale(1.06, 0.94) rotate(2.5deg);
+  }
+}
+
+/* BLISSFUL: Lingering satisfied sweet sway */
+.pet-sprite.blissful {
+  animation: blissfulSway 1.2s ease-in-out infinite alternate !important;
+}
+@keyframes blissfulSway {
+  0% {
+    transform: translateY(0) scale(1.02, 0.98) rotate(-1deg);
+  }
+  100% {
+    transform: translateY(-4px) scale(0.98, 1.02) rotate(1deg);
+  }
+}
+
+/* BOOP: Playful squish on click */
+.pet-sprite.booped {
+  animation: boopSquish 0.26s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+@keyframes boopSquish {
+  0% { transform: scale(1, 1); }
+  40% { transform: scale(1.15, 0.82) translateY(4px); }
+  100% { transform: scale(1, 1); }
+}
+
+/* Scratch ear twitch */
+.ear-wiggle {
+  animation: earTwitch 0.16s ease-in-out infinite alternate;
+  transform-origin: 32px 16px;
+}
+@keyframes earTwitch {
+  0% { transform: rotate(-4deg) scaleY(0.92); }
+  100% { transform: rotate(4deg) scaleY(1.06); }
+}
+
+/* Blush glow pulsing */
+.blush-glow {
+  animation: blushPulse 0.5s ease-in-out infinite alternate;
+}
+@keyframes blushPulse {
+  0% { fill: #ff7675; opacity: 0.8; }
+  100% { fill: #fd79a8; opacity: 1; filter: drop-shadow(0 0 2px #fd79a8); }
+}
+
+/* Affection scratch particles */
+.scratch-particles {
+  position: absolute;
+  inset: -12px;
+  pointer-events: none;
+  z-index: 25;
+}
+.heart-particle {
+  position: absolute;
+  font-size: 15px;
+  animation: floatHeart 0.95s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+}
+.h1 { top: -6px; left: 8px; animation-delay: 0s; }
+.h2 { top: -14px; right: 10px; animation-delay: 0.22s; }
+.h3 { top: 14px; right: -4px; animation-delay: 0.45s; }
+.h4 { top: 10px; left: -2px; animation-delay: 0.68s; }
+
+@keyframes floatHeart {
+  0% {
+    transform: translateY(6px) scale(0.4);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.2);
+  }
+  100% {
+    transform: translateY(-22px) scale(0.85);
+    opacity: 0;
+  }
 }
 
 /* UNKNOWN: Sleeping or confused */

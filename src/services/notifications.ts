@@ -146,6 +146,76 @@ class NotificationService {
       import('./native').then(({ native }) => native.playSystemSound()).catch(() => {});
     }
   }
+
+  private lastPurrTime = 0;
+
+  /** Playful warm cat purr and gentle chirp when scratched / petted */
+  public playPurr(): void {
+    const nowMs = Date.now();
+    if (nowMs - this.lastPurrTime < 340) return;
+    this.lastPurrTime = nowMs;
+
+    try {
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+
+      if (!this.audioCtx || this.audioCtx.state === 'closed') {
+        this.audioCtx = new AudioContextClass();
+      }
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+
+      const ctx = this.audioCtx;
+      const now = ctx.currentTime;
+
+      // 1. Warm purring rumble: low frequency modulated wave (~82Hz vibrating at ~24Hz)
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      const modOsc = ctx.createOscillator();
+      const modGain = ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(82, now);
+      osc.frequency.exponentialRampToValueAtTime(102, now + 0.12);
+      osc.frequency.exponentialRampToValueAtTime(74, now + 0.28);
+
+      modOsc.type = 'sine';
+      modOsc.frequency.setValueAtTime(24, now);
+      modGain.gain.setValueAtTime(0.04, now);
+
+      gainNode.gain.setValueAtTime(0.001, now);
+      gainNode.gain.linearRampToValueAtTime(0.06, now + 0.04);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
+      modOsc.connect(gainNode.gain);
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      modOsc.start(now);
+      osc.start(now);
+      modOsc.stop(now + 0.3);
+      osc.stop(now + 0.3);
+
+      // 2. Sweet subtle high harmonic chirp (D6 -> E6)
+      const chirp = ctx.createOscillator();
+      const chirpGain = ctx.createGain();
+      chirp.type = 'sine';
+      chirp.frequency.setValueAtTime(1174.66, now + 0.02);
+      chirp.frequency.exponentialRampToValueAtTime(1318.51, now + 0.1);
+      chirpGain.gain.setValueAtTime(0.0001, now + 0.02);
+      chirpGain.gain.linearRampToValueAtTime(0.025, now + 0.04);
+      chirpGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+
+      chirp.connect(chirpGain);
+      chirpGain.connect(ctx.destination);
+      chirp.start(now + 0.02);
+      chirp.stop(now + 0.17);
+    } catch {
+      // Audio optional / graceful fallback
+    }
+  }
 }
 
 export const notificationService = new NotificationService();

@@ -41,6 +41,7 @@
               :label="currentStatus.detail"
               :agent-name="activeAgentAdapter?.displayName || 'DevPet'"
               :show-bubble="false"
+              :sound-enabled="settings.soundEnabled"
             />
           </div>
 
