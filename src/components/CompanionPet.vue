@@ -394,7 +394,6 @@ const SPARK_SNIPPETS = ['✦', '✨', '⚡', '•', '✧'];
 const NEON_COLORS = ['#00cec9', '#55efc4', '#81ecec', '#a29bfe', '#ffeaa7', '#74b9ff'];
 
 function spawnBurst(count = 3, isCode = true) {
-  const now = Date.now();
   for (let i = 0; i < count; i++) {
     burstIdCounter++;
     const currentId = burstIdCounter;

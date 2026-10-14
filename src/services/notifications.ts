@@ -329,6 +329,125 @@ class NotificationService {
       import('./native').then(({ native }) => native.playSystemSound()).catch(() => {});
     }
   }
+
+  /** Subtle mechanical key switch click */
+  public playKeyClick(): void {
+    try {
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!this.audioCtx || this.audioCtx.state === 'closed') {
+        this.audioCtx = new AudioContextClass();
+      }
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+      const ctx = this.audioCtx;
+      const now = ctx.currentTime;
+
+      // Snappy micro-click
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      // Pitch drop simulates switch actuation
+      osc.frequency.setValueAtTime(600 + Math.random() * 80, now);
+      osc.frequency.exponentialRampToValueAtTime(140, now + 0.035);
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.08, now + 0.003);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.045);
+    } catch {}
+  }
+
+  /** Gentle harmonic stretch reminder chime (singing bowl vibe) */
+  public playStretchZenChime(): void {
+    try {
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!this.audioCtx || this.audioCtx.state === 'closed') {
+        this.audioCtx = new AudioContextClass();
+      }
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+      const ctx = this.audioCtx;
+      const now = ctx.currentTime;
+
+      const tones = [
+        { freq: 528.0, time: 0.0, gain: 0.22, dur: 2.2 }, // "Love frequency" 528Hz
+        { freq: 792.0, time: 0.15, gain: 0.12, dur: 1.8 },
+        { freq: 1056.0, time: 0.35, gain: 0.08, dur: 1.5 },
+      ];
+
+      for (const t of tones) {
+        const start = now + t.time;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(t.freq, start);
+
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(t.gain, start + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + t.dur);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + t.dur + 0.05);
+      }
+    } catch {
+      import('./native').then(({ native }) => native.playSystemSound()).catch(() => {});
+    }
+  }
+
+  /** Cheerful victory sparkle when completing a task or checklist item */
+  public playTaskCelebration(): void {
+    try {
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!this.audioCtx || this.audioCtx.state === 'closed') {
+        this.audioCtx = new AudioContextClass();
+      }
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+      const ctx = this.audioCtx;
+      const now = ctx.currentTime;
+
+      // 3 ascending major tones: G5 -> C6 -> E6
+      const fanfare = [
+        { freq: 783.99, time: 0.00, gain: 0.16, dur: 0.2 },
+        { freq: 1046.50, time: 0.10, gain: 0.20, dur: 0.22 },
+        { freq: 1318.51, time: 0.22, gain: 0.24, dur: 0.45 },
+      ];
+
+      for (const f of fanfare) {
+        const start = now + f.time;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f.freq, start);
+
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(f.gain, start + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + f.dur);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + f.dur + 0.03);
+      }
+    } catch {
+      import('./native').then(({ native }) => native.playSystemSound()).catch(() => {});
+    }
+  }
 }
 
 export const notificationService = new NotificationService();

@@ -61,6 +61,21 @@ fn is_pomodoro_companion_visible(app: AppHandle) -> bool {
 }
 
 #[tauri::command]
+fn set_moki_companion_mini(app: AppHandle, mini: bool) -> Result<(), String> {
+    windows::set_moki_companion_mini(&app, mini)
+}
+
+#[tauri::command]
+fn set_moki_companion_visible(app: AppHandle, visible: bool) -> Result<bool, String> {
+    windows::set_moki_companion_visible(&app, visible)
+}
+
+#[tauri::command]
+fn is_moki_companion_visible(app: AppHandle) -> bool {
+    windows::is_moki_companion_visible(&app)
+}
+
+#[tauri::command]
 fn show_dashboard(app: AppHandle) -> Result<(), String> {
     windows::show_dashboard(&app)
 }
@@ -80,6 +95,11 @@ fn quit_app(app: AppHandle) {
     app.exit(0);
 }
 
+#[tauri::command]
+fn start_window_dragging(window: tauri::WebviewWindow) -> Result<(), String> {
+    windows::start_window_dragging(&window)
+}
+
 // ---------------------------------------------------------------------- app
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -97,10 +117,14 @@ pub fn run() {
             set_pomodoro_companion_visible,
             is_pomodoro_companion_visible,
             set_pomodoro_companion_mini,
+            set_moki_companion_visible,
+            is_moki_companion_visible,
+            set_moki_companion_mini,
             show_dashboard,
             focus_target_app,
             play_system_sound,
             quit_app,
+            start_window_dragging,
         ])
         .setup(|app| {
             windows::build_tray(app.handle())?;
@@ -109,6 +133,9 @@ pub fn run() {
             }
             if let Some(p) = app.get_webview_window(windows::POMODORO_COMPANION) {
                 let _ = p.set_always_on_top(true);
+            }
+            if let Some(m) = app.get_webview_window(windows::MOKI_COMPANION) {
+                let _ = m.set_always_on_top(true);
             }
             let st = hook_install::status();
             if st.installed && !st.up_to_date {
@@ -127,6 +154,8 @@ pub fn run() {
                     let _ = windows::set_companion_visible(window.app_handle(), false);
                 } else if window.label() == windows::POMODORO_COMPANION {
                     let _ = windows::set_pomodoro_companion_visible(window.app_handle(), false);
+                } else if window.label() == windows::MOKI_COMPANION {
+                    let _ = windows::set_moki_companion_visible(window.app_handle(), false);
                 }
             }
         })

@@ -5,16 +5,20 @@
 import type { AppDetection, CelebrationEvent, CompanionState } from './status';
 import type { Settings } from './settings';
 import type { PomodoroConfig, PomodoroPhase, PomodoroState } from './pomodoro';
+import type { MokiAction, MokiState } from './moki';
 
 export const EVENTS = {
   rawEvents: 'devpet://raw-events',
   tick: 'devpet://tick',
   companionVisibility: 'devpet://companion-visibility',
   pomodoroVisibility: 'devpet://pomodoro-companion-visibility',
+  mokiVisibility: 'devpet://moki-companion-visibility',
   // Frontend-only (dashboard coordinator <-> companion windows)
   companionState: 'devpet://companion-state',
   pomodoroState: 'devpet://pomodoro-state',
   pomodoroAction: 'devpet://pomodoro-action',
+  mokiState: 'devpet://moki-state',
+  mokiAction: 'devpet://moki-action',
   companionReady: 'devpet://companion-ready',
   celebrate: 'devpet://celebrate',
   settings: 'devpet://settings',
@@ -73,13 +77,16 @@ export interface EventPayloads {
   [EVENTS.tick]: TickPayload;
   [EVENTS.companionVisibility]: CompanionVisibility;
   [EVENTS.pomodoroVisibility]: CompanionVisibility;
+  [EVENTS.mokiVisibility]: CompanionVisibility;
   [EVENTS.companionState]: CompanionState;
   [EVENTS.pomodoroState]: PomodoroState;
   [EVENTS.pomodoroAction]: PomodoroAction;
+  [EVENTS.mokiState]: MokiState;
+  [EVENTS.mokiAction]: MokiAction;
   [EVENTS.companionReady]: null;
   [EVENTS.celebrate]: CelebrationEvent;
   [EVENTS.settings]: Settings;
-  [EVENTS.userTyping]: { timestamp: number };
+  [EVENTS.userTyping]: { timestamp: number; key?: string };
 }
 
 export type EventName = keyof EventPayloads;

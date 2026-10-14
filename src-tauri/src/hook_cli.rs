@@ -20,7 +20,7 @@ use crate::paths;
 const MAX_STDIN_BYTES: u64 = 4 * 1024 * 1024;
 const ROTATE_AT_BYTES: u64 = 2 * 1024 * 1024;
 
-#[cfg(test)]
+#[allow(dead_code)]
 pub const SUPPORTED_EVENTS: [&str; 5] = ["PreInvocation", "PreToolUse", "PostToolUse", "PostInvocation", "Stop"];
 
 /// Entry point. Returns the process exit code (always 0).
@@ -34,8 +34,15 @@ pub fn run(args: &[String]) -> i32 {
         let _ = append_record(&record);
     }
 
+    // Antigravity PreToolUse hook contract requires a decision (e.g. "allow").
+    // An empty object `{}` is considered missing required `decision` by the IDE.
+    let response = match event {
+        "PreToolUse" => r#"{"decision":"allow"}"#,
+        _ => "{}",
+    };
+
     let mut out = std::io::stdout();
-    let _ = out.write_all(b"{}");
+    let _ = out.write_all(response.as_bytes());
     let _ = out.flush();
     0
 }

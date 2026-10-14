@@ -79,12 +79,59 @@ pub fn remove_devpet_hooks(existing: Value) -> (Value, bool) {
     }
 }
 
+fn strip_json_comments(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    let mut in_string = false;
+    let mut escape = false;
+    let mut chars = input.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        if in_string {
+            out.push(c);
+            if escape {
+                escape = false;
+            } else if c == '\\' {
+                escape = true;
+            } else if c == '"' {
+                in_string = false;
+            }
+        } else if c == '"' {
+            in_string = true;
+            out.push(c);
+        } else if c == '/' && chars.peek() == Some(&'/') {
+            // Line comment: skip until newline
+            chars.next();
+            while let Some(&next) = chars.peek() {
+                if next == '\n' {
+                    break;
+                }
+                chars.next();
+            }
+        } else if c == '/' && chars.peek() == Some(&'*') {
+            // Block comment: skip until */
+            chars.next();
+            while let Some(ch) = chars.next() {
+                if ch == '*' && chars.peek() == Some(&'/') {
+                    chars.next();
+                    break;
+                }
+            }
+        } else {
+            out.push(c);
+        }
+    }
+    out
+}
+
 fn read_json(path: &Path) -> Result<Option<Value>, String> {
     match std::fs::read_to_string(path) {
         Ok(text) if text.trim().is_empty() => Ok(None),
-        Ok(text) => serde_json::from_str(&text)
-            .map(Some)
-            .map_err(|e| format!("Existing {} is not valid JSON ({e}); not modified", path.display())),
+        Ok(text) => {
+            let cleaned = strip_json_comments(&text);
+            serde_json::from_str(&cleaned)
+                .map(Some)
+                .map_err(|e| format!("Existing {} is not valid JSON ({e}); not modified", path.display()))
+        }
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
         Err(e) => Err(format!("Cannot read {}: {e}", path.display())),
     }
@@ -252,5 +299,23 @@ mod tests {
     fn quotes_paths_with_spaces() {
         let cmd = hook_command(Path::new(r"C:\Program Files\DevPet\devpet.exe"), "Stop");
         assert_eq!(cmd, r#""C:\Program Files\DevPet\devpet.exe" hook Stop"#);
+    }
+
+    #[test]
+    fn strips_line_and_block_comments_cleanly() {
+        let raw = r#"{
+            // Line comment
+            "devpet": { /* inline block comment */ "enabled": true },
+            "url": "http://example.com/test//not_a_comment"
+        }"#;
+        let cleaned = strip_json_comments(raw);
+        let val: Value = serde_json::from_str(&cleaned).expect("valid json after stripping");
+        assert_eq!(val["devpet"]["enabled"], true);
+    }
+
+    #[test]
+    fn live_status_check() {
+        let st = status();
+        assert!(st.hook_exe.len() > 0);
     }
 }

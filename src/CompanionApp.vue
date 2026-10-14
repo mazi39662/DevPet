@@ -11,6 +11,17 @@
       />
     </template>
 
+    <!-- Keyboard & Wellness Companion Pet (Moki) -->
+    <template v-else-if="activePetType === 'moki'">
+      <MokiPet
+        :mini="settings.companionMini"
+        :sound-enabled="settings.soundEnabled"
+        :interactive="true"
+        @open-dashboard="openDashboard"
+        @hide-pet="hideCompanion"
+      />
+    </template>
+
     <!-- Coding Agent Companion Pet (Codi) -->
     <template v-else>
       <CompanionPet
@@ -45,6 +56,8 @@
 import { ref, onMounted } from 'vue';
 import CompanionPet from './components/CompanionPet.vue';
 import PomodoroPet from './components/PomodoroPet.vue';
+import MokiPet from './components/MokiPet.vue';
+import { mokiCoordinator } from './services/mokiCoordinator';
 import type { CelebrationEvent, CompanionState } from './types/status';
 import type { Settings } from './types/settings';
 import { DEFAULT_SETTINGS } from './types/settings';
@@ -53,7 +66,7 @@ import { native, onEvent } from './services/native';
 import { notificationService } from './services/notifications';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 
-const activePetType = ref<'agent' | 'pomodoro'>('agent');
+const activePetType = ref<'agent' | 'pomodoro' | 'moki'>('agent');
 
 const state = ref<CompanionState>({
   status: 'idle',
@@ -90,16 +103,22 @@ function triggerBubble(durationMs = 3000) {
 }
 
 onMounted(async () => {
+  mokiCoordinator.init(false);
+
   // Determine pet type from query param or window label
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const petParam = urlParams.get('pet');
     if (petParam === 'pomodoro') {
       activePetType.value = 'pomodoro';
+    } else if (petParam === 'moki') {
+      activePetType.value = 'moki';
     } else {
       const win = getCurrentWebviewWindow();
       if (win.label.includes('pomodoro')) {
         activePetType.value = 'pomodoro';
+      } else if (win.label.includes('moki')) {
+        activePetType.value = 'moki';
       }
     }
   } catch {}
@@ -162,6 +181,8 @@ async function focusAgentApp() {
 async function hideCompanion() {
   if (activePetType.value === 'pomodoro') {
     await native.setPomodoroCompanionVisible(false);
+  } else if (activePetType.value === 'moki') {
+    await native.setMokiCompanionVisible(false);
   } else {
     await native.setCompanionVisible(false);
   }

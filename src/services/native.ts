@@ -17,10 +17,14 @@ export const native = {
   setPomodoroCompanionVisible: (visible: boolean) => invoke<boolean>('set_pomodoro_companion_visible', { visible }),
   isPomodoroCompanionVisible: () => invoke<boolean>('is_pomodoro_companion_visible'),
   setPomodoroCompanionMini: (mini: boolean) => invoke<void>('set_pomodoro_companion_mini', { mini }),
+  setMokiCompanionVisible: (visible: boolean) => invoke<boolean>('set_moki_companion_visible', { visible }),
+  isMokiCompanionVisible: () => invoke<boolean>('is_moki_companion_visible'),
+  setMokiCompanionMini: (mini: boolean) => invoke<void>('set_moki_companion_mini', { mini }),
   showDashboard: () => invoke<void>('show_dashboard'),
   focusTargetApp: (agentId?: string | null) => invoke<boolean>('focus_target_app', { agentId: agentId || null }),
   playSystemSound: () => invoke<void>('play_system_sound'),
   quitApp: () => invoke<void>('quit_app'),
+  startWindowDragging: () => invoke<void>('start_window_dragging'),
 };
 
 export function onEvent<E extends EventName>(
@@ -42,5 +46,8 @@ export async function emitEvent<E extends EventName>(name: E, payload: EventPayl
   } catch {}
   try {
     await emitTo('companion-pomodoro', name, payload);
+  } catch {}
+  try {
+    await emitTo('companion-moki', name, payload);
   } catch {}
 }

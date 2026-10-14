@@ -9,8 +9,10 @@ use tauri::{AppHandle, Emitter, LogicalSize, Manager, Runtime, WebviewWindow};
 pub const DASHBOARD: &str = "main";
 pub const COMPANION: &str = "companion";
 pub const POMODORO_COMPANION: &str = "companion-pomodoro";
+pub const MOKI_COMPANION: &str = "companion-moki";
 pub const EVT_COMPANION_VISIBILITY: &str = "devpet://companion-visibility";
 pub const EVT_POMODORO_COMPANION_VISIBILITY: &str = "devpet://pomodoro-companion-visibility";
+pub const EVT_MOKI_COMPANION_VISIBILITY: &str = "devpet://moki-companion-visibility";
 pub const EVT_USER_TYPING: &str = "devpet://user-typing";
 
 const COMPANION_SIZE: (f64, f64) = (168.0, 184.0);
@@ -28,6 +30,10 @@ fn companion<R: Runtime>(app: &AppHandle<R>) -> Result<WebviewWindow<R>, String>
 
 fn pomodoro_companion<R: Runtime>(app: &AppHandle<R>) -> Result<WebviewWindow<R>, String> {
     app.get_webview_window(POMODORO_COMPANION).ok_or_else(|| "pomodoro companion window not found".into())
+}
+
+fn moki_companion<R: Runtime>(app: &AppHandle<R>) -> Result<WebviewWindow<R>, String> {
+    app.get_webview_window(MOKI_COMPANION).ok_or_else(|| "moki companion window not found".into())
 }
 
 pub fn set_companion_visible<R: Runtime>(app: &AppHandle<R>, visible: bool) -> Result<bool, String> {
@@ -84,6 +90,41 @@ pub fn set_pomodoro_companion_mini<R: Runtime>(app: &AppHandle<R>, mini: bool) -
     pomodoro_companion(app)?.set_size(LogicalSize::new(w, h)).map_err(|e| e.to_string())
 }
 
+pub fn set_moki_companion_visible<R: Runtime>(app: &AppHandle<R>, visible: bool) -> Result<bool, String> {
+    let win = moki_companion(app)?;
+    if visible {
+        // Offset if other companions are visible so they don't overlap
+        if let Ok(main_win) = companion(app) {
+            if let Ok(main_pos) = main_win.outer_position() {
+                if let Ok(cur_pos) = win.outer_position() {
+                    if (cur_pos.x - main_pos.x).abs() < 15 && (cur_pos.y - main_pos.y).abs() < 15 {
+                        let _ = win.set_position(tauri::PhysicalPosition::new(main_pos.x - 360, main_pos.y));
+                    }
+                }
+            }
+        }
+        win.show().map_err(|e| e.to_string())?;
+        let _ = win.set_always_on_top(true);
+    } else {
+        win.hide().map_err(|e| e.to_string())?;
+    }
+    let _ = app.emit(EVT_MOKI_COMPANION_VISIBILITY, CompanionVisibility { visible });
+    Ok(visible)
+}
+
+pub fn is_moki_companion_visible<R: Runtime>(app: &AppHandle<R>) -> bool {
+    moki_companion(app).ok().and_then(|w| w.is_visible().ok()).unwrap_or(false)
+}
+
+pub fn set_moki_companion_mini<R: Runtime>(app: &AppHandle<R>, mini: bool) -> Result<(), String> {
+    let (w, h) = if mini { COMPANION_MINI_SIZE } else { COMPANION_SIZE };
+    moki_companion(app)?.set_size(LogicalSize::new(w, h)).map_err(|e| e.to_string())
+}
+
+pub fn start_window_dragging<R: Runtime>(window: &WebviewWindow<R>) -> Result<(), String> {
+    window.start_dragging().map_err(|e| e.to_string())
+}
+
 pub fn show_dashboard<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     let win = app.get_webview_window(DASHBOARD).ok_or("dashboard window not found")?;
     let _ = win.unminimize();
@@ -95,9 +136,10 @@ pub fn build_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let show = MenuItem::with_id(app, "show_dashboard", "Open Dashboard", true, None::<&str>)?;
     let toggle_agent = MenuItem::with_id(app, "toggle_agent", "Toggle Codi (Coding Pet)", true, None::<&str>)?;
     let toggle_pomo = MenuItem::with_id(app, "toggle_pomo", "Toggle Momo (Pomodoro Pet)", true, None::<&str>)?;
+    let toggle_moki = MenuItem::with_id(app, "toggle_moki", "Toggle Moki (Keyboard & Wellness Pet)", true, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
     let quit = MenuItem::with_id(app, "quit", "Quit DevPet", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&show, &toggle_agent, &toggle_pomo, &sep, &quit])?;
+    let menu = Menu::with_items(app, &[&show, &toggle_agent, &toggle_pomo, &toggle_moki, &sep, &quit])?;
 
     let mut builder = TrayIconBuilder::with_id("devpet-tray")
         .tooltip("DevPet")
@@ -114,6 +156,10 @@ pub fn build_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
             "toggle_pomo" => {
                 let visible = is_pomodoro_companion_visible(app);
                 let _ = set_pomodoro_companion_visible(app, !visible);
+            }
+            "toggle_moki" => {
+                let visible = is_moki_companion_visible(app);
+                let _ = set_moki_companion_visible(app, !visible);
             }
             "quit" => app.exit(0),
             _ => {}
@@ -309,6 +355,7 @@ pub fn play_system_alert() {
 #[serde(rename_all = "camelCase")]
 pub struct UserTypingPayload {
     pub timestamp: u64,
+    pub key: Option<String>,
 }
 
 #[cfg(target_os = "windows")]
@@ -329,6 +376,15 @@ mod win_keyhook {
     const WH_KEYBOARD_LL: i32 = 13;
     const WM_KEYDOWN: usize = 0x0100;
     const WM_SYSKEYDOWN: usize = 0x0104;
+
+    #[repr(C)]
+    struct KBDLLHOOKSTRUCT {
+        vk_code: u32,
+        scan_code: u32,
+        flags: u32,
+        time: u32,
+        extra_info: usize,
+    }
 
     #[repr(C)]
     struct MSG {
@@ -355,22 +411,52 @@ mod win_keyhook {
         fn DispatchMessageW(lpMsg: *const MSG) -> LRESULT;
     }
 
-    static EMITTER: OnceLock<Box<dyn Fn(u64) + Send + Sync>> = OnceLock::new();
+    static EMITTER: OnceLock<Box<dyn Fn(u64, Option<String>) + Send + Sync>> = OnceLock::new();
     static LAST_EMIT_MS: AtomicI64 = AtomicI64::new(0);
 
     unsafe extern "system" fn ll_keyboard_proc(code: i32, wparam: usize, lparam: isize) -> isize {
         if code >= 0 && (wparam == WM_KEYDOWN || wparam == WM_SYSKEYDOWN) {
+            let key_str = if lparam != 0 {
+                let kbd = &*(lparam as *const KBDLLHOOKSTRUCT);
+                let vk = kbd.vk_code;
+                match vk {
+                    0x41..=0x5A => {
+                        let ch = (b'A' + (vk - 0x41) as u8) as char;
+                        Some(ch.to_string())
+                    }
+                    0x30..=0x39 => {
+                        let ch = (b'0' + (vk - 0x30) as u8) as char;
+                        Some(ch.to_string())
+                    }
+                    0x20 => Some("SPACE".to_string()),
+                    0x0D => Some("ENTER".to_string()),
+                    0x08 => Some("BACK".to_string()),
+                    0x1B => Some("ESC".to_string()),
+                    0x09 => Some("TAB".to_string()),
+                    0xBD => Some("-".to_string()),
+                    0xBB => Some("+".to_string()),
+                    0xBC => Some(",".to_string()),
+                    0xBE => Some(".".to_string()),
+                    0xBF => Some("/".to_string()),
+                    0xBA => Some(";".to_string()),
+                    0xDE => Some("'".to_string()),
+                    _ => Some("★".to_string()),
+                }
+            } else {
+                None
+            };
+
             let now = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .map(|d| d.as_millis() as i64)
                 .unwrap_or(0);
 
             let last = LAST_EMIT_MS.load(Ordering::Relaxed);
-            // Throttle emissions to at most one every 60ms to avoid flooding
-            if now - last >= 60 {
+            // Responsive keyboard emit with 25ms throttle
+            if now - last >= 25 {
                 LAST_EMIT_MS.store(now, Ordering::Relaxed);
                 if let Some(emitter) = EMITTER.get() {
-                    emitter(now as u64);
+                    emitter(now as u64, key_str);
                 }
             }
         }
@@ -379,8 +465,8 @@ mod win_keyhook {
 
     pub fn start<R: Runtime>(app: &AppHandle<R>) {
         let app_handle = app.clone();
-        let _ = EMITTER.set(Box::new(move |ts| {
-            let _ = app_handle.emit(EVT_USER_TYPING, UserTypingPayload { timestamp: ts });
+        let _ = EMITTER.set(Box::new(move |ts, key| {
+            let _ = app_handle.emit(EVT_USER_TYPING, UserTypingPayload { timestamp: ts, key });
         }));
 
         std::thread::Builder::new()
