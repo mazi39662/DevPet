@@ -1,19 +1,16 @@
 /**
  * MokiCoordinator - State Manager & Wellness Coach for Moki Companion
  * Handles live typing WPM calculation, keystroke particle events,
- * prolonged computer usage stretch reminders, tasks, and sticky notes.
+ * and prolonged computer usage stretch reminders.
  */
 
 import { reactive } from 'vue';
-import type { MokiAction, MokiMood, MokiState, MokiStickyNote, MokiTask, TypingSpeedTier } from '../types/moki';
+import type { MokiAction, MokiMood, MokiState, TypingSpeedTier } from '../types/moki';
 import { DEFAULT_MOKI_STATE } from '../types/moki';
 import { EVENTS } from '../types/events';
 import { emitEvent, onEvent } from './native';
-import { notificationService } from './notifications';
 
 const STORAGE_KEYS = {
-  tasks: 'devpet_moki_tasks',
-  notes: 'devpet_moki_notes',
   stats: 'devpet_moki_stats',
 };
 
@@ -49,20 +46,6 @@ class MokiCoordinatorService {
 
   private loadPersistedData(): void {
     try {
-      const savedTasks = localStorage.getItem(STORAGE_KEYS.tasks);
-      if (savedTasks) {
-        this.state.tasks = JSON.parse(savedTasks);
-      }
-    } catch {}
-
-    try {
-      const savedNotes = localStorage.getItem(STORAGE_KEYS.notes);
-      if (savedNotes) {
-        this.state.stickyNotes = JSON.parse(savedNotes);
-      }
-    } catch {}
-
-    try {
       const savedStats = localStorage.getItem(STORAGE_KEYS.stats);
       if (savedStats) {
         const stats = JSON.parse(savedStats);
@@ -75,8 +58,6 @@ class MokiCoordinatorService {
 
   private persistData(): void {
     try {
-      localStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(this.state.tasks));
-      localStorage.setItem(STORAGE_KEYS.notes, JSON.stringify(this.state.stickyNotes));
       localStorage.setItem(
         STORAGE_KEYS.stats,
         JSON.stringify({
@@ -222,87 +203,6 @@ class MokiCoordinatorService {
       case 'set-speech-bubble':
         this.showSpeechBubble(action.text, action.durationMs || 4000);
         this.broadcastState();
-        break;
-
-      case 'add-task': {
-        const newTask: MokiTask = {
-          id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          text: action.text.trim(),
-          completed: false,
-          priority: action.priority || 'normal',
-          createdAt: Date.now(),
-        };
-        this.state.tasks.unshift(newTask);
-        this.showSpeechBubble(`Task added: "${newTask.text.slice(0, 24)}..." 📝`, 2500);
-        this.persistData();
-        break;
-      }
-
-      case 'toggle-task': {
-        const task = this.state.tasks.find((t) => t.id === action.id);
-        if (task) {
-          task.completed = !task.completed;
-          if (task.completed) {
-            notificationService.playTaskCelebration();
-            this.state.mood = 'celebrating';
-            this.showSpeechBubble('Task finished! High five! 🎉🐾', 3000);
-            if (this.celebrationTimer) clearTimeout(this.celebrationTimer);
-            this.celebrationTimer = setTimeout(() => {
-              this.state.mood = 'idle';
-            }, 3000);
-          }
-          this.persistData();
-        }
-        break;
-      }
-
-      case 'delete-task':
-        this.state.tasks = this.state.tasks.filter((t) => t.id !== action.id);
-        this.persistData();
-        break;
-
-      case 'clear-completed-tasks':
-        this.state.tasks = this.state.tasks.filter((t) => !t.completed);
-        this.persistData();
-        break;
-
-      case 'add-sticky-note': {
-        const newNote: MokiStickyNote = {
-          id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          content: action.content || '',
-          color: action.color || 'yellow',
-          pinned: false,
-          createdAt: Date.now(),
-          x: action.x ?? 12,
-          y: action.y ?? 12,
-          width: 220,
-          height: 180,
-          isFloating: action.isFloating ?? true,
-        };
-        this.state.stickyNotes.unshift(newNote);
-        this.persistData();
-        break;
-      }
-
-      case 'update-sticky-note': {
-        const note = this.state.stickyNotes.find((n) => n.id === action.id);
-        if (note) {
-          if (action.content !== undefined) note.content = action.content;
-          if (action.color) note.color = action.color;
-          if (action.pinned !== undefined) note.pinned = action.pinned;
-          if (action.x !== undefined) note.x = action.x;
-          if (action.y !== undefined) note.y = action.y;
-          if (action.width !== undefined) note.width = action.width;
-          if (action.height !== undefined) note.height = action.height;
-          if (action.isFloating !== undefined) note.isFloating = action.isFloating;
-          this.persistData();
-        }
-        break;
-      }
-
-      case 'delete-sticky-note':
-        this.state.stickyNotes = this.state.stickyNotes.filter((n) => n.id !== action.id);
-        this.persistData();
         break;
 
       case 'sync':

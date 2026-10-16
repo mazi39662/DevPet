@@ -29,8 +29,6 @@ describe('mokiCoordinator', () => {
     const state = mokiCoordinator.getState();
     expect(state.mood).toBe('idle');
     expect(state.currentWpm).toBe(0);
-    expect(Array.isArray(state.tasks)).toBe(true);
-    expect(Array.isArray(state.stickyNotes)).toBe(true);
   });
 
   it('records keystrokes and increments counts & combo', () => {
@@ -43,45 +41,6 @@ describe('mokiCoordinator', () => {
     expect(state.totalKeystrokes).toBe(initialStrokes + 3);
     expect(state.combo).toBeGreaterThanOrEqual(3);
     expect(state.mood).toBe('typing');
-  });
-
-  it('adds, toggles and deletes tasks', () => {
-    mokiCoordinator.handleAction({ type: 'add-task', text: 'Write automated tests', priority: 'high' });
-    const state = mokiCoordinator.getState();
-    const created = state.tasks.find((t) => t.text === 'Write automated tests');
-    expect(created).toBeDefined();
-    expect(created?.completed).toBe(false);
-
-    if (created) {
-      mokiCoordinator.handleAction({ type: 'toggle-task', id: created.id });
-      expect(created.completed).toBe(true);
-      expect(state.mood).toBe('celebrating');
-
-      mokiCoordinator.handleAction({ type: 'delete-task', id: created.id });
-      expect(state.tasks.find((t) => t.id === created.id)).toBeUndefined();
-    }
-  });
-
-  it('handles sticky note operations', () => {
-    mokiCoordinator.handleAction({ type: 'add-sticky-note', content: 'Design review', color: 'pink' });
-    const state = mokiCoordinator.getState();
-    const note = state.stickyNotes.find((n) => n.content === 'Design review');
-    expect(note).toBeDefined();
-    expect(note?.color).toBe('pink');
-
-    if (note) {
-      mokiCoordinator.handleAction({
-        type: 'update-sticky-note',
-        id: note.id,
-        content: 'Design review updated',
-        color: 'mint',
-      });
-      expect(note.content).toBe('Design review updated');
-      expect(note.color).toBe('mint');
-
-      mokiCoordinator.handleAction({ type: 'delete-sticky-note', id: note.id });
-      expect(state.stickyNotes.find((n) => n.id === note.id)).toBeUndefined();
-    }
   });
 
   it('handles custom speech bubble messages', () => {

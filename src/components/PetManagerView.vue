@@ -4,15 +4,23 @@
     <div class="arcade-hero-banner">
       <div class="arcade-banner-content">
         <div class="arcade-badge-tag">
-          <span>DESKTOP ARCADE ROSTER</span>
+          <span>DESKTOP COMPANION</span>
         </div>
         <h2 class="arcade-title">Companion Pet Manager</h2>
         <p class="arcade-subtitle">
           Deploy your desktop companions side-by-side! <strong>Codi</strong> tracks coding agents, <strong>Momo</strong> keeps you in pomodoro flow, and <strong>Moki</strong> bursts typing particles & reminds you to stretch.
         </p>
       </div>
-      <div class="arcade-status-pill">
-        <span class="pill-count-text">{{ activePetsCount }} / 3 PETS DEPLOYED</span>
+      <div class="arcade-hero-actions">
+        <button class="hero-btn tut-btn" @click="$emit('open-tutorials')" title="Open Interactive Tutorials & Pet Playground">
+          🎓 Academy & Tutorials
+        </button>
+        <button class="hero-btn tour-btn" @click="$emit('open-onboarding')" title="Start Welcome & Onboarding Wizard">
+          ✨ Welcome Tour
+        </button>
+        <div class="arcade-status-pill">
+          <span class="pill-count-text">{{ activePetsCount }} / 3 PETS DEPLOYED</span>
+        </div>
       </div>
     </div>
 
@@ -109,8 +117,8 @@
       <!-- PET 3: Moki (Keyboard & Wellness Mascot) -->
       <PetManagerCard
         pet-name="Moki"
-        role-tag="Wellness & Typing"
-        banner-tag="KEYBOARD & STRETCH"
+        role-tag="Typing Companion"
+        banner-tag="KEYBOARD"
         theme-class="moki"
         :deployed="mokiCompanionVisible"
         @toggle-deploy="$emit('toggle-moki')"
@@ -123,7 +131,7 @@
         </template>
 
         <template #description>
-          Spawns colorful letter particles with every key typed, tracks live WPM typing speed, expresses playful animations, and manages sticky notes & quick checklists!
+          Spawns colorful letter particles with every key typed, tracks live WPM typing speed, and expresses playful animations & emotions!
         </template>
 
         <template #stats>
@@ -228,6 +236,8 @@ defineEmits<{
   (e: 'open-monitor'): void;
   (e: 'open-timer'): void;
   (e: 'open-moki'): void;
+  (e: 'open-tutorials'): void;
+  (e: 'open-onboarding'): void;
   (e: 'update:companionMini', val: boolean): void;
   (e: 'update:soundEnabled', val: boolean): void;
 }>();
@@ -301,6 +311,49 @@ defineEmits<{
   line-height: 1.5;
 }
 
+.arcade-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hero-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.hero-btn.tut-btn {
+  background: rgba(88, 101, 242, 0.15);
+  border: 1px solid rgba(88, 101, 242, 0.35);
+  color: #818cf8;
+}
+
+.hero-btn.tut-btn:hover {
+  background: rgba(88, 101, 242, 0.28);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.hero-btn.tour-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.hero-btn.tour-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
 .arcade-status-pill {
   display: flex;
   align-items: center;
@@ -333,8 +386,22 @@ defineEmits<{
 
 .pet-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 24px;
+}
+
+/* Give the 3rd pet (Moki) a generous full-width showcase row */
+.pet-cards-grid > :nth-child(3):last-child {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 940px) {
+  .pet-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .pet-cards-grid > :nth-child(3):last-child {
+    grid-column: auto;
+  }
 }
 
 .arcade-btn {

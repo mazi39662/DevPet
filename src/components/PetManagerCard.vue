@@ -259,6 +259,7 @@ defineEmits<{
 
 .pet-stats-badges {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: auto;
 }
@@ -266,11 +267,12 @@ defineEmits<{
 :deep(.stat-badge) {
   background: #1e1f22;
   border: 1px solid #383a40;
-  padding: 5px 10px;
-  border-radius: 6px;
+  padding: 5px 12px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
 }
 
 :deep(.stat-lbl) {
@@ -301,6 +303,8 @@ defineEmits<{
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .arcade-switch-control {
@@ -309,6 +313,7 @@ defineEmits<{
   gap: 12px;
   cursor: pointer;
   user-select: none;
+  flex-shrink: 0;
 }
 
 .arcade-toggle {
@@ -319,6 +324,7 @@ defineEmits<{
   position: relative;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
 }
 
 .arcade-toggle.on {
@@ -345,11 +351,13 @@ defineEmits<{
   font-size: 13px;
   font-weight: 700;
   color: #dbdee1;
+  white-space: nowrap;
 }
 
 .footer-btn-group {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 </style>

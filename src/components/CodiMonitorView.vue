@@ -1,218 +1,226 @@
 <template>
-  <div class="dashboard-grid">
-    <!-- Left: Active Status Hero Card & Codi Preview -->
-    <section class="arcade-panel status-hero-card">
-      <div class="panel-header">
-        <div class="panel-title-group">
-          <span class="panel-icon">🐾</span>
-          <h2 class="panel-title">Codi Status Feed</h2>
-        </div>
-        <span class="last-updated" v-if="lastUpdateTime">
-          {{ lastUpdateTime }}
-        </span>
-      </div>
-
-      <div class="hero-body">
-        <div class="hero-pet-preview codi-glow">
-          <CompanionPet
-            :status="currentStatus.status"
-            :label="currentStatus.detail"
-            agent-name="Codi"
-            :show-bubble="false"
-            :sound-enabled="settings.soundEnabled"
-          />
+  <div class="monitor-columns">
+    <!-- Left Column: Status Hero + Activity Feed -->
+    <div class="monitor-col primary-col">
+      <!-- Active Status Hero Card & Codi Preview -->
+      <section class="arcade-panel status-hero-card">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <span class="panel-icon">🐾</span>
+            <h2 class="panel-title">Codi Status Feed</h2>
+          </div>
+          <span class="last-updated" v-if="lastUpdateTime">
+            {{ lastUpdateTime }}
+          </span>
         </div>
 
-        <div class="hero-details">
-          <div class="status-row">
-            <span class="label-muted">Active Agent</span>
-            <span class="value-highlight">{{ activeAgentAdapter?.displayName || 'None' }}</span>
+        <div class="hero-body">
+          <div class="hero-pet-preview codi-glow">
+            <CompanionPet
+              :status="currentStatus.status"
+              :label="currentStatus.detail"
+              agent-name="Codi"
+              :show-bubble="false"
+              :sound-enabled="settings.soundEnabled"
+            />
           </div>
 
-          <div class="status-row">
-            <span class="label-muted">Current State</span>
-            <StatusBadge :status="currentStatus.status" size="lg" />
-          </div>
+          <div class="hero-details">
+            <div class="status-row">
+              <span class="label-muted">Active Agent</span>
+              <span class="value-highlight">{{ activeAgentAdapter?.displayName || 'None' }}</span>
+            </div>
 
-          <div class="status-row">
-            <span class="label-muted">Confidence</span>
-            <span class="badge-confidence" :class="currentStatus.confidence">
-              {{ currentStatus.confidence }}
-            </span>
-          </div>
+            <div class="status-row">
+              <span class="label-muted">Current State</span>
+              <StatusBadge :status="currentStatus.status" size="lg" />
+            </div>
 
-          <div class="status-row">
-            <span class="label-muted">Signal Source</span>
-            <span class="source-text">{{ currentStatus.source }}</span>
-          </div>
-
-          <div class="detail-box" v-if="currentStatus.detail">
-            <span class="detail-label">Status Summary</span>
-            <p class="detail-content">{{ currentStatus.detail }}</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Dev Simulator (Local Testing) -->
-      <div class="mock-simulator" v-if="isDevMode">
-        <span class="mock-title">⚡ Dev Simulator (Local State Testing):</span>
-        <div class="mock-buttons">
-          <button
-            v-for="st in testStates"
-            :key="st"
-            class="mock-btn"
-            :class="{ active: currentStatus.status === st }"
-            @click="$emit('simulate-state', st)"
-          >
-            {{ st }}
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Right: Monitored Agents & System Integrations -->
-    <section class="arcade-panel agents-card">
-      <div class="panel-header">
-        <div class="panel-title-group">
-          <span class="panel-icon">🔌</span>
-          <h2 class="panel-title">Coding Tool Integrations</h2>
-        </div>
-        <button class="arcade-btn btn-sm secondary" @click="$emit('refresh-integrations')">
-          Refresh
-        </button>
-      </div>
-
-      <div class="agents-list">
-        <div
-          v-for="adapter in adapters"
-          :key="adapter.id"
-          class="agent-item"
-          :class="{ active: activeAgentId === adapter.id }"
-          @click="$emit('select-agent', adapter.id)"
-        >
-          <div class="agent-item-top">
-            <div class="agent-name-group">
-              <span class="agent-title">{{ adapter.displayName }}</span>
-              <span
-                class="process-indicator"
-                :class="{ running: getApp(adapter.id)?.running }"
-                :title="getApp(adapter.id)?.running ? 'Process running' : 'Process not detected'"
-              >
-                {{ getApp(adapter.id)?.running ? 'App Open' : 'Closed' }}
+            <div class="status-row">
+              <span class="label-muted">Confidence</span>
+              <span class="badge-confidence" :class="currentStatus.confidence">
+                {{ currentStatus.confidence }}
               </span>
             </div>
-            <StatusBadge :status="getStatus(adapter.id).status" size="sm" />
+
+            <div class="status-row">
+              <span class="label-muted">Signal Source</span>
+              <span class="source-text">{{ currentStatus.source }}</span>
+            </div>
+
+            <div class="detail-box" v-if="currentStatus.detail">
+              <span class="detail-label">Status Summary</span>
+              <p class="detail-content">{{ currentStatus.detail }}</p>
+            </div>
           </div>
+        </div>
 
-          <p class="agent-integration-summary">
-            {{ adapter.getIntegrationState().summary }}
-          </p>
-
-          <div class="agent-controls" v-if="adapter.id === 'antigravity'">
-            <div v-if="antigravityHookInstalled" class="hook-status-tag success">
-              ✓ Hook Registered in ~/.gemini/config/hooks.json
-            </div>
-            <div v-else class="hook-status-tag warning">
-              ⚠ Hook Not Installed
-            </div>
+        <!-- Dev Simulator (Local Testing) -->
+        <div class="mock-simulator" v-if="isDevMode">
+          <span class="mock-title">⚡ Dev Simulator (Local State Testing):</span>
+          <div class="mock-buttons">
             <button
-              class="arcade-btn btn-xs"
-              :class="antigravityHookInstalled ? 'danger' : 'primary'"
-              @click.stop="$emit('toggle-hook')"
+              v-for="st in testStates"
+              :key="st"
+              class="mock-btn"
+              :class="{ active: currentStatus.status === st }"
+              @click="$emit('simulate-state', st)"
             >
-              {{ antigravityHookInstalled ? 'Uninstall Hook' : 'Install Hook' }}
+              {{ st }}
             </button>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Bottom-Left: Activity Feed -->
-    <section class="arcade-panel history-card">
-      <div class="panel-header">
-        <div class="panel-title-group">
-          <span class="panel-icon">📜</span>
-          <h2 class="panel-title">Activity Feed</h2>
-        </div>
-        <span class="count-badge">{{ history.length }} events</span>
-      </div>
-
-      <div class="history-list" v-if="history.length > 0">
-        <div v-for="item in history" :key="item.id" class="history-item">
-          <span class="history-time">{{ formatTime(item.timestamp) }}</span>
-          <span class="history-agent">{{ getAgentName(item.agentId) }}</span>
-          <div class="history-transition">
-            <span class="transition-from" v-if="item.from">{{ item.from }}</span>
-            <span class="arrow" v-if="item.from">→</span>
-            <StatusBadge :status="item.to" size="sm" />
+      <!-- Activity Feed -->
+      <section class="arcade-panel history-card">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <span class="panel-icon">📜</span>
+            <h2 class="panel-title">Activity Feed</h2>
           </div>
-          <span class="history-detail" :title="item.detail || ''">{{ item.detail || '—' }}</span>
+          <span class="count-badge">{{ history.length }} events</span>
         </div>
-      </div>
-      <div class="empty-state" v-else>
-        <p>No status changes recorded yet.</p>
-      </div>
-    </section>
 
-    <!-- Bottom-Right: Codi Preferences -->
-    <section class="arcade-panel settings-card">
-      <div class="panel-header">
-        <div class="panel-title-group">
-          <span class="panel-icon">⚙️</span>
-          <h2 class="panel-title">Codi Preferences</h2>
+        <div class="history-list" v-if="history.length > 0">
+          <div v-for="item in history" :key="item.id" class="history-item">
+            <span class="history-time">{{ formatTime(item.timestamp) }}</span>
+            <span class="history-agent">{{ getAgentName(item.agentId) }}</span>
+            <div class="history-transition">
+              <span class="transition-from" v-if="item.from">{{ item.from }}</span>
+              <span class="arrow" v-if="item.from">→</span>
+              <StatusBadge :status="item.to" size="sm" />
+            </div>
+            <span class="history-detail" :title="item.detail || ''">{{ item.detail || '—' }}</span>
+          </div>
         </div>
-      </div>
+        <div class="empty-state" v-else>
+          <p>No status changes recorded yet.</p>
+        </div>
+      </section>
+    </div>
 
-      <div class="settings-list">
-        <label class="setting-toggle">
-          <div class="toggle-info">
-            <span class="toggle-label">Monitoring Active</span>
-            <span class="toggle-desc">Enable event listening and agent status updates</span>
+    <!-- Right Column: Monitored Agents & System Integrations + Preferences -->
+    <div class="monitor-col secondary-col">
+      <section class="arcade-panel agents-card">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <span class="panel-icon">🔌</span>
+            <h2 class="panel-title">Coding Tool Integrations</h2>
           </div>
-          <input
-            type="checkbox"
-            class="custom-check"
-            :checked="settings.monitoringEnabled"
-            @change="$emit('update:monitoringEnabled', ($event.target as HTMLInputElement).checked)"
-          />
-        </label>
+          <button class="arcade-btn btn-sm secondary" @click="$emit('refresh-integrations')">
+            Refresh
+          </button>
+        </div>
 
-        <label class="setting-toggle">
-          <div class="toggle-info">
-            <span class="toggle-label">Task Desktop Notifications</span>
-            <span class="toggle-desc">Show notification when agent finishes</span>
-          </div>
-          <input
-            type="checkbox"
-            class="custom-check"
-            :checked="settings.notificationsEnabled"
-            @change="$emit('update:notificationsEnabled', ($event.target as HTMLInputElement).checked)"
-          />
-        </label>
+        <div class="agents-list">
+          <div
+            v-for="adapter in adapters"
+            :key="adapter.id"
+            class="agent-item"
+            :class="{
+              active: activeAgentId === adapter.id,
+              'featured-hook': adapter.id === 'antigravity'
+            }"
+            @click="$emit('select-agent', adapter.id)"
+          >
+            <div class="agent-item-top">
+              <div class="agent-name-group">
+                <span class="agent-title">{{ adapter.displayName }}</span>
+                <span
+                  class="process-indicator"
+                  :class="{ running: getApp(adapter.id)?.running }"
+                  :title="getApp(adapter.id)?.running ? 'Process running' : 'Process not detected'"
+                >
+                  {{ getApp(adapter.id)?.running ? 'App Open' : 'Closed' }}
+                </span>
+              </div>
+              <StatusBadge :status="getStatus(adapter.id).status" size="sm" />
+            </div>
 
-        <div class="setting-toggle">
-          <div class="toggle-info">
-            <div class="toggle-title-row">
-              <span class="toggle-label">Completion Audio Chime</span>
+            <p class="agent-integration-summary">
+              {{ adapter.getIntegrationState().summary }}
+            </p>
+
+            <div class="agent-controls" v-if="adapter.id === 'antigravity'">
+              <div v-if="antigravityHookInstalled" class="hook-status-tag success">
+                ✓ Hook Registered in ~/.gemini/config/hooks.json
+              </div>
+              <div v-else class="hook-status-tag warning">
+                ⚠ Hook Not Installed
+              </div>
               <button
-                type="button"
-                class="arcade-btn btn-xs secondary"
-                @click="$emit('test-chime')"
+                class="arcade-btn btn-xs"
+                :class="antigravityHookInstalled ? 'danger' : 'primary'"
+                @click.stop="$emit('toggle-hook')"
               >
-                🔊 Test Chime
+                {{ antigravityHookInstalled ? 'Uninstall Hook' : 'Install Hook' }}
               </button>
             </div>
-            <span class="toggle-desc">Play chime on task completion</span>
           </div>
-          <input
-            type="checkbox"
-            class="custom-check"
-            :checked="settings.soundEnabled"
-            @change="$emit('update:soundEnabled', ($event.target as HTMLInputElement).checked)"
-          />
         </div>
-      </div>
-    </section>
+      </section>
+
+      <!-- Codi Preferences -->
+      <section class="arcade-panel settings-card">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <span class="panel-icon">⚙️</span>
+            <h2 class="panel-title">Codi Preferences</h2>
+          </div>
+        </div>
+
+        <div class="settings-list">
+          <label class="setting-toggle">
+            <div class="toggle-info">
+              <span class="toggle-label">Monitoring Active</span>
+              <span class="toggle-desc">Enable event listening and agent status updates</span>
+            </div>
+            <input
+              type="checkbox"
+              class="custom-check"
+              :checked="settings.monitoringEnabled"
+              @change="$emit('update:monitoringEnabled', ($event.target as HTMLInputElement).checked)"
+            />
+          </label>
+
+          <label class="setting-toggle">
+            <div class="toggle-info">
+              <span class="toggle-label">Task Desktop Notifications</span>
+              <span class="toggle-desc">Show notification when agent finishes</span>
+            </div>
+            <input
+              type="checkbox"
+              class="custom-check"
+              :checked="settings.notificationsEnabled"
+              @change="$emit('update:notificationsEnabled', ($event.target as HTMLInputElement).checked)"
+            />
+          </label>
+
+          <div class="setting-toggle">
+            <div class="toggle-info">
+              <div class="toggle-title-row">
+                <span class="toggle-label">Completion Audio Chime</span>
+                <button
+                  type="button"
+                  class="arcade-btn btn-xs secondary"
+                  @click="$emit('test-chime')"
+                >
+                  🔊 Test Chime
+                </button>
+              </div>
+              <span class="toggle-desc">Play chime on task completion</span>
+            </div>
+            <input
+              type="checkbox"
+              class="custom-check"
+              :checked="settings.soundEnabled"
+              @change="$emit('update:soundEnabled', ($event.target as HTMLInputElement).checked)"
+            />
+          </div>
+        </div>
+      </section>
+    </div>
   </div>
 </template>
 
@@ -258,11 +266,18 @@ defineEmits<{
 </script>
 
 <style scoped>
-.dashboard-grid {
+.monitor-columns {
   display: grid;
   grid-template-columns: 1.15fr 1fr;
-  grid-template-rows: auto auto;
-  gap: 24px;
+  gap: 22px;
+  align-items: start;
+}
+
+.monitor-col {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
 }
 
 .arcade-panel {
@@ -273,6 +288,7 @@ defineEmits<{
   display: flex;
   flex-direction: column;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+  box-sizing: border-box;
 }
 
 .panel-header {
@@ -442,8 +458,8 @@ defineEmits<{
 }
 
 .agents-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 12px;
 }
 
@@ -451,9 +467,16 @@ defineEmits<{
   background: #1e1f22;
   border: 1px solid #383a40;
   border-radius: 10px;
-  padding: 14px 16px;
+  padding: 13px 15px;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+.agent-item.featured-hook {
+  grid-column: 1 / -1;
 }
 .agent-item:hover {
   border-color: #5865f2;
@@ -520,7 +543,7 @@ defineEmits<{
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 240px;
+  max-height: 320px;
   overflow-y: auto;
 }
 .history-item {
@@ -676,5 +699,59 @@ defineEmits<{
   height: 18px;
   accent-color: #5865f2;
   cursor: pointer;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+@media (max-width: 1080px) {
+  .monitor-columns {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .arcade-panel {
+    padding: 16px;
+  }
+
+  .hero-body {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .hero-pet-preview {
+    margin: 0 auto;
+  }
+
+  .hero-details {
+    width: 100%;
+  }
+
+  .status-row {
+    justify-content: space-between;
+  }
+
+  .label-muted {
+    width: auto;
+  }
+
+  .agents-list {
+    grid-template-columns: 1fr;
+  }
+
+  .history-item {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .history-detail {
+    margin-left: 0;
+    width: 100%;
+    max-width: none;
+    white-space: normal;
+  }
 }
 </style>

@@ -15,7 +15,7 @@ export const AGENT_STATUSES = [
 
 export type AgentStatus = (typeof AGENT_STATUSES)[number];
 
-export type AgentId = 'antigravity' | 'vscode' | 'codex';
+export type AgentId = 'antigravity' | 'vscode' | 'codex' | 'cursor' | 'opencode' | 'ollama';
 
 /** How a status was obtained. `process-scan` can never yield task status. */
 export type DetectionMethod = 'lifecycle-hook' | 'session-log' | 'none' | 'dev-mock';

@@ -259,7 +259,10 @@ mod win_focus {
         let agent = target_agent.unwrap_or("antigravity").to_lowercase();
         let (proc_patterns, title_patterns): (Vec<&str>, Vec<&str>) = match agent.as_str() {
             "vscode" => (vec!["code.exe", "code"], vec!["visual studio code"]),
+            "cursor" => (vec!["cursor.exe", "cursor"], vec!["cursor"]),
             "codex" => (vec!["codex.exe", "codex", "windowsterminal.exe"], vec!["codex", "powershell", "terminal"]),
+            "opencode" => (vec!["opencode.exe", "opencode", "claude.exe", "claude", "windowsterminal.exe"], vec!["opencode", "claude", "powershell", "terminal"]),
+            "ollama" => (vec!["ollama.exe", "ollama_app.exe", "ollama", "windowsterminal.exe"], vec!["ollama", "powershell", "terminal"]),
             _ => (
                 vec!["antigravity ide.exe", "antigravity.exe", "antigravity", "code.exe"],
                 vec!["antigravity", "visual studio code"],

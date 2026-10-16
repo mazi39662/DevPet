@@ -39,7 +39,36 @@
       >
         {{ p.char }}
       </div>
+    </div>
 
+    <!-- Speech Bubble (Clean floating pill matching CompanionPet) -->
+    <Transition name="pop">
+      <div
+        v-if="bubbleVisible"
+        class="speech-bubble"
+        :class="[currentMood, { 'scratch-bubble': isScratching || isBlissful }]"
+        @click.stop="triggerRandomQuip"
+        @mousedown.stop
+      >
+        <span class="bubble-icon">{{ bubbleMoodIcon }}</span>
+        <span class="bubble-text">{{ currentBubbleText }}</span>
+      </div>
+    </Transition>
+
+    <!-- Pixel Art Mascot SVG (72x72 crisp pixel grid, matching Momo & Codi) -->
+    <div
+      class="character-art"
+      :class="[
+        currentMood,
+        {
+          scratching: isScratching,
+          blissful: isBlissful,
+          booped: isBooped,
+          'user-typing': isTyping,
+          'status-morphing': isMorphing,
+        }
+      ]"
+    >
       <!-- Affection hearts when petted -->
       <Transition name="fade">
         <div v-if="isScratching || isBlissful" class="affection-particles">
@@ -137,36 +166,7 @@
           <span class="particle s3">🌿</span>
         </div>
       </Transition>
-    </div>
 
-    <!-- Speech Bubble (Clean floating pill matching CompanionPet) -->
-    <Transition name="pop">
-      <div
-        v-if="bubbleVisible"
-        class="speech-bubble"
-        :class="[currentMood, { 'scratch-bubble': isScratching || isBlissful }]"
-        @click.stop="triggerRandomQuip"
-        @mousedown.stop
-      >
-        <span class="bubble-icon">{{ bubbleMoodIcon }}</span>
-        <span class="bubble-text">{{ currentBubbleText }}</span>
-      </div>
-    </Transition>
-
-    <!-- Pixel Art Mascot SVG (72x72 crisp pixel grid, matching Momo & Codi) -->
-    <div
-      class="character-art"
-      :class="[
-        currentMood,
-        {
-          scratching: isScratching,
-          blissful: isBlissful,
-          booped: isBooped,
-          'user-typing': isTyping,
-          'status-morphing': isMorphing,
-        }
-      ]"
-    >
       <svg
         viewBox="0 0 72 72"
         class="character-svg"
@@ -400,104 +400,28 @@
       <span class="tag-label">Moki</span>
     </div>
 
-    <!-- Hover Quick Buttons: Settings, Sticky Notes, Checklist, Close -->
+    <!-- Hover Quick Buttons: Sound Profile, Settings, Close -->
     <div class="hover-controls" @mousedown.stop @mouseup.stop>
+      <button
+        class="icon-btn sound-profile-btn"
+        :title="`Keyboard Sound: ${currentProfileMeta.label} (Click to change)`"
+        @click.stop="cycleSoundProfile"
+      >
+        {{ currentProfileMeta.icon }}
+      </button>
       <button class="icon-btn" title="Settings (DevPet Dashboard)" @click.stop="openDashboard">⚙️</button>
-      <button class="icon-btn" title="Add Floating Sticky Note" @click.stop="addStickyNote">📌</button>
-      <button class="icon-btn" title="Open Checklist" @click.stop="toggleChecklistModal">✅</button>
       <button class="icon-btn" title="Hide Moki" @click.stop="hidePet">✕</button>
     </div>
-
-    <!-- Floating Sticky Notes (Draggable & editable on the desktop companion) -->
-    <div
-      v-for="note in floatingNotes"
-      :key="note.id"
-      class="floating-sticky-note"
-      :class="note.color"
-      :style="{ left: `${note.x ?? 10}px`, top: `${note.y ?? 10}px` }"
-      @mousedown.stop
-    >
-      <div class="sticky-drag-header" @mousedown="onStickyMouseDown($event, note)">
-        <span class="sticky-icon">📌</span>
-        <div class="sticky-dots">
-          <span
-            v-for="c in (['yellow', 'pink', 'mint', 'cyan', 'lavender'] as const)"
-            :key="c"
-            class="color-dot"
-            :class="[c, { active: note.color === c }]"
-            @click.stop="changeNoteColor(note, c)"
-          ></span>
-        </div>
-        <button class="sticky-close-btn" @click.stop="deleteNote(note.id)">✕</button>
-      </div>
-      <textarea
-        v-model="note.content"
-        class="sticky-textarea"
-        placeholder="Type quick note..."
-        @blur="saveNote(note)"
-      ></textarea>
-    </div>
-
-    <!-- Quick Tasks Checklist Modal -->
-    <Transition name="pop">
-      <div v-if="showChecklistModal" class="checklist-modal-backdrop" @mousedown.stop>
-        <div class="checklist-modal-card">
-          <div class="modal-header">
-            <div class="modal-title-group">
-              <span class="m-icon">✅</span>
-              <div>
-                <h4 class="m-title">Checklist</h4>
-                <p class="m-sub">{{ completedTasksCount }}/{{ state.tasks.length }} completed</p>
-              </div>
-            </div>
-            <button class="modal-close-btn" @click="showChecklistModal = false">✕</button>
-          </div>
-
-          <form @submit.prevent="addTaskFromModal" class="modal-add-form">
-            <input
-              v-model="modalNewTaskText"
-              type="text"
-              placeholder="+ New task & press Enter..."
-              class="modal-input"
-            />
-            <button type="submit" class="modal-add-btn" :disabled="!modalNewTaskText.trim()">Add</button>
-          </form>
-
-          <div class="modal-tasks-list">
-            <div
-              v-for="task in state.tasks"
-              :key="task.id"
-              class="modal-task-row"
-              :class="{ done: task.completed }"
-            >
-              <label class="m-check-label">
-                <input
-                  type="checkbox"
-                  class="m-chk"
-                  :checked="task.completed"
-                  @change="toggleTaskModal(task.id)"
-                />
-                <span class="m-chk-box"></span>
-              </label>
-              <span class="m-task-text">{{ task.text }}</span>
-              <button class="m-del-btn" @click="deleteTaskModal(task.id)">✕</button>
-            </div>
-            <div v-if="state.tasks.length === 0" class="modal-empty-tasks">
-              No tasks yet! Add one above 🚀
-            </div>
-          </div>
-        </div>
-      </div>
-    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import type { KeystrokeParticle, MokiMood } from '../types/moki';
+import type { KeyboardSoundProfile, Settings } from '../types/settings';
 import { mokiCoordinator } from '../services/mokiCoordinator';
 import { EVENTS } from '../types/events';
-import { native, onEvent } from '../services/native';
+import { native, onEvent, emitEvent } from '../services/native';
 import { notificationService } from '../services/notifications';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 
@@ -520,6 +444,48 @@ const emit = defineEmits<{
 }>();
 
 const containerRef = ref<HTMLElement | null>(null);
+
+// Keyboard Sound Customization Profiles
+const SOUND_PROFILES: { id: KeyboardSoundProfile; label: string; icon: string }[] = [
+  { id: 'clicky', label: 'Mechanical Blue', icon: '🔵' },
+  { id: 'thock', label: 'Creamy Thock', icon: '🪵' },
+  { id: 'typewriter', label: 'Typewriter', icon: '📜' },
+  { id: 'bubble', label: 'Bubble Pop', icon: '🫧' },
+  { id: 'arcade', label: '8-Bit Arcade', icon: '👾' },
+  { id: 'cyber', label: 'Cyberpunk', icon: '⚡' },
+  { id: 'muted', label: 'Muted Topre', icon: '🔇' },
+];
+
+const currentProfile = ref<KeyboardSoundProfile>(
+  notificationService.getSoundEffectsConfig().keyboardProfile || 'clicky'
+);
+
+const currentProfileMeta = computed(() => {
+  return SOUND_PROFILES.find((p) => p.id === currentProfile.value) || SOUND_PROFILES[0];
+});
+
+function cycleSoundProfile() {
+  const currentIndex = SOUND_PROFILES.findIndex((p) => p.id === currentProfile.value);
+  const nextProfile = SOUND_PROFILES[(currentIndex + 1) % SOUND_PROFILES.length];
+  currentProfile.value = nextProfile.id;
+  notificationService.setKeyboardProfile(nextProfile.id);
+
+  try {
+    const raw = localStorage.getItem('devpet:settings:v1');
+    if (raw) {
+      const parsed: Settings = JSON.parse(raw);
+      parsed.soundEffects = parsed.soundEffects || ({} as any);
+      parsed.soundEffects.keyboardProfile = nextProfile.id;
+      localStorage.setItem('devpet:settings:v1', JSON.stringify(parsed));
+      emitEvent(EVENTS.settings, parsed).catch(() => {});
+    }
+  } catch {}
+
+  if (props.soundEnabled) {
+    notificationService.playKeyClick(' ', nextProfile.id);
+  }
+  mokiCoordinator.showSpeechBubble(`Sound: ${nextProfile.label} ${nextProfile.icon}`, 3000);
+}
 const state = mokiCoordinator.getState();
 
 // Reactive pet interaction states
@@ -553,6 +519,15 @@ const KEYBOARD_LETTERS = [
 let letterCycleIdx = 0;
 
 function resolveKeyboardLetter(rawKey?: string): string {
+  if (rawKey === ' ' || rawKey?.toLowerCase() === 'space' || rawKey?.toLowerCase() === 'spacebar') {
+    return '␣';
+  }
+  if (rawKey?.toLowerCase() === 'enter' || rawKey?.toLowerCase() === 'return') {
+    return '↵';
+  }
+  if (rawKey?.toLowerCase() === 'backspace' || rawKey?.toLowerCase() === 'delete') {
+    return '⌫';
+  }
   if (rawKey && /^[a-zA-Z]$/.test(rawKey)) {
     return rawKey.toUpperCase();
   }
@@ -601,7 +576,7 @@ function registerKeystrokeLocally(char: string) {
     lastKeystrokeTime = 0;
   }, 2000);
 
-  // 1. Emit keyboard letter particle
+  // 1. Emit keyboard letter particle and play customized key sound
   spawnLetterParticle(char);
 
   // 2. Base Codi: Shoot 1-2 code / spark particles in 360-degree directions
@@ -656,7 +631,7 @@ function spawnLetterParticle(char: string) {
   ];
 
   if (props.soundEnabled) {
-    notificationService.playKeyClick();
+    notificationService.playKeyClick(char);
   }
 }
 
@@ -852,115 +827,6 @@ function showBubbleBriefly(ms = 3500) {
   bubbleTimer = setTimeout(() => (bubbleVisible.value = false), ms);
 }
 
-// Checklist & Sticky Notes Modal / Floating State
-const showChecklistModal = ref(false);
-const modalNewTaskText = ref('');
-
-const completedTasksCount = computed(() => state.tasks.filter((t) => t.completed).length);
-
-const floatingNotes = computed(() => {
-  return state.stickyNotes.filter((n) => n.isFloating !== false);
-});
-
-function toggleChecklistModal() {
-  showChecklistModal.value = !showChecklistModal.value;
-}
-
-function addTaskFromModal() {
-  if (!modalNewTaskText.value.trim()) return;
-  mokiCoordinator.dispatchAction({
-    type: 'add-task',
-    text: modalNewTaskText.value.trim(),
-    priority: 'normal',
-  });
-  modalNewTaskText.value = '';
-}
-
-function toggleTaskModal(id: string) {
-  mokiCoordinator.dispatchAction({ type: 'toggle-task', id });
-}
-
-function deleteTaskModal(id: string) {
-  mokiCoordinator.dispatchAction({ type: 'delete-task', id });
-}
-
-function addStickyNote() {
-  const colors: Array<'yellow' | 'pink' | 'mint' | 'cyan' | 'lavender'> = ['yellow', 'pink', 'mint', 'cyan', 'lavender'];
-  const randColor = colors[Math.floor(Math.random() * colors.length)];
-  mokiCoordinator.dispatchAction({
-    type: 'add-sticky-note',
-    color: randColor,
-    content: 'Quick note 📌',
-    x: 10 + Math.floor(Math.random() * 20),
-    y: 10 + Math.floor(Math.random() * 20),
-    isFloating: true,
-  });
-  showBubbleBriefly(2500);
-}
-
-function changeNoteColor(note: any, color: 'yellow' | 'pink' | 'mint' | 'cyan' | 'lavender') {
-  mokiCoordinator.dispatchAction({
-    type: 'update-sticky-note',
-    id: note.id,
-    color,
-  });
-}
-
-function saveNote(note: any) {
-  mokiCoordinator.dispatchAction({
-    type: 'update-sticky-note',
-    id: note.id,
-    content: note.content,
-  });
-}
-
-function deleteNote(id: string) {
-  mokiCoordinator.dispatchAction({
-    type: 'delete-sticky-note',
-    id,
-  });
-}
-
-// Dragging sticky notes inside companion
-let draggingNote: any = null;
-let noteDragStartX = 0;
-let noteDragStartY = 0;
-let noteOrigX = 0;
-let noteOrigY = 0;
-
-function onStickyMouseDown(e: MouseEvent, note: any) {
-  draggingNote = note;
-  noteDragStartX = e.clientX;
-  noteDragStartY = e.clientY;
-  noteOrigX = note.x ?? 10;
-  noteOrigY = note.y ?? 10;
-
-  window.addEventListener('mousemove', onStickyMouseMove);
-  window.addEventListener('mouseup', onStickyMouseUp);
-}
-
-function onStickyMouseMove(e: MouseEvent) {
-  if (!draggingNote) return;
-  const dx = e.clientX - noteDragStartX;
-  const dy = e.clientY - noteDragStartY;
-  draggingNote.x = Math.max(0, noteOrigX + dx);
-  draggingNote.y = Math.max(0, noteOrigY + dy);
-}
-
-function onStickyMouseUp() {
-  if (draggingNote) {
-    mokiCoordinator.dispatchAction({
-      type: 'update-sticky-note',
-      id: draggingNote.id,
-      x: draggingNote.x,
-      y: draggingNote.y,
-    });
-    draggingNote = null;
-  }
-  window.removeEventListener('mousemove', onStickyMouseMove);
-  window.removeEventListener('mouseup', onStickyMouseUp);
-}
-
 // Window Dragging & Interactions
 let clickCount = 0;
 let clickTimer: ReturnType<typeof setTimeout> | null = null;
@@ -1057,6 +923,10 @@ function onMouseUp(e: MouseEvent) {
     isBooped.value = true;
     setTimeout(() => (isBooped.value = false), 260);
 
+    if (props.soundEnabled) {
+      notificationService.playMascotBoop();
+    }
+
     clickCount++;
     if (clickTimer) clearTimeout(clickTimer);
     if (clickCount >= 3) {
@@ -1125,6 +995,7 @@ function onWindowKeyDown(e: KeyboardEvent) {
 }
 
 let unlistenTyping: (() => void) | null = null;
+let unlistenSettings: (() => void) | null = null;
 
 onMounted(async () => {
   window.addEventListener('keydown', onWindowKeyDown);
@@ -1137,6 +1008,14 @@ onMounted(async () => {
     });
   } catch {}
 
+  try {
+    unlistenSettings = await onEvent(EVENTS.settings, (newSettings: Settings) => {
+      if (newSettings?.soundEffects?.keyboardProfile) {
+        currentProfile.value = newSettings.soundEffects.keyboardProfile;
+      }
+    });
+  } catch {}
+
   showBubbleBriefly(3000);
 });
 
@@ -1144,6 +1023,7 @@ onUnmounted(() => {
   window.removeEventListener('keydown', onWindowKeyDown);
   if (animId) cancelAnimationFrame(animId);
   if (unlistenTyping) unlistenTyping();
+  if (unlistenSettings) unlistenSettings();
   if (clickTimer) clearTimeout(clickTimer);
   if (bubbleTimer) clearTimeout(bubbleTimer);
   if (typingTimeout) clearTimeout(typingTimeout);
@@ -1609,6 +1489,12 @@ onUnmounted(() => {
   }
 }
 
+.particle {
+  position: absolute;
+  user-select: none;
+  pointer-events: none;
+}
+
 /* Celebration Star Particles (Base Codi) */
 .celebration-particles {
   position: absolute;
@@ -1752,24 +1638,31 @@ onUnmounted(() => {
 }
 
 /* Sleepy & Stretching Particles */
-.sleepy-particles-container,
+.sleepy-particles-container {
+  position: absolute;
+  inset: -10px;
+  pointer-events: none;
+  z-index: 20;
+}
+.z1 { top: 14px; right: 24px; font-size: 12px; animation: driftUp 2.4s infinite ease-out; }
+.z2 { top: 2px; right: 14px; font-size: 13px; font-weight: 800; color: #c084fc; text-shadow: 0 0 6px rgba(192, 132, 252, 0.6); animation: driftUp 2.4s 0.8s infinite ease-out; }
+.z3 { top: -10px; right: 4px; font-size: 12px; animation: driftUp 2.4s 1.6s infinite ease-out; }
+
 .stretch-particles-container {
   position: absolute;
   inset: -10px;
   pointer-events: none;
+  z-index: 20;
 }
-.z1 { top: -10px; right: 8px; font-size: 13px; animation: driftUp 2s infinite ease-out; }
-.z2 { top: -16px; right: -2px; font-size: 11px; font-weight: bold; color: #a855f7; animation: driftUp 2s 0.6s infinite ease-out; }
-.z3 { top: 4px; left: -4px; font-size: 12px; animation: driftUp 2s 1.2s infinite ease-out; }
-
-.s1 { top: -8px; left: 6px; font-size: 13px; animation: pulseSparkle 1.6s infinite alternate; }
-.s2 { top: -12px; right: 10px; font-size: 12px; animation: pulseSparkle 1.8s 0.3s infinite alternate; }
-.s3 { bottom: 10px; right: -4px; font-size: 12px; animation: pulseSparkle 1.5s 0.6s infinite alternate; }
+.s1 { top: -6px; left: 8px; font-size: 13px; animation: pulseSparkle 1.6s infinite alternate; }
+.s2 { top: -10px; right: 8px; font-size: 12px; animation: pulseSparkle 1.8s 0.3s infinite alternate; }
+.s3 { bottom: 8px; right: -2px; font-size: 12px; animation: pulseSparkle 1.5s 0.6s infinite alternate; }
 
 @keyframes driftUp {
-  0% { transform: translateY(0) scale(0.7); opacity: 0; }
-  30% { opacity: 0.85; }
-  100% { transform: translateY(-16px) scale(1.2); opacity: 0; }
+  0% { transform: translateY(4px) translateX(0) scale(0.65); opacity: 0; }
+  25% { opacity: 0.95; }
+  75% { opacity: 0.85; }
+  100% { transform: translateY(-16px) translateX(6px) scale(1.15); opacity: 0; }
 }
 @keyframes pulseSparkle {
   0% { transform: scale(0.8) rotate(0deg); opacity: 0.5; }
@@ -1858,12 +1751,14 @@ onUnmounted(() => {
 
 .affection-particles {
   position: absolute;
-  top: 15%;
+  top: -12px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   gap: 6px;
   font-size: 14px;
+  pointer-events: none;
+  z-index: 25;
 }
 .heart-particle {
   animation: heartFloat 0.8s ease-out forwards;
@@ -1977,233 +1872,6 @@ onUnmounted(() => {
   color: #ffffff;
   transform: scale(1.1);
   border-color: #38bdf8;
-}
-
-/* Floating Sticky Notes */
-.floating-sticky-note {
-  position: absolute;
-  width: 135px;
-  height: 120px;
-  border-radius: 6px;
-  padding: 6px;
-  box-sizing: border-box;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
-  display: flex;
-  flex-direction: column;
-  z-index: 50;
-  color: #1e293b;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-}
-
-.floating-sticky-note.yellow { background: #fef08a; border-color: #fde047; }
-.floating-sticky-note.pink { background: #fbcfe8; border-color: #f472b6; }
-.floating-sticky-note.mint { background: #a7f3d0; border-color: #6ee7b7; }
-.floating-sticky-note.cyan { background: #bae6fd; border-color: #7dd3fc; }
-.floating-sticky-note.lavender { background: #e9d5ff; border-color: #d8b4fe; }
-
-.sticky-drag-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: grab;
-  padding-bottom: 4px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  margin-bottom: 4px;
-  user-select: none;
-}
-.sticky-drag-header:active {
-  cursor: grabbing;
-}
-.sticky-icon {
-  font-size: 11px;
-}
-.sticky-dots {
-  display: flex;
-  gap: 3px;
-}
-.color-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-}
-.color-dot.yellow { background: #facc15; }
-.color-dot.pink { background: #f472b6; }
-.color-dot.mint { background: #34d399; }
-.color-dot.cyan { background: #38bdf8; }
-.color-dot.lavender { background: #c084fc; }
-.color-dot.active { border-color: #000; transform: scale(1.15); }
-
-.sticky-close-btn {
-  background: transparent;
-  border: none;
-  font-size: 10px;
-  font-weight: 800;
-  cursor: pointer;
-  color: #475569;
-  padding: 0 2px;
-}
-.sticky-close-btn:hover {
-  color: #e11d48;
-}
-
-.sticky-textarea {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  resize: none;
-  font-size: 11px;
-  line-height: 1.35;
-  color: #0f172a;
-  font-family: inherit;
-  padding: 0;
-}
-
-/* Quick Checklist Modal */
-.checklist-modal-backdrop {
-  position: absolute;
-  top: 10px;
-  bottom: 10px;
-  left: 6px;
-  right: 6px;
-  z-index: 60;
-  display: flex;
-  flex-direction: column;
-}
-.checklist-modal-card {
-  background: rgba(17, 18, 20, 0.98);
-  border: 1px solid #383a40;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
-  display: flex;
-  flex-direction: column;
-  padding: 8px;
-  flex: 1;
-  overflow: hidden;
-}
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid #2b2d31;
-  padding-bottom: 6px;
-  margin-bottom: 6px;
-}
-.modal-title-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.m-icon { font-size: 13px; }
-.m-title {
-  font-size: 11px;
-  font-weight: 700;
-  color: #f2f3f5;
-  margin: 0;
-}
-.m-sub {
-  font-size: 9px;
-  color: #949ba4;
-  margin: 0;
-}
-.modal-close-btn {
-  background: transparent;
-  border: none;
-  color: #949ba4;
-  font-size: 11px;
-  cursor: pointer;
-}
-.modal-close-btn:hover { color: #f2f3f5; }
-.modal-add-form {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 6px;
-}
-.modal-input {
-  flex: 1;
-  background: #1e1f22;
-  border: 1px solid #3b3e45;
-  border-radius: 4px;
-  padding: 4px 6px;
-  font-size: 10px;
-  color: #f2f3f5;
-  outline: none;
-}
-.modal-add-btn {
-  background: #38bdf8;
-  color: #0f172a;
-  border: none;
-  border-radius: 4px;
-  padding: 0 8px;
-  font-size: 10px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.modal-tasks-list {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-height: 80px;
-}
-.modal-task-row {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background: #232428;
-  padding: 3px 6px;
-  border-radius: 4px;
-  font-size: 10px;
-  color: #dbdee1;
-}
-.modal-task-row.done {
-  opacity: 0.6;
-}
-.modal-task-row.done .m-task-text {
-  text-decoration: line-through;
-  color: #80848e;
-}
-.m-check-label {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}
-.m-chk { display: none; }
-.m-chk-box {
-  width: 10px;
-  height: 10px;
-  border: 1px solid #5c5f66;
-  border-radius: 2px;
-  display: inline-block;
-  background: #1e1f22;
-}
-.m-chk:checked + .m-chk-box {
-  background: #22c55e;
-  border-color: #22c55e;
-}
-.m-task-text {
-  flex: 1;
-  word-break: break-word;
-  line-height: 1.2;
-}
-.m-del-btn {
-  background: transparent;
-  border: none;
-  color: #5c5f66;
-  font-size: 9px;
-  cursor: pointer;
-  padding: 0 2px;
-}
-.m-del-btn:hover { color: #f43f5e; }
-.modal-empty-tasks {
-  text-align: center;
-  font-size: 9px;
-  color: #80848e;
-  padding: 10px 0;
 }
 
 /* Transitions */

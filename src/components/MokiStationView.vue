@@ -9,7 +9,7 @@
         </div>
         <h2 class="hero-title">Moki Station</h2>
         <p class="hero-sub">
-          Your idle desktop typing companion! Spawns letter particle bursts, tracks typing speed, expresses playful emotions, and keeps floating sticky notes & quick checklists handy.
+          Your idle desktop typing companion! Spawns letter particle bursts, tracks typing speed, and expresses playful animations & emotions.
         </p>
 
         <div class="hero-stats-row">
@@ -52,261 +52,222 @@
       </div>
     </div>
 
-    <!-- Main Grid: 2 Columns -->
+    <!-- Main Grid: Typing Sandbox & Emotion Showcase -->
     <div class="moki-grid">
-      <!-- COLUMN 1: Typing Sandbox & Prolonged Usage Stretch Coach -->
-      <div class="grid-col left-col">
-        <!-- Panel 1: Interactive Keystroke & Particle Playground -->
-        <div class="moki-card playground-card">
-          <div class="card-header">
-            <div class="card-title-group">
-              <span class="card-icon">⌨️</span>
-              <div>
-                <h3 class="card-title">Typing Sandbox & Particle Lab</h3>
-                <p class="card-desc">Type anything below to see letter particles fly, test WPM, and clack RGB keys!</p>
-              </div>
+      <!-- Panel 1: Interactive Keystroke & Particle Playground -->
+      <div class="moki-card playground-card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-icon">⌨️</span>
+            <div>
+              <h3 class="card-title">Typing Sandbox & Particle Lab</h3>
+              <p class="card-desc">Type anything below to see letter particles fly, test WPM, and clack RGB keys!</p>
             </div>
+          </div>
+          <div class="card-header-actions">
+            <button
+              class="sound-profile-quick-pill"
+              :title="`Current switch sound: ${activeProfileMeta.name}. Click to cycle.`"
+              @click="cycleKeyboardProfile"
+            >
+              <span>{{ activeProfileMeta.icon }}</span>
+              <span class="pill-name">{{ activeProfileMeta.name }}</span>
+              <span class="pill-switch-tag">Switch 🔄</span>
+            </button>
             <div class="live-combo-pill" v-if="state.combo > 0">
               <span>🔥 COMBO x{{ state.combo }}</span>
             </div>
           </div>
+        </div>
 
-          <div class="sandbox-input-area">
-            <textarea
-              v-model="sandboxText"
-              rows="3"
-              class="sandbox-textarea"
-              placeholder="Start clacking your keyboard here! Letters will burst as floating particles... ✨"
-              @keydown="onSandboxKeydown"
-            ></textarea>
+        <div class="sandbox-input-area">
+          <textarea
+            v-model="sandboxText"
+            rows="5"
+            class="sandbox-textarea"
+            placeholder="Start clacking your keyboard here! Letters will burst as floating particles... ✨"
+            @keydown="onSandboxKeydown"
+          ></textarea>
 
-            <div class="sandbox-actions">
+          <div class="sandbox-actions">
+            <div class="sandbox-left-actions">
               <button class="action-btn-clean" @click="sandboxText = ''" :disabled="!sandboxText">
                 Clear Text
               </button>
-              <div class="sandbox-hint">
-                <span>Tip: Global keyboard hook also detects typing in any application!</span>
-              </div>
+              <span v-if="sandboxLastKey" class="last-key-badge">Key: {{ sandboxLastKey }}</span>
             </div>
-          </div>
-        </div>
-
-        <!-- Panel 2: Moki Emotion & Animation Laboratory -->
-        <div class="moki-card emotion-card">
-          <div class="card-header">
-            <div class="card-title-group">
-              <span class="card-icon">🎭</span>
-              <div>
-                <h3 class="card-title">Moki Emotion & Reaction Showcase</h3>
-                <p class="card-desc">Click any emotion to test Moki's dynamic facial expressions and body animations!</p>
-              </div>
+            <div class="sandbox-hint">
+              <span>Tip: Global keyboard hook also detects typing in any application!</span>
             </div>
-          </div>
-
-          <div class="emotions-preview-grid">
-            <button class="emotion-trigger-btn" @click="testMokiEmotion('happy')">
-              <span class="e-icon">✨</span>
-              <span class="e-label">Happy</span>
-            </button>
-            <button class="emotion-trigger-btn" @click="testMokiEmotion('typing')">
-              <span class="e-icon">💻</span>
-              <span class="e-label">Typing Focus</span>
-            </button>
-            <button class="emotion-trigger-btn" @click="testMokiEmotion('turbo')">
-              <span class="e-icon">🔥</span>
-              <span class="e-label">Turbo 60+ WPM</span>
-            </button>
-            <button class="emotion-trigger-btn" @click="testMokiEmotion('thinking')">
-              <span class="e-icon">🧠</span>
-              <span class="e-label">Thinking</span>
-            </button>
-            <button class="emotion-trigger-btn" @click="testMokiEmotion('waiting')">
-              <span class="e-icon">⏳</span>
-              <span class="e-label">Waiting</span>
-            </button>
-            <button class="emotion-trigger-btn" @click="testMokiEmotion('celebrating')">
-              <span class="e-icon">🎉</span>
-              <span class="e-label">Victory Jump</span>
-            </button>
-            <button class="emotion-trigger-btn" @click="testMokiEmotion('error')">
-              <span class="e-icon">⚠️</span>
-              <span class="e-label">Panic / Bug</span>
-            </button>
-            <button class="emotion-trigger-btn" @click="testMokiEmotion('sleepy')">
-              <span class="e-icon">💤</span>
-              <span class="e-label">Sleepy</span>
-            </button>
-            <button class="emotion-trigger-btn" @click="testMokiEmotion('stretching')">
-              <span class="e-icon">🌸</span>
-              <span class="e-label">Cat Stretch</span>
-            </button>
-            <button class="emotion-trigger-btn" @click="testMokiEmotion('blissful')">
-              <span class="e-icon">💖</span>
-              <span class="e-label">Pet / Purr</span>
-            </button>
-            <button class="emotion-trigger-btn" @click="testMokiEmotion('boop')">
-              <span class="e-icon">🐾</span>
-              <span class="e-label">Nose Boop</span>
-            </button>
           </div>
         </div>
       </div>
 
-      <!-- COLUMN 2: Quick Tasks Checklist & Sticky Notes -->
-      <div class="grid-col right-col">
-        <!-- Panel 3: Quick Tasks & Checklist -->
-        <div class="moki-card tasks-card">
-          <div class="card-header">
-            <div class="card-title-group">
-              <span class="card-icon">✅</span>
-              <div>
-                <h3 class="card-title">Quick Tasks & Checklist</h3>
-                <p class="card-desc">Fast checklist with celebratory fanfare & Moki victory jumps!</p>
-              </div>
+      <!-- Panel 2: Moki Emotion & Animation Laboratory -->
+      <div class="moki-card emotion-card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-icon">🎭</span>
+            <div>
+              <h3 class="card-title">Moki Emotion & Reaction Showcase</h3>
+              <p class="card-desc">Click any emotion to test Moki's dynamic facial expressions and body animations!</p>
             </div>
-            <div class="tasks-counter">
-              <span>{{ completedTasksCount }}/{{ state.tasks.length }} DONE</span>
-            </div>
-          </div>
-
-          <!-- Task Fast Input -->
-          <form @submit.prevent="addNewTask" class="new-task-form">
-            <input
-              v-model="newTaskText"
-              type="text"
-              placeholder="+ Add a quick task & press Enter..."
-              class="task-input"
-            />
-            <select v-model="newTaskPriority" class="task-prio-select">
-              <option value="normal">Normal</option>
-              <option value="high">High ⚡</option>
-              <option value="urgent">Urgent 🔥</option>
-            </select>
-            <button type="submit" class="task-add-btn" :disabled="!newTaskText.trim()">Add</button>
-          </form>
-
-          <!-- Task List -->
-          <div class="tasks-scroll-list">
-            <div
-              v-for="task in filteredTasks"
-              :key="task.id"
-              class="task-row-item"
-              :class="{ completed: task.completed, [task.priority]: true }"
-            >
-              <label class="task-checkbox-label">
-                <input
-                  type="checkbox"
-                  class="task-chk"
-                  :checked="task.completed"
-                  @change="toggleTask(task.id)"
-                />
-                <span class="task-chk-custom"></span>
-              </label>
-
-              <span class="task-text-content">{{ task.text }}</span>
-
-              <span class="prio-tag" :class="task.priority">{{ task.priority }}</span>
-
-              <button class="task-del-btn" @click="deleteTask(task.id)" title="Delete task">
-                ✕
-              </button>
-            </div>
-
-            <div v-if="state.tasks.length === 0" class="tasks-empty-state">
-              <span>🎉 All tasks cleared! Add your next mini-goal above.</span>
-            </div>
-          </div>
-
-          <!-- Bottom Task Filters -->
-          <div class="tasks-footer">
-            <div class="filter-pills">
-              <button
-                class="f-pill"
-                :class="{ active: taskFilter === 'all' }"
-                @click="taskFilter = 'all'"
-              >
-                All ({{ state.tasks.length }})
-              </button>
-              <button
-                class="f-pill"
-                :class="{ active: taskFilter === 'active' }"
-                @click="taskFilter = 'active'"
-              >
-                Active ({{ pendingTasksCount }})
-              </button>
-              <button
-                class="f-pill"
-                :class="{ active: taskFilter === 'completed' }"
-                @click="taskFilter = 'completed'"
-              >
-                Done ({{ completedTasksCount }})
-              </button>
-            </div>
-
-            <button
-              v-if="completedTasksCount > 0"
-              class="clear-completed-btn"
-              @click="clearCompleted"
-            >
-              Clear Done
-            </button>
           </div>
         </div>
 
-        <!-- Panel 4: Colorful Sticky Notes -->
-        <div class="moki-card notes-card">
-          <div class="card-header">
-            <div class="card-title-group">
-              <span class="card-icon">📌</span>
-              <div>
-                <h3 class="card-title">Sticky Notes</h3>
-                <p class="card-desc">Draggable colorful desktop stickies for quick scratchpads</p>
+        <div class="emotions-preview-grid">
+          <button class="emotion-trigger-btn" @click="testMokiEmotion('happy')">
+            <span class="e-icon">✨</span>
+            <span class="e-label">Happy</span>
+          </button>
+          <button class="emotion-trigger-btn" @click="testMokiEmotion('typing')">
+            <span class="e-icon">💻</span>
+            <span class="e-label">Typing Focus</span>
+          </button>
+          <button class="emotion-trigger-btn" @click="testMokiEmotion('turbo')">
+            <span class="e-icon">🔥</span>
+            <span class="e-label">Turbo 60+ WPM</span>
+          </button>
+          <button class="emotion-trigger-btn" @click="testMokiEmotion('thinking')">
+            <span class="e-icon">🧠</span>
+            <span class="e-label">Thinking</span>
+          </button>
+          <button class="emotion-trigger-btn" @click="testMokiEmotion('waiting')">
+            <span class="e-icon">⏳</span>
+            <span class="e-label">Waiting</span>
+          </button>
+          <button class="emotion-trigger-btn" @click="testMokiEmotion('celebrating')">
+            <span class="e-icon">🎉</span>
+            <span class="e-label">Victory Jump</span>
+          </button>
+          <button class="emotion-trigger-btn" @click="testMokiEmotion('error')">
+            <span class="e-icon">⚠️</span>
+            <span class="e-label">Panic / Bug</span>
+          </button>
+          <button class="emotion-trigger-btn" @click="testMokiEmotion('sleepy')">
+            <span class="e-icon">💤</span>
+            <span class="e-label">Sleepy</span>
+          </button>
+          <button class="emotion-trigger-btn" @click="testMokiEmotion('stretching')">
+            <span class="e-icon">🌸</span>
+            <span class="e-label">Cat Stretch</span>
+          </button>
+          <button class="emotion-trigger-btn" @click="testMokiEmotion('blissful')">
+            <span class="e-icon">💖</span>
+            <span class="e-label">Pet / Purr</span>
+          </button>
+          <button class="emotion-trigger-btn" @click="testMokiEmotion('boop')">
+            <span class="e-icon">🐾</span>
+            <span class="e-label">Nose Boop</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Panel 3: Keyboard Sound Studio & Switch Acoustics -->
+      <div class="moki-card keyboard-studio-card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-icon studio-icon">🎧</span>
+            <div>
+              <div class="title-with-badge">
+                <h3 class="card-title">Keyboard Sound Studio & Switch Acoustics</h3>
+                <span class="active-profile-indicator">Active: {{ activeProfileMeta.name }} {{ activeProfileMeta.icon }}</span>
               </div>
-            </div>
-            <div class="notes-add-actions">
-              <button class="add-note-btn yellow" @click="createNote('yellow')" title="Add Yellow Sticky">+</button>
-              <button class="add-note-btn pink" @click="createNote('pink')" title="Add Pink Sticky">+</button>
-              <button class="add-note-btn mint" @click="createNote('mint')" title="Add Mint Sticky">+</button>
-              <button class="add-note-btn cyan" @click="createNote('cyan')" title="Add Cyan Sticky">+</button>
-              <button class="add-note-btn lavender" @click="createNote('lavender')" title="Add Lavender Sticky">+</button>
+              <p class="card-desc">
+                Customize Moki's tactile typing acoustics, spacebar stabilizer clacks, carriage return bells, and backspace blips.
+              </p>
             </div>
           </div>
+        </div>
 
-          <!-- Notes Grid -->
-          <div class="sticky-notes-grid">
-            <div
-              v-for="note in state.stickyNotes"
-              :key="note.id"
-              class="sticky-note-card"
-              :class="note.color"
-            >
-              <div class="sticky-note-top">
-                <span class="sticky-pin" :class="{ pinned: note.pinned }" @click="togglePinNote(note)">
-                  📌
-                </span>
-                <div class="sticky-color-dots">
-                  <span
-                    v-for="c in (['yellow', 'pink', 'mint', 'cyan', 'lavender'] as const)"
-                    :key="c"
-                    class="color-dot"
-                    :class="[c, { active: note.color === c }]"
-                    @click="changeNoteColor(note, c)"
-                  ></span>
+        <!-- 7 Acoustic Profiles Grid -->
+        <div class="profiles-section-title">
+          <span>Acoustic Switch Profiles (Click to Select & Audition)</span>
+          <span class="profiles-hint">Procedural Web Audio synthesis • Zero asset latency</span>
+        </div>
+
+        <div class="studio-profiles-grid">
+          <div
+            v-for="prof in keyboardProfiles"
+            :key="prof.id"
+            class="studio-profile-card"
+            :class="{
+              active: currentProfile === prof.id,
+              disabled: !soundEnabled
+            }"
+            @click="setProfile(prof.id)"
+          >
+            <div class="prof-top-bar">
+              <span class="prof-icon">{{ prof.icon }}</span>
+              <span v-if="currentProfile === prof.id" class="active-tag">ACTIVE</span>
+            </div>
+            <div class="prof-name">{{ prof.name }}</div>
+            <div class="prof-badge">{{ prof.badge }}</div>
+            <p class="prof-desc">{{ prof.desc }}</p>
+
+            <div class="prof-footer">
+              <button
+                class="audition-btn"
+                :disabled="!soundEnabled"
+                @click.stop="auditionProfile(prof.id)"
+                title="Play sound audition"
+              >
+                🔊 Audition
+              </button>
+              <span class="prof-status">
+                {{ currentProfile === prof.id ? '✓ Selected' : 'Tap to select' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dedicated Key Sound Effects Row -->
+        <div class="studio-sub-panels-grid">
+          <div class="studio-sub-panel full-width">
+            <h4 class="sub-panel-title">Dedicated Key Sound Effects</h4>
+
+            <div class="dedicated-keys-list">
+              <div class="studio-fx-item">
+                <div class="fx-info">
+                  <span class="fx-label">⎵ Spacebar Stabilizer Clack</span>
+                  <span class="fx-sub">Deeper resonance & stabilizer wire clack</span>
                 </div>
-                <button class="sticky-del" @click="deleteNote(note.id)">✕</button>
+                <div class="fx-ctrls">
+                  <button class="mini-snd-btn" :disabled="!soundEnabled" @click="testSpacebar">Play</button>
+                  <label class="switch mini-switch">
+                    <input type="checkbox" v-model="soundConfig.spacebarSound" :disabled="!soundEnabled" @change="saveConfig" />
+                    <span class="slider round"></span>
+                  </label>
+                </div>
               </div>
 
-              <textarea
-                v-model="note.content"
-                class="sticky-content-textarea"
-                rows="4"
-                placeholder="Write your note here..."
-                @blur="updateNote(note)"
-              ></textarea>
-            </div>
+              <div class="studio-fx-item">
+                <div class="fx-info">
+                  <span class="fx-label">↵ Enter Carriage Return & Chime</span>
+                  <span class="fx-sub">Typewriter bell ding or harmonic chime</span>
+                </div>
+                <div class="fx-ctrls">
+                  <button class="mini-snd-btn" :disabled="!soundEnabled" @click="testEnter">Play</button>
+                  <label class="switch mini-switch">
+                    <input type="checkbox" v-model="soundConfig.enterSound" :disabled="!soundEnabled" @change="saveConfig" />
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+              </div>
 
-            <div v-if="state.stickyNotes.length === 0" class="notes-empty-state">
-              <span>No sticky notes yet. Click any color above to pin a note! 📌</span>
+              <div class="studio-fx-item">
+                <div class="fx-info">
+                  <span class="fx-label">⌫ Backspace Deletion Blip</span>
+                  <span class="fx-sub">Downward blip when erasing characters</span>
+                </div>
+                <div class="fx-ctrls">
+                  <button class="mini-snd-btn" :disabled="!soundEnabled" @click="testBackspace">Play</button>
+                  <label class="switch mini-switch">
+                    <input type="checkbox" v-model="soundConfig.backspaceSound" :disabled="!soundEnabled" @change="saveConfig" />
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -319,18 +280,153 @@
 import { ref, computed } from 'vue';
 import MokiPet from './MokiPet.vue';
 import { mokiCoordinator } from '../services/mokiCoordinator';
-import type { MokiStickyNote } from '../types/moki';
+import { notificationService } from '../services/notifications';
+import { emitEvent } from '../services/native';
+import { EVENTS } from '../types/events';
+import type { KeyboardSoundProfile, Settings } from '../types/settings';
 
-defineProps<{
+const props = defineProps<{
   soundEnabled: boolean;
+  settings?: Settings;
 }>();
 
 const state = mokiCoordinator.getState();
 
 const sandboxText = ref('');
-const newTaskText = ref('');
-const newTaskPriority = ref<'normal' | 'high' | 'urgent'>('normal');
-const taskFilter = ref<'all' | 'active' | 'completed'>('all');
+const sandboxLastKey = ref('');
+
+// 7 Keyboard Switch Acoustic Profiles
+const keyboardProfiles = [
+  {
+    id: 'clicky' as KeyboardSoundProfile,
+    name: 'Mechanical Blue',
+    badge: 'Cherry MX / Box White',
+    icon: '🔵',
+    desc: 'Crisp snappy dual-stage click with tactile click-leaf snap',
+  },
+  {
+    id: 'thock' as KeyboardSoundProfile,
+    name: 'Creamy Thock',
+    badge: 'Lubed Linear / Holy Panda',
+    icon: '🪵',
+    desc: 'Deep acoustic wooden resonance and rich low-frequency bottom-out',
+  },
+  {
+    id: 'typewriter' as KeyboardSoundProfile,
+    name: 'Vintage Typewriter',
+    badge: 'Remington Metal',
+    icon: '📜',
+    desc: 'Authentic metallic striker impact with classic brass carriage return bell',
+  },
+  {
+    id: 'bubble' as KeyboardSoundProfile,
+    name: 'Bubble Pop',
+    badge: 'Water Droplets',
+    icon: '🫧',
+    desc: 'Satisfying upward acoustic bubble pops and organic water chirps',
+  },
+  {
+    id: 'arcade' as KeyboardSoundProfile,
+    name: '8-Bit Arcade',
+    badge: 'Retro Chiptune',
+    icon: '👾',
+    desc: 'Square-wave arpeggio blips stepping through classic gaming scales',
+  },
+  {
+    id: 'cyber' as KeyboardSoundProfile,
+    name: 'Cyberpunk Neon',
+    badge: 'Sci-Fi Laser',
+    icon: '⚡',
+    desc: 'Resonant sweeping lowpass synth pulse for futuristic neon coders',
+  },
+  {
+    id: 'muted' as KeyboardSoundProfile,
+    name: 'Muted Silent',
+    badge: 'Topre / Quiet Membrane',
+    icon: '🔇',
+    desc: 'Soft cushioned rubber-dome bottom-out for quiet late-night sessions',
+  },
+];
+
+const currentProfile = computed<KeyboardSoundProfile>({
+  get() {
+    return (
+      props.settings?.soundEffects?.keyboardProfile ||
+      notificationService.getSoundEffectsConfig().keyboardProfile ||
+      'clicky'
+    );
+  },
+  set(val: KeyboardSoundProfile) {
+    if (props.settings?.soundEffects) {
+      props.settings.soundEffects.keyboardProfile = val;
+    }
+    notificationService.setKeyboardProfile(val);
+    saveConfig();
+  },
+});
+
+const activeProfileMeta = computed(() => {
+  return keyboardProfiles.find((p) => p.id === currentProfile.value) || keyboardProfiles[0];
+});
+
+const soundConfig = computed(() => {
+  if (props.settings?.soundEffects) {
+    return props.settings.soundEffects;
+  }
+  return notificationService.getSoundEffectsConfig();
+});
+
+function saveConfig() {
+  notificationService.setSoundEffectsConfig(soundConfig.value);
+  try {
+    const raw = localStorage.getItem('devpet:settings:v1');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      parsed.soundEffects = parsed.soundEffects || {};
+      Object.assign(parsed.soundEffects, soundConfig.value);
+      localStorage.setItem('devpet:settings:v1', JSON.stringify(parsed));
+      emitEvent(EVENTS.settings, parsed).catch(() => {});
+    }
+  } catch {}
+}
+
+function setProfile(prof: KeyboardSoundProfile) {
+  currentProfile.value = prof;
+  if (props.soundEnabled) {
+    notificationService.playKeyClick(' ', prof);
+  }
+}
+
+function cycleKeyboardProfile() {
+  const currentIndex = keyboardProfiles.findIndex((p) => p.id === currentProfile.value);
+  const nextProfile = keyboardProfiles[(currentIndex + 1) % keyboardProfiles.length];
+  setProfile(nextProfile.id);
+  mokiCoordinator.showSpeechBubble(`Sound: ${nextProfile.name} ${nextProfile.icon}`, 2600);
+}
+
+function auditionProfile(prof: KeyboardSoundProfile) {
+  if (props.soundEnabled) {
+    notificationService.playKeyboardProfileSound(prof);
+  }
+}
+
+function testSpacebar() {
+  if (props.soundEnabled) {
+    notificationService.playSpacebarSound(currentProfile.value);
+  }
+}
+
+function testEnter() {
+  if (props.soundEnabled) {
+    notificationService.playEnterSound(currentProfile.value);
+  }
+}
+
+function testBackspace() {
+  if (props.soundEnabled) {
+    notificationService.playBackspaceSound(currentProfile.value);
+  }
+}
 
 function testMokiEmotion(emotion: string) {
   switch (emotion) {
@@ -357,6 +453,9 @@ function testMokiEmotion(emotion: string) {
         text: 'TURBO SPEED UNLOCKED! 🚀⚡ 85+ WPM!',
         durationMs: 4000,
       });
+      if (props.soundEnabled) {
+        notificationService.playTurboPowerup();
+      }
       break;
     case 'thinking':
       mokiCoordinator.dispatchAction({ type: 'set-mood', mood: 'thinking', durationMs: 5000 });
@@ -381,6 +480,9 @@ function testMokiEmotion(emotion: string) {
         text: 'Task complete! High five victory! 🎉🐾',
         durationMs: 4000,
       });
+      if (props.soundEnabled) {
+        notificationService.playTaskCelebration();
+      }
       break;
     case 'error':
       mokiCoordinator.dispatchAction({ type: 'set-mood', mood: 'error', durationMs: 5000 });
@@ -389,6 +491,9 @@ function testMokiEmotion(emotion: string) {
         text: 'Bug detected! Don\'t panic, we can fix it! ⚠️⚡',
         durationMs: 4000,
       });
+      if (props.soundEnabled) {
+        notificationService.playAlertChime();
+      }
       break;
     case 'sleepy':
       mokiCoordinator.dispatchAction({ type: 'set-mood', mood: 'sleepy', durationMs: 5000 });
@@ -405,6 +510,9 @@ function testMokiEmotion(emotion: string) {
         text: 'Cat stretch break! Stretch paws & breathe! 🌸🐾',
         durationMs: 3500,
       });
+      if (props.soundEnabled) {
+        notificationService.playStretchZenChime();
+      }
       break;
     case 'blissful':
       mokiCoordinator.dispatchAction({ type: 'set-mood', mood: 'blissful', durationMs: 4000 });
@@ -413,6 +521,9 @@ function testMokiEmotion(emotion: string) {
         text: 'Purrrrr~ that feels wonderful! 💕✨',
         durationMs: 3500,
       });
+      if (props.soundEnabled) {
+        notificationService.playPurr();
+      }
       break;
     case 'boop':
       mokiCoordinator.dispatchAction({ type: 'set-mood', mood: 'idle' });
@@ -421,79 +532,21 @@ function testMokiEmotion(emotion: string) {
         text: 'Hehe you booped my snoot! 🐾❤️',
         durationMs: 3000,
       });
+      if (props.soundEnabled) {
+        notificationService.playMascotBoop();
+      }
       break;
   }
 }
 
 function onSandboxKeydown(e: KeyboardEvent) {
   const key = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+  sandboxLastKey.value = e.key === ' ' ? 'SPACE' : e.key.toUpperCase();
   mokiCoordinator.recordKeystroke(key);
-}
 
-// Tasks Filtering
-const completedTasksCount = computed(() => state.tasks.filter((t) => t.completed).length);
-const pendingTasksCount = computed(() => state.tasks.filter((t) => !t.completed).length);
-
-const filteredTasks = computed(() => {
-  if (taskFilter.value === 'active') return state.tasks.filter((t) => !t.completed);
-  if (taskFilter.value === 'completed') return state.tasks.filter((t) => t.completed);
-  return state.tasks;
-});
-
-// Tasks Actions
-function addNewTask() {
-  if (!newTaskText.value.trim()) return;
-  mokiCoordinator.dispatchAction({
-    type: 'add-task',
-    text: newTaskText.value.trim(),
-    priority: newTaskPriority.value,
-  });
-  newTaskText.value = '';
-}
-
-function toggleTask(id: string) {
-  mokiCoordinator.dispatchAction({ type: 'toggle-task', id });
-}
-
-function deleteTask(id: string) {
-  mokiCoordinator.dispatchAction({ type: 'delete-task', id });
-}
-
-function clearCompleted() {
-  mokiCoordinator.dispatchAction({ type: 'clear-completed-tasks' });
-}
-
-// Sticky Notes Actions
-function createNote(color: 'yellow' | 'pink' | 'mint' | 'cyan' | 'lavender') {
-  mokiCoordinator.dispatchAction({
-    type: 'add-sticky-note',
-    content: 'Quick thought...',
-    color,
-  });
-}
-
-function updateNote(note: MokiStickyNote) {
-  mokiCoordinator.dispatchAction({
-    type: 'update-sticky-note',
-    id: note.id,
-    content: note.content,
-    color: note.color,
-    pinned: note.pinned,
-  });
-}
-
-function changeNoteColor(note: MokiStickyNote, color: 'yellow' | 'pink' | 'mint' | 'cyan' | 'lavender') {
-  note.color = color;
-  updateNote(note);
-}
-
-function togglePinNote(note: MokiStickyNote) {
-  note.pinned = !note.pinned;
-  updateNote(note);
-}
-
-function deleteNote(id: string) {
-  mokiCoordinator.dispatchAction({ type: 'delete-sticky-note', id });
+  if (props.soundEnabled) {
+    notificationService.playKeyClick(e.key, currentProfile.value);
+  }
 }
 </script>
 
@@ -631,10 +684,10 @@ function deleteNote(id: string) {
   gap: 24px;
 }
 
-.grid-col {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+@media (max-width: 960px) {
+  .moki-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .moki-card {
@@ -777,264 +830,366 @@ function deleteNote(id: string) {
   text-align: center;
 }
 
-/* Panel 3: Tasks Checklist */
-.tasks-counter {
-  font-size: 11px;
-  font-weight: 800;
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.12);
-  padding: 3px 8px;
-  border-radius: 6px;
-}
-
-.new-task-form {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-.task-input {
-  flex: 1;
-  background: #111214;
-  border: 1px solid #383a40;
-  border-radius: 8px;
-  padding: 8px 12px;
-  color: #ffffff;
-  font-size: 12px;
-}
-.task-prio-select {
-  background: #1e1f22;
-  border: 1px solid #383a40;
-  color: #dbdee1;
-  border-radius: 8px;
-  padding: 0 8px;
-  font-size: 11px;
-}
-.task-add-btn {
-  background: #5865f2;
-  border: none;
-  color: #ffffff;
-  border-radius: 8px;
-  padding: 0 14px;
-  font-weight: 700;
-  font-size: 12px;
-  cursor: pointer;
-}
-.task-add-btn:hover:not(:disabled) {
-  background: #4752c4;
-}
-
-.tasks-scroll-list {
-  max-height: 200px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-.task-row-item {
+/* Header Actions & Quick Switcher Pill */
+.card-header-actions {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.sound-profile-quick-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  color: #e9d5ff;
+  border-radius: 20px;
+  padding: 4px 11px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sound-profile-quick-pill:hover {
+  background: rgba(168, 85, 247, 0.28);
+  border-color: #c084fc;
+  transform: translateY(-1px);
+}
+
+.pill-switch-tag {
+  font-size: 10px;
+  color: #c084fc;
+  font-weight: 800;
+  margin-left: 3px;
+}
+
+.sandbox-left-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.last-key-badge {
+  font-size: 10px;
+  font-family: monospace;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+}
+
+/* Panel 3: Keyboard Studio Card */
+.keyboard-studio-card {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, #2b2d31 0%, #1f2024 100%);
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+.studio-icon {
+  background: rgba(168, 85, 247, 0.16);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+}
+
+.title-with-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.active-profile-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  color: #d8b4fe;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.profiles-section-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 12px 0 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #dbdee1;
+  letter-spacing: 0.5px;
+}
+
+.profiles-hint {
+  font-size: 11px;
+  color: #949ba4;
+  font-weight: normal;
+}
+
+.studio-profiles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.studio-profile-card {
   background: #1e1f22;
   border: 1px solid #383a40;
-  border-radius: 8px;
-  padding: 8px 12px;
-  transition: all 0.15s ease;
-}
-.task-row-item:hover {
-  border-color: #4e5058;
-}
-.task-row-item.completed {
-  opacity: 0.6;
-}
-.task-row-item.completed .task-text-content {
-  text-decoration: line-through;
-  color: #949ba4;
+  border-radius: 12px;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.task-checkbox-label {
+.studio-profile-card:hover:not(.disabled) {
+  border-color: rgba(168, 85, 247, 0.45);
+  transform: translateY(-2px);
+  background: #232428;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.studio-profile-card.active {
+  border-color: #a855f7;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.16), rgba(88, 28, 135, 0.25));
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.3);
+}
+
+.studio-profile-card.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.prof-top-bar {
   display: flex;
   align-items: center;
-  cursor: pointer;
-}
-.task-chk {
-  width: 16px;
-  height: 16px;
-  accent-color: #10b981;
-  cursor: pointer;
+  justify-content: space-between;
 }
 
-.task-text-content {
-  flex: 1;
-  font-size: 12px;
-  color: #ffffff;
-  font-weight: 500;
+.prof-icon {
+  font-size: 22px;
 }
 
-.prio-tag {
+.active-tag {
   font-size: 9px;
   font-weight: 800;
-  text-transform: uppercase;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 8px;
+  background: #a855f7;
+  color: #ffffff;
 }
-.prio-tag.normal { background: #313338; color: #949ba4; }
-.prio-tag.high { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
-.prio-tag.urgent { background: rgba(244, 63, 94, 0.2); color: #f43f5e; }
 
-.task-del-btn {
-  background: transparent;
-  border: none;
-  color: #64748b;
-  cursor: pointer;
-  font-size: 12px;
+.prof-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-top: 3px;
 }
-.task-del-btn:hover { color: #f43f5e; }
 
-.tasks-empty-state {
-  font-size: 12px;
+.prof-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #c084fc;
+}
+
+.prof-desc {
+  font-size: 11px;
   color: #949ba4;
-  text-align: center;
-  padding: 20px 0;
+  line-height: 1.4;
+  margin: 3px 0 8px;
+  flex: 1;
 }
 
-.tasks-footer {
+.prof-footer {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  border-top: 1px solid #313338;
-  padding-top: 10px;
+  gap: 8px;
+  margin-top: auto;
 }
-.filter-pills { display: flex; gap: 4px; }
-.f-pill {
-  background: transparent;
-  border: none;
-  font-size: 11px;
-  color: #949ba4;
-  padding: 4px 8px;
+
+.audition-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #dbdee1;
   border-radius: 6px;
-  cursor: pointer;
-  font-weight: 700;
-}
-.f-pill.active { background: #313338; color: #ffffff; }
-.clear-completed-btn {
-  background: transparent;
-  border: none;
+  padding: 4px 8px;
   font-size: 11px;
-  color: #f43f5e;
+  font-weight: 700;
   cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.audition-btn:hover:not(:disabled) {
+  background: #a855f7;
+  color: #ffffff;
+  border-color: #c084fc;
+}
+
+.prof-status {
+  font-size: 10px;
+  color: #64748b;
   font-weight: 700;
 }
 
-/* Panel 4: Sticky Notes */
-.notes-add-actions {
-  display: flex;
-  gap: 5px;
+.studio-profile-card.active .prof-status {
+  color: #c084fc;
 }
-.add-note-btn {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  font-size: 12px;
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.add-note-btn.yellow { background: #fef08a; color: #713f12; }
-.add-note-btn.pink { background: #fbcfe8; color: #831843; }
-.add-note-btn.mint { background: #a7f3d0; color: #064e3b; }
-.add-note-btn.cyan { background: #bae6fd; color: #0c4a6e; }
-.add-note-btn.lavender { background: #e9d5ff; color: #581c87; }
 
-.sticky-notes-grid {
+/* Sub-panels Grid */
+.studio-sub-panels-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.dedicated-keys-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 12px;
 }
 
-.sticky-note-card {
-  border-radius: 10px;
-  padding: 10px 12px;
+.studio-sub-panel {
+  background: #1e1f22;
+  border: 1px solid #383a40;
+  border-radius: 12px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s ease;
+  gap: 10px;
 }
-.sticky-note-card:hover {
-  transform: translateY(-2px);
-}
-.sticky-note-card.yellow { background: #fef08a; color: #713f12; }
-.sticky-note-card.pink { background: #fbcfe8; color: #831843; }
-.sticky-note-card.mint { background: #a7f3d0; color: #064e3b; }
-.sticky-note-card.cyan { background: #bae6fd; color: #0c4a6e; }
-.sticky-note-card.lavender { background: #e9d5ff; color: #581c87; }
 
-.sticky-note-top {
+.sub-panel-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #dbdee1;
+  margin: 0 0 6px;
+  letter-spacing: 0.5px;
+}
+
+.studio-fx-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
 }
 
-.sticky-pin {
-  cursor: pointer;
-  opacity: 0.6;
-  font-size: 12px;
-}
-.sticky-pin.pinned {
-  opacity: 1;
-}
-
-.sticky-color-dots {
+.fx-info {
   display: flex;
-  gap: 3px;
-}
-.color-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  cursor: pointer;
-  opacity: 0.5;
-}
-.color-dot.active { opacity: 1; transform: scale(1.2); }
-.color-dot.yellow { background: #eab308; }
-.color-dot.pink { background: #ec4899; }
-.color-dot.mint { background: #10b981; }
-.color-dot.cyan { background: #0ea5e9; }
-.color-dot.lavender { background: #a855f7; }
-
-.sticky-del {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  font-size: 11px;
-  opacity: 0.6;
-  color: inherit;
-}
-.sticky-del:hover { opacity: 1; }
-
-.sticky-content-textarea {
-  width: 100%;
-  box-sizing: border-box;
-  background: transparent;
-  border: none;
-  font-family: inherit;
-  font-size: 11px;
-  color: inherit;
-  resize: vertical;
-  outline: none;
-  line-height: 1.4;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.notes-empty-state {
-  grid-column: span 2;
-  text-align: center;
+.fx-label {
   font-size: 12px;
+  font-weight: 700;
+  color: #f2f3f5;
+}
+
+.fx-sub {
+  font-size: 10px;
   color: #949ba4;
-  padding: 24px 0;
+}
+
+.fx-ctrls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mini-snd-btn {
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  color: #c084fc;
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mini-snd-btn:hover:not(:disabled) {
+  background: #a855f7;
+  color: #ffffff;
+}
+
+/* Switches */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 20px;
+}
+
+.switch.mini-switch {
+  width: 32px;
+  height: 18px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #383a40;
+  transition: 0.25s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #ffffff;
+  transition: 0.25s;
+}
+
+.switch.mini-switch .slider:before {
+  height: 12px;
+  width: 12px;
+  left: 3px;
+  bottom: 3px;
+}
+
+input:checked + .slider {
+  background-color: #a855f7;
+}
+
+input:checked + .slider:before {
+  transform: translateX(18px);
+}
+
+.switch.mini-switch input:checked + .slider:before {
+  transform: translateX(14px);
+}
+
+.slider.round {
+  border-radius: 20px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
 }
 </style>

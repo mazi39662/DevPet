@@ -14,6 +14,7 @@
       @toggle-agent="toggleAgentCompanion"
       @toggle-pomo="togglePomodoroCompanion"
       @toggle-moki="toggleMokiCompanion"
+      @open-onboarding="openOnboardingModal"
     />
 
     <!-- Main Content Tabs -->
@@ -45,6 +46,8 @@
           @open-monitor="currentTab = 'monitor'"
           @open-timer="currentTab = 'pomodoro'"
           @open-moki="currentTab = 'moki'"
+          @open-tutorials="currentTab = 'tutorials'"
+          @open-onboarding="openOnboardingModal"
           @update:companion-mini="onMiniToggle"
           @update:sound-enabled="settings.soundEnabled = $event"
         />
@@ -105,9 +108,67 @@
       <!-- TAB 4: MOKI KEYBOARD & WELLNESS STATION                  -->
       <!-- ======================================================== -->
       <section v-else-if="currentTab === 'moki'" class="tab-content moki-view">
-        <MokiStationView :sound-enabled="settings.soundEnabled" />
+        <MokiStationView :sound-enabled="settings.soundEnabled" :settings="settings" />
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- TAB 5: APP SETTINGS & AUDIO CONFIGURATIONS               -->
+      <!-- ======================================================== -->
+      <section v-else-if="currentTab === 'settings'" class="tab-content settings-view">
+        <SettingsView
+          :settings="settings"
+          @update:companion-mini="onMiniToggle"
+          @open-onboarding="openOnboardingModal"
+          @start-tour="startSpotlightTour"
+          @open-tutorials="currentTab = 'tutorials'"
+        />
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- TAB 6: ABOUT DEVPET & DEVELOPER PROFILE                  -->
+      <!-- ======================================================== -->
+      <section v-else-if="currentTab === 'about'" class="tab-content about-view">
+        <AboutView />
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- TAB 7: TUTORIALS & INTERACTIVE PLAYGROUND ACADEMY        -->
+      <!-- ======================================================== -->
+      <section v-else-if="currentTab === 'tutorials'" class="tab-content tutorials-view">
+        <TutorialsView
+          @replay-onboarding="openOnboardingModal"
+          @start-tour="startSpotlightTour"
+          @test-chime="testChime"
+          @test-focus-sound="testFocusSound"
+          @test-key-sound="testKeySound"
+        />
       </section>
     </main>
+
+    <!-- First-Time Onboarding Wizard Modal -->
+    <OnboardingModal
+      :is-open="isOnboardingOpen"
+      :settings="settings"
+      :agent-companion-visible="agentCompanionVisible"
+      :pomodoro-companion-visible="pomodoroCompanionVisible"
+      :moki-companion-visible="mokiCompanionVisible"
+      @close="isOnboardingOpen = false"
+      @complete="onOnboardingComplete"
+      @start-tour="startSpotlightTour"
+      @toggle-agent="toggleAgentCompanion"
+      @toggle-pomo="togglePomodoroCompanion"
+      @toggle-moki="toggleMokiCompanion"
+      @test-chime="testChime"
+      @test-focus-sound="testFocusSound"
+      @test-key-sound="testKeySound"
+    />
+
+    <!-- Interactive UI Spotlight Tour Overlay -->
+    <AppSpotlightTour
+      :is-open="isTourOpen"
+      @close="isTourOpen = false"
+      @complete="onTourComplete"
+    />
   </div>
 </template>
 
@@ -116,9 +177,12 @@
  * App.vue - Root Dashboard Container
  * Cleanly orchestrates sub-views:
  *   1. DashboardHeader - Channel tabs, pet counts, and instant desktop toggles.
- *   2. PetManagerView  - (Default) Arcade roster for deploying Codi and Momo.
+ *   2. PetManagerView  - (Default) Roster for deploying Codi, Momo, Moki.
  *   3. MomoFocusView   - Pomodoro Sprint timer, circular clock, and presets.
  *   4. CodiMonitorView - Real-time AI agent status feed and IDE hook integrations.
+ *   5. MokiStationView - Keystroke velocity, typing stats, and wellness breaks.
+ *   6. SettingsView    - Master audio volume slider, sound effect toggles, and configs.
+ *   7. AboutView       - Developer profile (Terence Franz Indenerio) and fleet architecture.
  */
 import { ref, computed, onMounted } from 'vue';
 import DashboardHeader from './components/DashboardHeader.vue';
@@ -126,12 +190,20 @@ import PetManagerView from './components/PetManagerView.vue';
 import MomoFocusView from './components/MomoFocusView.vue';
 import CodiMonitorView from './components/CodiMonitorView.vue';
 import MokiStationView from './components/MokiStationView.vue';
+import SettingsView from './components/SettingsView.vue';
+import AboutView from './components/AboutView.vue';
+import TutorialsView from './components/TutorialsView.vue';
+import OnboardingModal from './components/OnboardingModal.vue';
+import AppSpotlightTour from './components/AppSpotlightTour.vue';
 
 import type { AgentId, AgentStatus, AppDetection, HistoryEntry, StatusUpdate } from './types/status';
 import { AGENT_STATUSES } from './types/status';
 import { AntigravityAdapter } from './adapters/antigravity';
 import { CodexAdapter } from './adapters/codex';
 import { VSCodeAdapter } from './adapters/vscode';
+import { CursorAdapter } from './adapters/cursor';
+import { OpenCodeAdapter } from './adapters/opencode';
+import { OllamaAdapter } from './adapters/ollama';
 import { MonitoringCoordinator } from './services/coordinator';
 import { PomodoroCoordinator } from './services/pomodoro';
 import { mokiCoordinator } from './services/mokiCoordinator';
@@ -146,7 +218,31 @@ const isDevMode = import.meta.env.DEV;
 const testStates = AGENT_STATUSES;
 
 // Active Navigation Tab
-const currentTab = ref<'pets' | 'monitor' | 'pomodoro' | 'moki'>('pets');
+const currentTab = ref<'pets' | 'monitor' | 'pomodoro' | 'moki' | 'settings' | 'about' | 'tutorials'>('pets');
+
+// Onboarding & Guided Tour State
+const isOnboardingOpen = ref(false);
+const isTourOpen = ref(false);
+
+function openOnboardingModal() {
+  isOnboardingOpen.value = true;
+}
+
+function onOnboardingComplete() {
+  try {
+    localStorage.setItem('devpet:onboarding_completed', 'true');
+  } catch {}
+  settings.value.hasSeenOnboarding = true;
+}
+
+function startSpotlightTour() {
+  currentTab.value = 'pets';
+  isTourOpen.value = true;
+}
+
+function onTourComplete() {
+  notificationService.playChime();
+}
 
 // App settings
 const { settings } = useSettings();
@@ -154,9 +250,19 @@ const { settings } = useSettings();
 // Adapters & Coordinators
 const antigravityAdapter = new AntigravityAdapter();
 const codexAdapter = new CodexAdapter();
+const cursorAdapter = new CursorAdapter();
+const opencodeAdapter = new OpenCodeAdapter();
+const ollamaAdapter = new OllamaAdapter();
 const vscodeAdapter = new VSCodeAdapter();
 
-const coordinator = new MonitoringCoordinator([antigravityAdapter, codexAdapter, vscodeAdapter]);
+const coordinator = new MonitoringCoordinator([
+  antigravityAdapter,
+  codexAdapter,
+  cursorAdapter,
+  opencodeAdapter,
+  ollamaAdapter,
+  vscodeAdapter,
+]);
 const adapters = coordinator.getAdapters();
 
 const pomodoro = new PomodoroCoordinator(() => settings.value, settings.value.pomodoroConfig);
@@ -456,6 +562,14 @@ onMounted(async () => {
   } catch (e) {
     console.warn('Native monitoring backend not connected (running in browser?):', e);
   }
+
+  // First launch onboarding check
+  try {
+    const hasSeen = localStorage.getItem('devpet:onboarding_completed') || settings.value.hasSeenOnboarding;
+    if (!hasSeen) {
+      isOnboardingOpen.value = true;
+    }
+  } catch {}
 });
 </script>
 

@@ -167,6 +167,12 @@ onMounted(async () => {
   // Listen for settings synchronization
   await onEvent(EVENTS.settings, (newSettings: Settings) => {
     settings.value = newSettings;
+    if (newSettings.soundEffects) {
+      notificationService.setSoundEffectsConfig(newSettings.soundEffects);
+    }
+    if (typeof newSettings.volume === 'number') {
+      notificationService.setVolume(newSettings.volume / 100);
+    }
   });
 });
 

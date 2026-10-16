@@ -1,91 +1,36 @@
 <template>
   <header class="app-header">
-    <!-- Brand / Fleet Identity -->
+    <!-- Left: Brand Identity -->
     <div class="brand">
-      <div class="brand-avatar" @click="$emit('update:currentTab', 'pets')">
+      <div class="brand-avatar" @click="selectTab('pets')" title="Return to Pet Manager">
         <span class="pixel-pet-icon">🐾</span>
         <span class="avatar-sparkle">✨</span>
       </div>
       <div class="brand-text">
         <div class="brand-title-row">
-          <h1 class="brand-title">DevPet</h1>
-          <span class="fleet-chip">
-            <span class="pulse-indicator"></span>
-            ARCADE HUB
+          <h1 class="brand-title" @click="selectTab('pets')">DevPet</h1>
+          <span class="fleet-status-chip">
+            <span class="status-live-beacon"></span>
+            Developer's Desktop Companion
           </span>
         </div>
-        <p class="brand-subtitle">Desktop Companion Fleet & Productivity Mascots</p>
+        <p class="brand-subtitle">Desktop Companions & Productivity Ecosystem</p>
       </div>
     </div>
 
-    <!-- Scalable Pet Navigation Track (Scrollable if many pets, sleek pill styling) -->
-    <nav class="nav-container" ref="navContainerRef" @wheel.passive="onNavWheel">
-      <div class="nav-tabs-track">
-        <!-- Always Present: Pet Manager Overview Hub -->
-        <button
-          class="tab-btn hub-btn"
-          :class="{ active: currentTab === 'pets' }"
-          @click="$emit('update:currentTab', 'pets')"
-          title="Pet Manager Hub (Overview & Settings)"
-        >
-          <span class="tab-icon hub-icon">🎮</span>
-          <span class="tab-name">Pet Manager</span>
-          <span class="tab-count-badge">{{ activePetsCount }} Active</span>
-        </button>
-
-        <div class="tab-divider"></div>
-
-        <!-- Dynamic Scalable Pet Tabs List -->
-        <button
-          v-for="pet in allPets"
-          :key="pet.id"
-          class="tab-btn pet-tab-btn"
-          :class="{
-            active: currentTab === pet.id,
-            'is-floating': pet.companionVisible,
-          }"
-          :style="{
-            '--pet-accent': pet.accentColor,
-          }"
-          @click="$emit('update:currentTab', pet.id)"
-          :title="`${pet.name} — ${pet.role}`"
-        >
-          <span class="pet-tab-avatar" :style="{ borderColor: pet.accentColor }">
-            <span class="pet-icon">{{ pet.icon }}</span>
-          </span>
-          <span class="tab-name">{{ pet.name }}</span>
-
-          <!-- Dynamic Badge (Status, Timer, WPM, or Info) -->
-          <span
-            v-if="pet.badge"
-            class="tab-badge"
-            :class="[pet.badgeClass, { pulse: pet.badgePulse }]"
-          >
-            {{ pet.badge }}
-          </span>
-
-          <!-- Mini Desktop Indicator Dot -->
-          <span
-            class="pet-status-dot"
-            :class="{ active: pet.companionVisible }"
-            :title="pet.companionVisible ? 'Active on desktop' : 'Hidden from desktop'"
-          ></span>
-        </button>
-      </div>
-    </nav>
-
-    <!-- Scalable Desktop Companions Quick-Toggles Strip -->
+    <!-- Right: Header Quick Toggles for Adding Pets on Desktop + Burger Button -->
     <div class="header-actions">
+      <!-- Desktop Companions Quick-Toggles Strip (Header) -->
       <div class="fleet-control-group">
         <div class="fleet-label-row">
-          <span class="fleet-control-title">DESKTOP COMPANIONS</span>
+          <span class="fleet-control-title">DESKTOP PETS</span>
           <span class="fleet-count-chip">{{ activeDesktopPetsCount }}/{{ allPets.length }}</span>
         </div>
 
         <div class="header-toggles-track">
           <button
             v-for="pet in allPets"
-            :key="`toggle-${pet.id}`"
+            :key="`hdr-toggle-${pet.id}`"
             class="pet-pill-btn"
             :class="{ active: pet.companionVisible }"
             :style="{
@@ -100,7 +45,195 @@
           </button>
         </div>
       </div>
+
+      <!-- Burger Menu Button -->
+      <button
+        class="burger-toggle-btn"
+        :class="{ open: isBurgerOpen }"
+        @click="toggleBurgerMenu"
+        title="Open Navigation & Fleet Menu"
+        aria-label="Toggle navigation drawer"
+      >
+        <span class="burger-bar top"></span>
+        <span class="burger-bar mid"></span>
+        <span class="burger-bar bot"></span>
+      </button>
     </div>
+
+    <!-- Scalable Burger Menu Drawer & Backdrop Overlay -->
+    <teleport to="body">
+      <transition name="drawer-fade">
+        <div v-if="isBurgerOpen" class="burger-backdrop" @click="closeBurger">
+          <aside class="burger-drawer" @click.stop>
+            <!-- Drawer Header -->
+            <div class="drawer-header">
+              <div class="drawer-title-group">
+                <div class="drawer-avatar">🐾</div>
+                <div>
+                  <h3 class="drawer-title">DevPet Fleet Menu</h3>
+                  <p class="drawer-subtitle">Scalable Navigation & Mascot Controls</p>
+                </div>
+              </div>
+              <button class="drawer-close-btn" @click="closeBurger" title="Close menu">✕</button>
+            </div>
+
+            <!-- Drawer Body -->
+            <div class="drawer-content">
+              <!-- SECTION 1: Quick Toggles for Adding Pets in Burger Menu -->
+              <div class="drawer-section">
+                <div class="section-label-row">
+                  <span class="section-tag">DESKTOP COMPANIONS</span>
+                  <span class="section-status-pill">{{ activeDesktopPetsCount }} DEPLOYED</span>
+                </div>
+                <p class="section-hint">Toggle floating companions directly to your desktop screen</p>
+
+                <div class="burger-pets-list">
+                  <div
+                    v-for="pet in allPets"
+                    :key="`burger-pet-${pet.id}`"
+                    class="burger-pet-card"
+                    :class="{ deployed: pet.companionVisible }"
+                    :style="{ '--pet-accent': pet.accentColor }"
+                  >
+                    <div class="burger-pet-left" @click="navigateFromBurger(pet.id)">
+                      <div class="burger-pet-ico-box">
+                        <span class="burger-pet-ico">{{ pet.icon }}</span>
+                        <span class="burger-pet-glow"></span>
+                      </div>
+                      <div class="burger-pet-meta">
+                        <div class="burger-pet-title-line">
+                          <span class="burger-pet-name">{{ pet.name }}</span>
+                          <span v-if="pet.badge" class="burger-pet-badge" :class="pet.badgeClass">
+                            {{ pet.badge }}
+                          </span>
+                        </div>
+                        <span class="burger-pet-role">{{ pet.role }}</span>
+                      </div>
+                    </div>
+
+                    <!-- Direct Desktop Toggle Switch -->
+                    <button
+                      class="burger-toggle-action-btn"
+                      :class="{ active: pet.companionVisible }"
+                      @click="onPetToggle(pet)"
+                      :title="pet.companionVisible ? `Remove ${pet.name} from desktop` : `Add ${pet.name} to desktop`"
+                    >
+                      <span class="toggle-dot"></span>
+                      <span class="toggle-text">{{ pet.companionVisible ? 'Active' : 'Add' }}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECTION 2: Navigation Destinations -->
+              <div class="drawer-section">
+                <div class="section-label-row">
+                  <span class="section-tag">NAVIGATION DESTINATIONS</span>
+                </div>
+
+                <div class="burger-nav-grid">
+                  <button
+                    class="burger-nav-item"
+                    :class="{ active: currentTab === 'pets' }"
+                    @click="navigateFromBurger('pets')"
+                  >
+                    <span class="b-nav-icon">🎮</span>
+                    <div class="b-nav-text">
+                      <span class="b-nav-title">Pet Manager</span>
+                      <span class="b-nav-sub">Roster & Overview</span>
+                    </div>
+                  </button>
+
+                  <button
+                    class="burger-nav-item"
+                    :class="{ active: currentTab === 'monitor' }"
+                    @click="navigateFromBurger('monitor')"
+                  >
+                    <span class="b-nav-icon">🐾</span>
+                    <div class="b-nav-text">
+                      <span class="b-nav-title">Codi Monitor</span>
+                      <span class="b-nav-sub">AI Agent Status & IDE Hook</span>
+                    </div>
+                  </button>
+
+                  <button
+                    class="burger-nav-item"
+                    :class="{ active: currentTab === 'pomodoro' }"
+                    @click="navigateFromBurger('pomodoro')"
+                  >
+                    <span class="b-nav-icon">🍅</span>
+                    <div class="b-nav-text">
+                      <span class="b-nav-title">Momo Focus</span>
+                      <span class="b-nav-sub">Pomodoro Sprint Timer</span>
+                    </div>
+                  </button>
+
+                  <button
+                    class="burger-nav-item"
+                    :class="{ active: currentTab === 'moki' }"
+                    @click="navigateFromBurger('moki')"
+                  >
+                    <span class="b-nav-icon">✨</span>
+                    <div class="b-nav-text">
+                      <span class="b-nav-title">Moki Station</span>
+                      <span class="b-nav-sub">Typing WPM & Wellness</span>
+                    </div>
+                  </button>
+
+                  <button
+                    class="burger-nav-item"
+                    :class="{ active: currentTab === 'tutorials' }"
+                    @click="navigateFromBurger('tutorials')"
+                  >
+                    <span class="b-nav-icon">🎓</span>
+                    <div class="b-nav-text">
+                      <span class="b-nav-title">Tutorials & Academy</span>
+                      <span class="b-nav-sub">Interactive Playground & Guides</span>
+                    </div>
+                  </button>
+
+                  <button
+                    class="burger-nav-item"
+                    :class="{ active: currentTab === 'settings' }"
+                    @click="navigateFromBurger('settings')"
+                  >
+                    <span class="b-nav-icon">⚙️</span>
+                    <div class="b-nav-text">
+                      <span class="b-nav-title">Settings & Audio</span>
+                      <span class="b-nav-sub">Volume Slider & Preferences</span>
+                    </div>
+                  </button>
+
+                  <button
+                    class="burger-nav-item"
+                    :class="{ active: currentTab === 'about' }"
+                    @click="navigateFromBurger('about')"
+                  >
+                    <span class="b-nav-icon">ℹ️</span>
+                    <div class="b-nav-text">
+                      <span class="b-nav-title">About DevPet</span>
+                      <span class="b-nav-sub">Creator: Terence Franz Indenerio</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Drawer Footer -->
+            <div class="drawer-footer">
+              <button class="drawer-onboarding-btn" @click="triggerOnboardingTour" title="Replay Welcome & Onboarding Wizard">
+                <span>🚀</span> Replay Onboarding
+              </button>
+              <div class="drawer-dev-tag" @click="navigateFromBurger('about')">
+                <span class="heart-pulse">💖</span>
+                <span>Crafted by <strong>Terence Franz Indenerio</strong></span>
+              </div>
+              <span class="drawer-version">v0.2.0</span>
+            </div>
+          </aside>
+        </div>
+      </transition>
+    </teleport>
   </header>
 </template>
 
@@ -108,7 +241,7 @@
 import { computed, ref } from 'vue';
 
 export interface PetConfigItem {
-  id: 'pets' | 'monitor' | 'pomodoro' | 'moki' | string;
+  id: 'pets' | 'monitor' | 'pomodoro' | 'moki' | 'settings' | 'about' | 'tutorials' | string;
   name: string;
   icon: string;
   role: string;
@@ -122,7 +255,7 @@ export interface PetConfigItem {
 
 const props = withDefaults(
   defineProps<{
-    currentTab: 'pets' | 'monitor' | 'pomodoro' | 'moki' | string;
+    currentTab: 'pets' | 'monitor' | 'pomodoro' | 'moki' | 'settings' | 'about' | 'tutorials' | string;
     activePetsCount: number;
     agentStatus: string;
     pomoRunning: boolean;
@@ -131,9 +264,6 @@ const props = withDefaults(
     agentCompanionVisible: boolean;
     pomodoroCompanionVisible: boolean;
     mokiCompanionVisible: boolean;
-    /**
-     * Optional extra pets to easily scale to 5, 8, 10+ pets in the future
-     */
     customPets?: PetConfigItem[];
   }>(),
   {
@@ -147,14 +277,31 @@ const emit = defineEmits<{
   (e: 'toggle-pomo'): void;
   (e: 'toggle-moki'): void;
   (e: 'toggle-pet', petId: string): void;
+  (e: 'open-onboarding'): void;
 }>();
 
-const navContainerRef = ref<HTMLElement | null>(null);
+const isBurgerOpen = ref(false);
 
-function onNavWheel(e: WheelEvent) {
-  if (navContainerRef.value && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-    navContainerRef.value.scrollLeft += e.deltaY;
-  }
+function toggleBurgerMenu() {
+  isBurgerOpen.value = !isBurgerOpen.value;
+}
+
+function closeBurger() {
+  isBurgerOpen.value = false;
+}
+
+function triggerOnboardingTour() {
+  closeBurger();
+  emit('open-onboarding');
+}
+
+function selectTab(tab: any) {
+  emit('update:currentTab', tab);
+}
+
+function navigateFromBurger(tab: any) {
+  selectTab(tab);
+  closeBurger();
 }
 
 // Unified Scalable Pet Roster
@@ -226,21 +373,21 @@ function onPetToggle(pet: PetConfigItem) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 20px;
-  background: rgba(20, 22, 27, 0.94);
-  backdrop-filter: blur(14px);
+  padding: 10px 22px;
+  background: rgba(18, 20, 26, 0.94);
+  backdrop-filter: blur(16px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
   position: sticky;
   top: 0;
   z-index: 50;
   gap: 16px;
-  min-height: 64px;
+  min-height: 66px;
   box-sizing: border-box;
 }
 
 /* ==========================================================================
-   Brand & Fleet Hub Tag
+   Brand & Fleet Status
    ========================================================================== */
 .brand {
   display: flex;
@@ -254,19 +401,20 @@ function onPetToggle(pet: PetConfigItem) {
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #6366f1 0%, #ec4899 50%, #f59e0b 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #8b5cf6 50%, #ec4899 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  box-shadow: 0 0 18px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.25);
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+
 .brand-avatar:hover {
   transform: scale(1.08) rotate(4deg);
-  box-shadow: 0 0 24px rgba(236, 72, 153, 0.6);
+  box-shadow: 0 0 24px rgba(139, 92, 246, 0.6);
 }
 
 .avatar-sparkle {
@@ -276,6 +424,7 @@ function onPetToggle(pet: PetConfigItem) {
   font-size: 11px;
   animation: sparkleTwinkle 2s infinite ease-in-out alternate;
 }
+
 @keyframes sparkleTwinkle {
   0% { transform: scale(0.8) rotate(0deg); opacity: 0.6; }
   100% { transform: scale(1.2) rotate(20deg); opacity: 1; }
@@ -294,41 +443,48 @@ function onPetToggle(pet: PetConfigItem) {
 
 .brand-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 900;
   color: #ffffff;
   letter-spacing: -0.5px;
-  background: linear-gradient(180deg, #ffffff 30%, #cbd5e1 100%);
+  cursor: pointer;
+  background: linear-gradient(135deg, #ffffff 40%, #38bdf8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  transition: opacity 0.2s;
 }
 
-.fleet-chip {
+.brand-title:hover {
+  opacity: 0.9;
+}
+
+.fleet-status-chip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 1px 7px;
-  background: rgba(99, 102, 241, 0.18);
-  border: 1px solid rgba(99, 102, 241, 0.4);
+  padding: 2px 7px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
   border-radius: 6px;
-  font-size: 9px;
+  font-size: 9.5px;
   font-weight: 800;
-  color: #818cf8;
+  color: #34d399;
   letter-spacing: 0.6px;
   font-family: 'JetBrains Mono', monospace;
 }
 
-.pulse-indicator {
+.status-live-beacon {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 6px #22c55e;
-  animation: pulseDot 1.6s infinite ease-in-out;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: beaconPulse 1.8s infinite ease-in-out;
 }
-@keyframes pulseDot {
-  0%, 100% { opacity: 0.7; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.2); }
+
+@keyframes beaconPulse {
+  0%, 100% { opacity: 0.6; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.3); }
 }
 
 .brand-subtitle {
@@ -340,19 +496,20 @@ function onPetToggle(pet: PetConfigItem) {
 }
 
 /* ==========================================================================
-   Scalable Navigation Track (Scrollable if many pets)
+   Scalable Navigation Track
    ========================================================================== */
 .nav-container {
   display: flex;
   align-items: center;
   flex: 1;
-  max-width: 620px;
+  max-width: 680px;
   min-width: 200px;
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
   padding: 2px 4px;
 }
+
 .nav-container::-webkit-scrollbar {
   display: none;
 }
@@ -360,7 +517,7 @@ function onPetToggle(pet: PetConfigItem) {
 .nav-tabs-track {
   display: inline-flex;
   align-items: center;
-  background: rgba(14, 16, 20, 0.9);
+  background: rgba(14, 16, 22, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 4px;
@@ -372,7 +529,7 @@ function onPetToggle(pet: PetConfigItem) {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 7px 13px;
+  padding: 6px 12px;
   background: transparent;
   border: none;
   color: #949ba4;
@@ -393,9 +550,9 @@ function onPetToggle(pet: PetConfigItem) {
 }
 
 .tab-btn.hub-btn.active {
-  background: #6366f1;
+  background: linear-gradient(135deg, #38bdf8, #2563eb);
   color: #ffffff;
-  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.45);
+  box-shadow: 0 2px 12px rgba(56, 189, 248, 0.4);
 }
 
 .tab-btn.pet-tab-btn.active {
@@ -403,6 +560,12 @@ function onPetToggle(pet: PetConfigItem) {
   color: #ffffff;
   box-shadow: 0 0 14px color-mix(in srgb, var(--pet-accent) 35%, transparent),
               inset 0 0 0 1px color-mix(in srgb, var(--pet-accent) 60%, transparent);
+}
+
+.tab-btn.extra-tab-btn.active {
+  background: rgba(139, 92, 246, 0.25);
+  border: 1px solid rgba(139, 92, 246, 0.5);
+  color: #ffffff;
 }
 
 .tab-divider {
@@ -428,9 +591,9 @@ function onPetToggle(pet: PetConfigItem) {
 
 .tab-count-badge {
   font-size: 10px;
-  background: #22c55e;
+  background: #10b981;
   color: #ffffff;
-  padding: 2px 6px;
+  padding: 1px 6px;
   border-radius: 8px;
   font-weight: 800;
   font-family: 'JetBrains Mono', monospace;
@@ -450,6 +613,7 @@ function onPetToggle(pet: PetConfigItem) {
 .tab-badge.pulse {
   animation: badgePulse 1.2s infinite alternate;
 }
+
 @keyframes badgePulse {
   0% { transform: scale(0.96); opacity: 0.75; }
   100% { transform: scale(1.04); opacity: 1; }
@@ -480,17 +644,19 @@ function onPetToggle(pet: PetConfigItem) {
   background: #475569;
   transition: all 0.2s ease;
 }
+
 .pet-status-dot.active {
   background: var(--pet-accent, #22c55e);
   box-shadow: 0 0 6px var(--pet-accent, #22c55e);
 }
 
 /* ==========================================================================
-   Scalable Desktop Fleet Quick-Toggles
+   Header Actions (Quick Toggles & Burger Menu Button)
    ========================================================================== */
 .header-actions {
   display: flex;
   align-items: center;
+  gap: 12px;
   flex-shrink: 0;
 }
 
@@ -529,15 +695,12 @@ function onPetToggle(pet: PetConfigItem) {
   display: flex;
   align-items: center;
   gap: 6px;
-  overflow-x: auto;
-  max-width: 420px;
-  padding: 1px;
 }
 
 .pet-pill-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   padding: 5px 11px;
   border-radius: 16px;
   background: rgba(30, 32, 38, 0.9);
@@ -559,10 +722,10 @@ function onPetToggle(pet: PetConfigItem) {
 }
 
 .pet-pill-btn.active {
-  background: color-mix(in srgb, var(--pet-accent, #6366f1) 18%, rgba(20, 22, 28, 0.9));
+  background: color-mix(in srgb, var(--pet-accent, #6366f1) 20%, rgba(20, 22, 28, 0.95));
   border-color: var(--pet-accent, #6366f1);
   color: #ffffff;
-  box-shadow: 0 0 10px color-mix(in srgb, var(--pet-accent, #6366f1) 40%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--pet-accent, #6366f1) 40%, transparent);
 }
 
 .pill-ico {
@@ -582,6 +745,474 @@ function onPetToggle(pet: PetConfigItem) {
   box-shadow: 0 0 8px var(--pet-accent, #22c55e);
 }
 
+/* Burger Toggle Button */
+.burger-toggle-btn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  width: 38px;
+  height: 38px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  cursor: pointer;
+  padding: 8px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.burger-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: scale(1.04);
+}
+
+.burger-bar {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: #cbd5e1;
+  border-radius: 2px;
+  transition: all 0.25s ease;
+}
+
+.burger-toggle-btn.open .burger-bar.top {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.burger-toggle-btn.open .burger-bar.mid {
+  opacity: 0;
+  transform: translateX(-4px);
+}
+
+.burger-toggle-btn.open .burger-bar.bot {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+/* ==========================================================================
+   Teleported Burger Drawer Overlay
+   ========================================================================== */
+.burger-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  z-index: 999;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.burger-drawer {
+  width: 380px;
+  max-width: 90vw;
+  height: 100%;
+  background: #16181f;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #dbdee1;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.drawer-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.drawer-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #38bdf8, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.drawer-title {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  background: linear-gradient(135deg, #ffffff 40%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.drawer-subtitle {
+  margin: 2px 0 0;
+  font-family: 'Outfit', sans-serif;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #94a3b8;
+  letter-spacing: 0.1px;
+}
+
+.drawer-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #94a3b8;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  font-family: 'Outfit', sans-serif;
+}
+
+.drawer-close-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.drawer-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.drawer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+}
+
+.section-status-pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  letter-spacing: 0.4px;
+}
+
+.section-hint {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: #94a3b8;
+  line-height: 1.45;
+}
+
+/* Burger Pets List (Quick Toggles in Burger Menu) */
+.burger-pets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.burger-pet-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.burger-pet-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.burger-pet-card.deployed {
+  border-color: color-mix(in srgb, var(--pet-accent) 40%, transparent);
+  background: color-mix(in srgb, var(--pet-accent) 8%, rgba(255, 255, 255, 0.02));
+}
+
+.burger-pet-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.burger-pet-ico-box {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--pet-accent);
+  font-size: 17px;
+}
+
+.burger-pet-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.burger-pet-title-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.burger-pet-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.2px;
+}
+
+.burger-pet-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.burger-pet-role {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.burger-toggle-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  font-family: 'Outfit', sans-serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.burger-toggle-action-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.burger-toggle-action-btn.active {
+  background: var(--pet-accent, #38bdf8);
+  border-color: var(--pet-accent, #38bdf8);
+  color: #0f172a;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--pet-accent) 50%, transparent);
+}
+
+.burger-toggle-action-btn .toggle-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #64748b;
+}
+
+.burger-toggle-action-btn.active .toggle-dot {
+  background: #0f172a;
+}
+
+/* Burger Nav Grid */
+.burger-nav-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.burger-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  color: #cbd5e1;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Outfit', sans-serif;
+}
+
+.burger-nav-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  transform: translateX(3px);
+}
+
+.burger-nav-item.active {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(139, 92, 246, 0.15));
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #ffffff;
+}
+
+.b-nav-icon {
+  font-size: 20px;
+}
+
+.b-nav-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.b-nav-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.2px;
+}
+
+.b-nav-sub {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+/* Drawer Footer */
+.drawer-footer {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(14, 16, 22, 0.6);
+  font-family: 'Outfit', sans-serif;
+  flex-wrap: wrap;
+}
+
+.drawer-onboarding-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(88, 101, 242, 0.15);
+  border: 1px solid rgba(88, 101, 242, 0.35);
+  color: #818cf8;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Outfit', sans-serif;
+}
+
+.drawer-onboarding-btn:hover {
+  background: rgba(88, 101, 242, 0.28);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.drawer-dev-tag {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s ease;
+}
+
+.drawer-dev-tag:hover {
+  color: #c4b5fd;
+}
+
+.drawer-dev-tag strong {
+  color: #e2e8f0;
+  font-weight: 700;
+}
+
+.heart-pulse {
+  animation: heartBeat 1.5s infinite;
+  display: inline-block;
+}
+
+@keyframes heartBeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.drawer-version {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.8px;
+}
+
+/* Drawer Transition */
+.drawer-fade-enter-active,
+.drawer-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.drawer-fade-enter-from,
+.drawer-fade-leave-to {
+  opacity: 0;
+}
+
 /* ==========================================================================
    Responsive Adaptations
    ========================================================================== */
@@ -594,8 +1225,8 @@ function onPetToggle(pet: PetConfigItem) {
 @media (max-width: 900px) {
   .app-header {
     flex-wrap: wrap;
-    padding: 8px 14px;
-    gap: 8px;
+    padding: 10px 16px;
+    gap: 10px;
   }
   .nav-container {
     order: 3;
@@ -603,7 +1234,7 @@ function onPetToggle(pet: PetConfigItem) {
     width: 100%;
   }
   .fleet-control-group {
-    align-items: flex-start;
+    display: none; /* Accessible in the burger menu! */
   }
 }
 </style>
