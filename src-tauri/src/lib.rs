@@ -91,6 +91,11 @@ fn play_system_sound() {
 }
 
 #[tauri::command]
+fn set_keyboard_hook_enabled(app: AppHandle, enabled: bool) {
+    windows::set_keyboard_hook_enabled(&app, enabled);
+}
+
+#[tauri::command]
 fn quit_app(app: AppHandle) {
     app.exit(0);
 }
@@ -123,6 +128,7 @@ pub fn run() {
             show_dashboard,
             focus_target_app,
             play_system_sound,
+            set_keyboard_hook_enabled,
             quit_app,
             start_window_dragging,
         ])
@@ -141,7 +147,8 @@ pub fn run() {
             if st.installed && !st.up_to_date {
                 let _ = hook_install::install();
             }
-            windows::start_keyboard_hook(app.handle());
+            // The keyboard hook is started by the dashboard via
+            // `set_keyboard_hook_enabled` once the user's setting is loaded.
             Ok(())
         })
         .on_window_event(|window, event| {

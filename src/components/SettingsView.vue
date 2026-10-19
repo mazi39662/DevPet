@@ -455,6 +455,17 @@
 
           <div class="setting-row">
             <div class="setting-info">
+              <span class="setting-label">Global Keyboard Listener</span>
+              <span class="setting-sub">Lets your pets react to typing in any app (Windows keyboard hook). Only keystroke counts &amp; WPM are saved, never what you type. When off, Moki only reacts while its own window is focused.</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" v-model="settings.keyboardHookEnabled" />
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
               <span class="setting-label">AI Agent Background Monitoring</span>
               <span class="setting-sub">Poll and listen for IDE events from Antigravity & VS Code</span>
             </div>

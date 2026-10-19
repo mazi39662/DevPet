@@ -45,6 +45,8 @@ export interface Settings {
   pomodoroPetVisible: boolean;
   /** Moki — keyboard companion pet (Default) */
   mokiPetVisible: boolean;
+  /** Global Windows keyboard hook that lets the pets react to typing in any app. */
+  keyboardHookEnabled: boolean;
   hasSeenOnboarding?: boolean;
   pomodoroConfig: PomodoroConfig;
   autoStartBreaks?: boolean;
@@ -78,6 +80,7 @@ export const DEFAULT_SETTINGS: Settings = {
   agentPetVisible: false,
   pomodoroPetVisible: false,
   mokiPetVisible: true,
+  keyboardHookEnabled: true,
   hasSeenOnboarding: false,
   pomodoroConfig: { ...DEFAULT_POMODORO_CONFIG },
   autoStartBreaks: false,

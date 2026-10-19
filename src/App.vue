@@ -184,7 +184,7 @@
  *   6. SettingsView    - Master audio volume slider, sound effect toggles, and configs.
  *   7. AboutView       - Developer profile (Terence Franz Indenerio) and fleet architecture.
  */
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import DashboardHeader from './components/DashboardHeader.vue';
 import PetManagerView from './components/PetManagerView.vue';
 import MomoFocusView from './components/MomoFocusView.vue';
@@ -497,6 +497,16 @@ function simulateState(status: AgentStatus) {
     );
   }
 }
+
+// Global keyboard listener (Windows hook). Applied as soon as the dashboard
+// loads, and again whenever the setting changes.
+watch(
+  () => settings.value.keyboardHookEnabled ?? true,
+  (enabled) => {
+    native.setKeyboardHookEnabled(enabled).catch(() => {});
+  },
+  { immediate: true }
+);
 
 onMounted(async () => {
   await notificationService.init();

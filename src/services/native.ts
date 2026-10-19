@@ -23,6 +23,7 @@ export const native = {
   showDashboard: () => invoke<void>('show_dashboard'),
   focusTargetApp: (agentId?: string | null) => invoke<boolean>('focus_target_app', { agentId: agentId || null }),
   playSystemSound: () => invoke<void>('play_system_sound'),
+  setKeyboardHookEnabled: (enabled: boolean) => invoke<void>('set_keyboard_hook_enabled', { enabled }),
   quitApp: () => invoke<void>('quit_app'),
   startWindowDragging: () => invoke<void>('start_window_dragging'),
 };

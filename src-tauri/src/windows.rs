@@ -364,7 +364,7 @@ pub struct UserTypingPayload {
 #[cfg(target_os = "windows")]
 mod win_keyhook {
     use super::*;
-    use std::sync::atomic::{AtomicI64, Ordering};
+    use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
     use std::sync::OnceLock;
 
     type HHOOK = isize;
@@ -416,9 +416,14 @@ mod win_keyhook {
 
     static EMITTER: OnceLock<Box<dyn Fn(u64, Option<String>) + Send + Sync>> = OnceLock::new();
     static LAST_EMIT_MS: AtomicI64 = AtomicI64::new(0);
+    /// When false, key events are ignored and nothing is emitted to the UI.
+    static ENABLED: AtomicBool = AtomicBool::new(false);
+    /// The OS hook is installed at most once per run, and only after the user's
+    /// setting says the keyboard listener is on.
+    static STARTED: AtomicBool = AtomicBool::new(false);
 
     unsafe extern "system" fn ll_keyboard_proc(code: i32, wparam: usize, lparam: isize) -> isize {
-        if code >= 0 && (wparam == WM_KEYDOWN || wparam == WM_SYSKEYDOWN) {
+        if code >= 0 && ENABLED.load(Ordering::Relaxed) && (wparam == WM_KEYDOWN || wparam == WM_SYSKEYDOWN) {
             let key_str = if lparam != 0 {
                 let kbd = &*(lparam as *const KBDLLHOOKSTRUCT);
                 let vk = kbd.vk_code;
@@ -466,7 +471,14 @@ mod win_keyhook {
         CallNextHookEx(0, code, wparam, lparam)
     }
 
-    pub fn start<R: Runtime>(app: &AppHandle<R>) {
+    pub fn set_enabled<R: Runtime>(app: &AppHandle<R>, enabled: bool) {
+        ENABLED.store(enabled, Ordering::Relaxed);
+        if enabled && !STARTED.swap(true, Ordering::SeqCst) {
+            start(app);
+        }
+    }
+
+    fn start<R: Runtime>(app: &AppHandle<R>) {
         let app_handle = app.clone();
         let _ = EMITTER.set(Box::new(move |ts, key| {
             let _ = app_handle.emit(EVT_USER_TYPING, UserTypingPayload { timestamp: ts, key });
@@ -492,9 +504,15 @@ mod win_keyhook {
     }
 }
 
-pub fn start_keyboard_hook<R: Runtime>(app: &AppHandle<R>) {
+/// Turns the global keyboard listener on or off (Settings → "Global keyboard
+/// listener"). The Windows hook is only installed the first time it is enabled,
+/// so with the setting off it is never installed on the next launch. Turning it
+/// off mid-session stops all key events from reaching the UI immediately.
+pub fn set_keyboard_hook_enabled<R: Runtime>(app: &AppHandle<R>, enabled: bool) {
     #[cfg(target_os = "windows")]
-    win_keyhook::start(app);
+    win_keyhook::set_enabled(app, enabled);
+    #[cfg(not(target_os = "windows"))]
+    let _ = (app, enabled);
 }
 
 
