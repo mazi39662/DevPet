@@ -16,6 +16,13 @@
   <img src="docs/demo.gif" alt="DevPet demo: Moki reacting to typing with key particles" width="480" />
 </p>
 
+### Demos
+
+| Codi tracks your agent | Momo runs your focus timer | Pet Moki |
+|:---:|:---:|:---:|
+| <img src="docs/demo-codi.gif" alt="Codi cycling through thinking, working, approval needed and task complete" width="240" /> | <img src="docs/demo-momo.gif" alt="Momo starting a deep work Pomodoro session" width="240" /> | <img src="docs/demo-petting.gif" alt="Moki purring when petted and booped" width="240" /> |
+| Thinking → working → needs approval → done | Click the timer to start a focus session | Rub or click Moki to pet it |
+
 > **"Stop tab-switching every 20 seconds to see if your AI agent finished or got stuck."**  
 > **DevPet** is an ultra-lean desktop companion built on **Tauri + Rust + Vue 3**. It hooks directly into the lifecycles of autonomous coding agents like **Google Antigravity** and **Codex**, mirroring their real-time execution state—thinking, running tools, waiting for approvals, or celebrating completions—straight onto your screen.
 >
