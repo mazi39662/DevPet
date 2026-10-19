@@ -10,7 +10,6 @@ export type MokiMood =
   | 'waiting'
   | 'celebrating'
   | 'error'
-  | 'sleepy'
   | 'booped'
   | 'blissful';
 

@@ -158,10 +158,7 @@
             <span class="e-icon">⚠️</span>
             <span class="e-label">Panic / Bug</span>
           </button>
-          <button class="emotion-trigger-btn" @click="testMokiEmotion('sleepy')">
-            <span class="e-icon">💤</span>
-            <span class="e-label">Sleepy</span>
-          </button>
+
           <button class="emotion-trigger-btn" @click="testMokiEmotion('blissful')">
             <span class="e-icon">💖</span>
             <span class="e-label">Pet / Purr</span>
@@ -645,14 +642,7 @@ function testMokiEmotion(emotion: string) {
         notificationService.playAlertChime();
       }
       break;
-    case 'sleepy':
-      mokiCoordinator.dispatchAction({ type: 'set-mood', mood: 'sleepy', durationMs: 5000 });
-      mokiCoordinator.dispatchAction({
-        type: 'set-speech-bubble',
-        text: 'Zzz... Snoozing on the keyboard... 💤',
-        durationMs: 3500,
-      });
-      break;
+
     case 'blissful':
       mokiCoordinator.dispatchAction({ type: 'set-mood', mood: 'blissful', durationMs: 4000 });
       mokiCoordinator.dispatchAction({

@@ -150,14 +150,7 @@
         </div>
       </Transition>
 
-      <!-- Sleepy snoring particles -->
-      <Transition name="fade">
-        <div v-if="currentMood === 'sleepy'" class="sleepy-particles-container">
-          <span class="particle z1">💤</span>
-          <span class="particle z2">Zzz</span>
-          <span class="particle z3">💭</span>
-        </div>
-      </Transition>
+
 
 
       <svg
@@ -263,11 +256,7 @@
             </g>
           </template>
 
-          <!-- 6. Sleepy / Dozing -->
-          <template v-else-if="currentMood === 'sleepy'">
-            <rect x="25" y="34" width="6" height="2" fill="#451a03" />
-            <rect x="41" y="34" width="6" height="2" fill="#451a03" />
-          </template>
+
 
 
           <!-- 8. Typing Focus with Determined Brows & Cyber Screen Glint -->
@@ -745,7 +734,7 @@ function scheduleNextIdleAction() {
     idleActionTimer = null;
   }
 
-  // Only run when in idle and not typing/scratching/booped/sleepy
+  // Only run when in idle and not typing/scratching/booped
   if (currentMood.value !== 'idle' || isTyping.value || isScratching.value || isBooped.value) {
     return;
   }
@@ -841,7 +830,6 @@ const bubbleMoodIcon = computed(() => {
     case 'thinking': return '💡';
     case 'waiting': return '⏳';
     case 'error': return '⚠️';
-    case 'sleepy': return '💤';
     case 'typing': return '⚡';
     default: return '✨';
   }
@@ -865,8 +853,6 @@ const currentBubbleText = computed(() => {
       return 'Waiting for your action! Ready when you are! ⏳🐾';
     case 'error':
       return 'Oh no! A bug was detected! We can squash it! ⚠️⚡';
-    case 'sleepy':
-      return 'Zzz... Snoozing on the keyboard... 💤';
     default:
       return state.speechBubbleText || activeBubbleQuip.value;
   }
@@ -1398,15 +1384,7 @@ onUnmounted(() => {
   100% { transform: translateY(-5px) rotate(12deg); }
 }
 
-/* 8. SLEEPY: Gentle slow snoring sway */
-.character-art.sleepy {
-  animation: sleepySway 3.6s ease-in-out infinite alternate !important;
-  opacity: 0.9;
-}
-@keyframes sleepySway {
-  0% { transform: translateY(1px) rotate(-1.5deg); }
-  100% { transform: translateY(-1px) rotate(1.5deg); }
-}
+
 
 
 /* 10. SCRATCHING / PURRING: Ecstatic purr vibration */
@@ -1752,28 +1730,7 @@ onUnmounted(() => {
   100% { opacity: 1; transform: scale(1.2); }
 }
 
-/* Sleepy & Stretching Particles */
-.sleepy-particles-container {
-  position: absolute;
-  inset: -10px;
-  pointer-events: none;
-  z-index: 20;
-}
-.z1 { top: 14px; right: 24px; font-size: 12px; animation: driftUp 2.4s infinite ease-out; }
-.z2 { top: 2px; right: 14px; font-size: 13px; font-weight: 800; color: #c084fc; text-shadow: 0 0 6px rgba(192, 132, 252, 0.6); animation: driftUp 2.4s 0.8s infinite ease-out; }
-.z3 { top: -10px; right: 4px; font-size: 12px; animation: driftUp 2.4s 1.6s infinite ease-out; }
 
-
-@keyframes driftUp {
-  0% { transform: translateY(4px) translateX(0) scale(0.65); opacity: 0; }
-  25% { opacity: 0.95; }
-  75% { opacity: 0.85; }
-  100% { transform: translateY(-16px) translateX(6px) scale(1.15); opacity: 0; }
-}
-@keyframes pulseSparkle {
-  0% { transform: scale(0.8) rotate(0deg); opacity: 0.5; }
-  100% { transform: scale(1.2) rotate(20deg); opacity: 1; }
-}
 
 /* Status Pill (Matches Momo & Codi 1:1) */
 .name-tag {

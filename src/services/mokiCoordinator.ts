@@ -77,13 +77,9 @@ class MokiCoordinatorService {
       this.recentKeystrokes = this.recentKeystrokes.filter((ts) => now - ts <= 6000);
       this.recalculateWpm(now);
 
-      // Idle mood progression (stays in lively idle with random animations for 8 minutes before snoozing)
+      // Idle mood progression (stays in lively idle with random animations)
       if (this.state.mood !== 'celebrating' && this.state.mood !== 'blissful' && this.state.mood !== 'booped') {
-        if (elapsedSinceKeystroke > 480000) {
-          // > 8 minutes deep idle -> sleepy
-          this.state.mood = 'sleepy';
-          this.state.speechBubbleText = 'Zzz... Snoozing... 💤';
-        } else if (elapsedSinceKeystroke > 12000) {
+        if (elapsedSinceKeystroke > 12000) {
           // > 12 seconds idle -> resting idle (pet executes random idle micro-animations)
           this.state.mood = 'idle';
         }
