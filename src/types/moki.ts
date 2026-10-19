@@ -52,6 +52,6 @@ export const DEFAULT_MOKI_STATE: MokiState = {
   peakWpm: 0,
   totalKeystrokes: 0,
   speedTier: 'idle',
-  speechBubbleText: 'Hi, I am Moki! Ready to type with you! 🐾',
+  speechBubbleText: '...hmmm',
   isSpeechBubbleVisible: true,
 };

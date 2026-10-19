@@ -842,7 +842,7 @@ const tierClass = computed(() => {
 
 const currentBubbleText = computed(() => {
   if (isScratching.value || isBlissful.value) {
-    return 'Purrrrr~ that tickles so good! 💕🐾';
+    return 'Purrrrr~ 💕🐾';
   }
   switch (currentMood.value) {
     case 'celebrating':
