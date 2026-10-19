@@ -12,16 +12,9 @@
 [![Status](https://img.shields.io/badge/Status-Observing%20%26%20Active-brightgreen?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
-<!--
-  TODO (Terence): record a 10–15 s demo GIF of the real app and save it as docs/demo.gif,
-  then delete this comment and uncomment the <p> block below.
-  Suggested shot: agent runs → Codi goes "thinking" → "needs approval" radar → you approve → confetti,
-  with Moki reacting to your typing. ScreenToGif (free) works well; keep it under ~5 MB.
-
 <p align="center">
-  <img src="docs/demo.gif" alt="DevPet demo: Codi, Momo and Moki on the desktop" width="640" />
+  <img src="docs/demo.gif" alt="DevPet demo: Moki reacting to typing with key particles" width="480" />
 </p>
--->
 
 > **"Stop tab-switching every 20 seconds to see if your AI agent finished or got stuck."**  
 > **DevPet** is an ultra-lean desktop companion built on **Tauri + Rust + Vue 3**. It hooks directly into the lifecycles of autonomous coding agents like **Google Antigravity** and **Codex**, mirroring their real-time execution state—thinking, running tools, waiting for approvals, or celebrating completions—straight onto your screen.
