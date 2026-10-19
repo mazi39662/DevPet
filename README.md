@@ -7,16 +7,26 @@
 [![Built with Tauri](https://img.shields.io/badge/Tauri-v2-24C8D8?style=for-the-badge&logo=tauri&logoColor=white)](https://tauri.app/)
 [![Powered by Rust](https://img.shields.io/badge/Rust-1.70+-orange?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Vue 3 + Vite](https://img.shields.io/badge/Vue.js-3.5-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white)](https://vuejs.org/)
+[![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D6?style=for-the-badge&logo=windows&logoColor=white)](#-platform-support)
 [![Agent Monitor](https://img.shields.io/badge/Agents-Antigravity%20%7C%20Codex-7A58EC?style=for-the-badge)](#-how-devpet-keeps-tabs-on-your-agents)
 [![Status](https://img.shields.io/badge/Status-Observing%20%26%20Active-brightgreen?style=for-the-badge)](#)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](#)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+
+<!--
+  TODO (Terence): record a 10–15 s demo GIF of the real app and save it as docs/demo.gif,
+  then delete this comment and uncomment the <p> block below.
+  Suggested shot: agent runs → Codi goes "thinking" → "needs approval" radar → you approve → confetti,
+  with Moki reacting to your typing. ScreenToGif (free) works well; keep it under ~5 MB.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/gist/x1ah/1470a67fad1b6297a35a1828505ebb30/raw/7a909f5ecebcc454b0e37a2a0c42435ce8218a76/cat.gif" alt="DevPet Mascot Animation" width="230" />
+  <img src="docs/demo.gif" alt="DevPet demo: Codi, Momo and Moki on the desktop" width="640" />
 </p>
+-->
 
 > **"Stop tab-switching every 20 seconds to see if your AI agent finished or got stuck."**  
 > **DevPet** is an ultra-lean desktop companion built on **Tauri + Rust + Vue 3**. It hooks directly into the lifecycles of autonomous coding agents like **Google Antigravity** and **Codex**, mirroring their real-time execution state—thinking, running tools, waiting for approvals, or celebrating completions—straight onto your screen.
+>
+> 🪟 **Windows 10/11 only for now.** See [Platform Support](#-platform-support).
 
 ---
 
@@ -29,7 +39,7 @@ When you dispatch agentic coding assistants like **Antigravity**, you typically 
 - It was grinding through tool steps.
 - It finished long ago while you were still waiting.
 
-**DevPet solves this.** It floats on your desktop as an animated cyber-familiar (**Codi** the agent monitor, or **Momo** the Pomodoro tracker), translating background agent telemetry into instant visual and audio cues.
+**DevPet solves this.** It floats on your desktop as an animated cyber-familiar (**Moki** the keyboard buddy, **Codi** the agent monitor, or **Momo** the Pomodoro tracker), translating background agent telemetry into instant visual and audio cues.
 
 ---
 
@@ -46,13 +56,16 @@ When you dispatch agentic coding assistants like **Antigravity**, you typically 
   - 🎉 **Completed**: Victory confetti and fanfare when the task succeeds.
   - ⚠️ **Error**: Panic sweat drops and warning indicator if the turn fails.
 
-### 🍅 Dual-Pet Ecosystem
+### 🍅 Three-Pet Ecosystem
+- **Moki (Keyboard Buddy, on by default)**: The pet you meet on first launch. Reacts to your typing with live WPM, peak WPM and speed tiers (casual → flow → fast → *godspeed*), floating key particles, and 12 synthesized keyboard sound profiles (clicky, thock, typewriter, arcade, synthwave…). Gets sleepy after 8 minutes without typing.
 - **Codi (Agent Watchdog)**: Tails agent sessions, monitors tool execution, and warns of stuck turns.
-- **Momo (Pomodoro Focus)**: Built-in productivity rhythm cycles, streak tracking, and break reminders.
-- Run either pet—or both simultaneously across your multi-display setup!
+- **Momo (Pomodoro Focus)**: 25/5 focus cycles by default (configurable), completed-session count, break reminders, and optional auto-start breaks.
+- Run any pet—or all three at once across your multi-display setup! Toggle them from the dashboard or the system tray.
+
+> **Other tools:** Cursor, VS Code, OpenCode / Claude CLI and Ollama are detected by process and get one-click window focus, but no live thinking/done status yet.
 
 ### 🖥️ Zero-Distraction Floating Overlay
-- **Sub-50MB RAM footprint**: Native Rust backend with WebView2/WebKit. No heavy Electron bloatware eating your dev machine's resources.
+- **Lightweight by design**: Native Rust backend on WebView2. No heavy Electron bloatware eating your dev machine's resources. (Goal: a small idle footprint; real RAM/CPU numbers coming once measured.)
 - **Click-Through / Mini Mode**: Collapse your pet into a compact stealth badge or expand it when you want full status bubbles.
 - **Interactive Micro-Physics**: Scratch, boop, drag across monitors, and enjoy responsive procedural retro SFX synthesized via the Web Audio API.
 
@@ -69,7 +82,7 @@ DevPet talks to your development environment through clean, non-intrusive observ
                  │ Lifecycle events (PreInvocation, PreToolUse, PostToolUse, Stop)
                  ▼
 ┌─────────────────────────────────┐
-│  DevPet Rust Hook CLI & Engine  │ (Tails JSONL event streams with <5ms latency)
+│  DevPet Rust Hook CLI & Engine  │ (Tails JSONL event streams, polled every 500 ms)
 └────────────────┬────────────────┘
                  │ Emits normalized events (devpet://raw-events)
                  ▼
@@ -92,7 +105,7 @@ DevPet talks to your development environment through clean, non-intrusive observ
 
 | Layer | Technology | Details |
 |---|---|---|
-| **Core Desktop Engine** | [Tauri v2](https://tauri.app/) | Transparent, frameless windowing & OS tray management |
+| **Core Desktop Engine** | [Tauri v2](https://tauri.app/) | Transparent, frameless windowing & OS tray management (Windows / WebView2) |
 | **Native Backend** | [Rust](https://www.rust-lang.org/) | Multi-threaded file tailing, process detection & hook CLI |
 | **Frontend UI** | [Vue 3](https://vuejs.org/) + [Vite](https://vitejs.dev/) | Reactive state engine, custom pixel art SVG renderer |
 | **Language** | [TypeScript](https://www.typescriptlang.org/) | Strictly typed adapter model & event coordinator |
@@ -100,17 +113,46 @@ DevPet talks to your development environment through clean, non-intrusive observ
 
 ---
 
+## 🪟 Platform Support
+
+DevPet currently targets **Windows 10/11** only.
+
+- The installer is built as a Windows **NSIS** `.exe`.
+- One-click IDE focus and the global keyboard listener behind Moki use Win32 APIs and are compiled only on Windows.
+- macOS/Linux are **not supported yet**. The code may compile there, but IDE focus, the keyboard hook and the Antigravity hook installer (it writes a Windows `.exe` path) won't work. PRs welcome!
+
+---
+
+## 🔒 Privacy
+
+DevPet runs entirely on your machine. Here's exactly what it touches:
+
+**⌨️ Global keyboard listener (Moki & typing reactions)**
+- To react to typing in *any* app, DevPet registers a Windows low-level keyboard hook (`SetWindowsHookExW(WH_KEYBOARD_LL)`).
+- On each key-down it sends a timestamp and a coarse key label (A–Z, 0–9, Space, Enter, a few punctuation keys, `★` for everything else) to the pet windows, throttled to one event per 25 ms. The label is only used to draw the floating key particle and is then thrown away.
+- The only things saved are your **total keystroke count and peak WPM** (in the app's local storage). What you type is **never** stored, logged, or sent anywhere.
+- You can switch it off: **Settings → Desktop Companion Windows → Global Keyboard Listener**. When it's off, key events are ignored right away, and on the next launch the hook isn't installed at all. Moki then only reacts while its own window is focused.
+
+**🤖 Agent monitoring**
+- **Antigravity:** if you click *Install Hook* (Codi tab), DevPet adds an entry to `~/.gemini/config/hooks.json` (it makes a `hooks.json.devpet-backup` first) and copies a small hook exe to `%LOCALAPPDATA%\DevPet\bin`. The hook appends only status fields (event name, conversation id, step/tool name, error, workspace path) to `%LOCALAPPDATA%\DevPet\antigravity-events.jsonl`. Prompts, tool arguments and transcripts are not saved. It answers `{}` to every event except `PreToolUse`, where Antigravity requires a decision and DevPet answers `allow`. Click *Uninstall Hook* in the Codi tab to remove the entry.
+- **Codex:** DevPet reads `~/.codex/sessions/**/*.jsonl` and keeps only event type, turn id, session id, timestamp and error. Message content is dropped.
+- **Other tools:** process names are scanned every 3 s to detect running IDEs/CLIs.
+
+**🌐 Network**
+- DevPet has no analytics or telemetry and makes no internet requests. The UI's Content Security Policy only allows Tauri IPC. The only HTTP call in the code is the Ollama adapter probing your own local Ollama server at `127.0.0.1:11434`.
+
+> ⚠️ Because DevPet uses a keyboard hook and the installer isn't code-signed yet, some antivirus tools or Windows SmartScreen may warn you. The full source is right here, so you can build it yourself if you'd rather.
+
+---
+
 ## 🚀 Quickstart
 
 ### 📋 Prerequisites
 
-Ensure you have installed:
+Ensure you have installed (Windows 10/11):
 1. **Node.js** (v18+) — [nodejs.org](https://nodejs.org/)
 2. **Rust & Cargo** (stable) — [rustup.rs](https://rustup.rs/)
-3. **OS Build Tools**:
-   - **Windows**: Microsoft C++ Build Tools & WebView2
-   - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
-   - **Linux**: `libwebkit2gtk-4.1-dev`, `build-essential`, `libssl-dev`
+3. **Microsoft C++ Build Tools** & **WebView2** (WebView2 ships with Windows 11)
 
 ---
 
@@ -137,7 +179,7 @@ Ensure you have installed:
    ```bash
    npm run tauri build
    ```
-   *Compiled binaries will be generated inside `src-tauri/target/release/`.*
+   *The Windows installer is generated at `src-tauri/target/release/bundle/nsis/`.*
 
 ---
 
@@ -191,6 +233,11 @@ DevPet/
 - [x] Real-time "Action Required" permission alert radar
 - [x] Interactive procedural sound synthesizer
 - [x] Focus app window switcher on double-click
+- [x] ⌨️ Moki keyboard pet with WPM tracking & 12 keyboard sound profiles
+- [x] 🍅 Momo Pomodoro pet
+- [ ] 🚀 Start on Windows login (autostart)
+- [ ] 🌱 Git activity reactions (celebrate commits/pushes, react to failing tests)
+- [ ] 📏 Measured RAM/CPU numbers in the README
 - [ ] 🤖 Claude Code & OpenCodeInterpreter adapter presets
 - [ ] 📊 Token velocity & task time analytics in dashboard
 - [ ] 🎨 Custom pixel skins & retro synthwave desktop themes
