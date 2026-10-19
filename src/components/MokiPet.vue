@@ -5,6 +5,7 @@
     :class="[
       `mood-${currentMood}`,
       currentMood,
+      currentIdleAction ? `idle-action-${currentIdleAction}` : '',
       {
         mini,
         booped: isBooped,
@@ -13,7 +14,6 @@
         hovered: isHovered,
         'user-typing': isTyping,
         'status-morphing': isMorphing,
-        turbo: displayWpm >= 60 || currentMood === 'turbo',
       },
     ]"
     @mousedown="onMouseDown"
@@ -60,6 +60,7 @@
       class="character-art"
       :class="[
         currentMood,
+        currentIdleAction ? `idle-action-${currentIdleAction}` : '',
         {
           scratching: isScratching,
           blissful: isBlissful,
@@ -158,14 +159,6 @@
         </div>
       </Transition>
 
-      <!-- Stretching wellness relaxation particles -->
-      <Transition name="fade">
-        <div v-if="currentMood === 'stretching'" class="stretch-particles-container">
-          <span class="particle s1">🌸</span>
-          <span class="particle s2">✨</span>
-          <span class="particle s3">🌿</span>
-        </div>
-      </Transition>
 
       <svg
         viewBox="0 0 72 72"
@@ -276,25 +269,8 @@
             <rect x="41" y="34" width="6" height="2" fill="#451a03" />
           </template>
 
-          <!-- 7. Stretching / Wellness (Contented relaxed squint) -->
-          <template v-else-if="currentMood === 'stretching'">
-            <path d="M 24 33 Q 28 35 31 33" stroke="#451a03" stroke-width="2" fill="none" stroke-linecap="round" />
-            <path d="M 41 33 Q 44 35 48 33" stroke="#451a03" stroke-width="2" fill="none" stroke-linecap="round" />
-          </template>
 
-          <!-- 8. Starry / Turbo Typing (60+ WPM) -->
-          <template v-else-if="displayWpm >= 60 || currentMood === 'turbo'">
-            <!-- Left Sparkle Star Eye -->
-            <rect x="26" y="28" width="2" height="8" fill="#f59e0b" class="star-eye" />
-            <rect x="23" y="31" width="8" height="2" fill="#f59e0b" class="star-eye" />
-            <rect x="25" y="30" width="4" height="4" fill="#ffffff" />
-            <!-- Right Sparkle Star Eye -->
-            <rect x="44" y="28" width="2" height="8" fill="#f59e0b" class="star-eye" />
-            <rect x="41" y="31" width="8" height="2" fill="#f59e0b" class="star-eye" />
-            <rect x="43" y="30" width="4" height="4" fill="#ffffff" />
-          </template>
-
-          <!-- 9. Typing Focus with Determined Brows & Cyber Screen Glint -->
+          <!-- 8. Typing Focus with Determined Brows & Cyber Screen Glint -->
           <template v-else-if="isTyping">
             <line x1="23" y1="27" x2="30" y2="29" stroke="#451a03" stroke-width="1.5" stroke-linecap="round" />
             <line x1="49" y1="27" x2="42" y2="29" stroke="#451a03" stroke-width="1.5" stroke-linecap="round" />
@@ -306,7 +282,7 @@
             </g>
           </template>
 
-          <!-- 10. Normal Blinking Pixel Eyes with Interactive Mouse Gaze (Base Codi) -->
+          <!-- 9. Normal Blinking Pixel Eyes with Interactive Mouse Gaze (Base Codi) -->
           <template v-else>
             <g :style="{ transform: `translate(${eyeLookX}px, ${eyeLookY}px)` }" class="idle-eyes">
               <rect x="25" y="30" width="4" height="6" fill="#451a03" class="eye-pupil" />
@@ -325,11 +301,6 @@
         <template v-if="currentMood === 'error'">
           <path d="M 31 40 Q 34 38 36 40 Q 38 42 41 40" stroke="#d63031" stroke-width="2" fill="none" stroke-linecap="round" />
         </template>
-        <!-- Stretching yawny mouth -->
-        <template v-else-if="currentMood === 'stretching'">
-          <rect x="34" y="38" width="4" height="4" fill="#451a03" rx="2" />
-          <rect x="35" y="40" width="2" height="2" fill="#f43f5e" />
-        </template>
         <!-- Thinking "o" mouth -->
         <template v-else-if="currentMood === 'thinking'">
           <rect x="35" y="39" width="3" height="3" fill="#451a03" rx="1" />
@@ -339,7 +310,7 @@
           <rect x="34" y="39" width="4" height="3" fill="#451a03" rx="1" />
         </template>
         <!-- Happy open smile when typing/celebrating/blissful -->
-        <template v-else-if="isTyping || isBlissful || isScratching || currentMood === 'celebrating' || currentMood === 'turbo'">
+        <template v-else-if="isTyping || isBlissful || isScratching || currentMood === 'celebrating'">
           <rect x="33" y="39" width="6" height="2" fill="#451a03" />
           <rect x="34" y="41" width="4" height="2" fill="#f43f5e" />
         </template>
@@ -380,14 +351,9 @@
           <rect x="44" y="50" width="6" height="5" fill="#fffbeb" class="paw right-paw" />
         </g>
 
-        <!-- Extended stretching paws -->
-        <g v-else-if="currentMood === 'stretching'" class="stretching-paws">
-          <rect x="20" y="56" width="6" height="4" fill="#fffbeb" class="stretch-paw left" rx="1" />
-          <rect x="46" y="56" width="6" height="4" fill="#fffbeb" class="stretch-paw right" rx="1" />
-        </g>
 
         <!-- Pixel Paws clacking on keyboard or dancing -->
-        <g v-else class="pixel-paws" :class="{ 'paws-clacking': isTyping || currentMood === 'turbo' }">
+        <g v-else class="pixel-paws" :class="{ 'paws-clacking': isTyping }">
           <rect x="22" y="50" width="6" height="5" fill="#fffbeb" class="paw left-paw" />
           <rect x="44" y="50" width="6" height="5" fill="#fffbeb" class="paw right-paw" />
         </g>
@@ -449,6 +415,11 @@ const containerRef = ref<HTMLElement | null>(null);
 const SOUND_PROFILES: { id: KeyboardSoundProfile; label: string; icon: string }[] = [
   { id: 'clicky', label: 'Mechanical Blue', icon: '🔵' },
   { id: 'thock', label: 'Creamy Thock', icon: '🪵' },
+  { id: 'marbly', label: 'Hi-Fi Marbly', icon: '🔮' },
+  { id: 'creamy', label: 'Lubed Creamy', icon: '🍦' },
+  { id: 'waterdrop', label: 'Waterdrop', icon: '💧' },
+  { id: 'synthwave', label: '80s Synthwave', icon: '🕹️' },
+  { id: 'wooden', label: 'Bamboo Wood', icon: '🪵' },
   { id: 'typewriter', label: 'Typewriter', icon: '📜' },
   { id: 'bubble', label: 'Bubble Pop', icon: '🫧' },
   { id: 'arcade', label: '8-Bit Arcade', icon: '👾' },
@@ -567,6 +538,7 @@ function registerKeystrokeLocally(char: string) {
   }
 
   isTyping.value = true;
+  clearCurrentIdleAction();
   if (typingTimeout) clearTimeout(typingTimeout);
   typingTimeout = setTimeout(() => {
     isTyping.value = false;
@@ -574,6 +546,7 @@ function registerKeystrokeLocally(char: string) {
     continuousTypingStartTime = 0;
     continuousKeystrokeCount = 0;
     lastKeystrokeTime = 0;
+    scheduleNextIdleAction();
   }, 2000);
 
   // 1. Emit keyboard letter particle and play customized key sound
@@ -601,7 +574,7 @@ const particles = ref<KeystrokeParticle[]>([]);
 let nextId = 1;
 const COLORS = ['#38bdf8', '#fb923c', '#f43f5e', '#a855f7', '#22c55e', '#facc15'];
 const keyColors = ref(['#38bdf8', '#818cf8', '#c084fc', '#f472b6']);
-const rgbAccent = computed(() => (displayWpm.value >= 60 || currentMood.value === 'turbo' ? '#f43f5e' : '#38bdf8'));
+const rgbAccent = computed(() => '#38bdf8');
 
 function spawnLetterParticle(char: string) {
   const displayChar = resolveKeyboardLetter(char);
@@ -692,9 +665,8 @@ function spawnBurst(count = 2, isCode = true) {
 
 function spawnWpmParticle() {
   const wpm = displayWpm.value > 0 ? displayWpm.value : 32;
-  const isTurbo = wpm >= 60;
-  const badgeText = isTurbo ? `${wpm} WPM 🔥` : `${wpm} WPM ⚡`;
-  const badgeColor = isTurbo ? '#f43f5e' : '#38bdf8';
+  const badgeText = `${wpm} WPM ⚡`;
+  const badgeColor = '#38bdf8';
   const side = Math.random() > 0.5 ? 1 : -1;
 
   particles.value.push({
@@ -734,7 +706,7 @@ function loopParticles() {
 const MOKI_QUIPS = [
   'Clack clack! Let us code something epic! ⌨️✨',
   'Your keyboard sounds like music to my ears! 🎶🐾',
-  'Speed demon! Keep that rhythm going! 🔥⚡',
+  'Smooth flow! Keep that typing rhythm going! ⚡🐾',
   'I believe in you! Write that clean code! 💻🌸',
   'Type away! I will catch all your keystrokes! ✨🐾',
   'Feeling the coding flow today! 🚀💫',
@@ -753,11 +725,88 @@ function triggerRandomQuip() {
   showBubbleBriefly(3800);
 }
 
+// Random Idle Micro-Animations (Plays varied animations at random times during idle instead of straight to sleeping)
+type IdleMicroAction = 'ear-twitch' | 'curious-look' | 'tail-wag' | 'bouncy-hop' | 'paw-clean' | 'happy-wiggle';
+const currentIdleAction = ref<IdleMicroAction | null>(null);
+let idleActionTimer: ReturnType<typeof setTimeout> | null = null;
+let idleActionTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function clearCurrentIdleAction() {
+  currentIdleAction.value = null;
+  if (idleActionTimeout) {
+    clearTimeout(idleActionTimeout);
+    idleActionTimeout = null;
+  }
+}
+
+function scheduleNextIdleAction() {
+  if (idleActionTimer) {
+    clearTimeout(idleActionTimer);
+    idleActionTimer = null;
+  }
+
+  // Only run when in idle and not typing/scratching/booped/sleepy
+  if (currentMood.value !== 'idle' || isTyping.value || isScratching.value || isBooped.value) {
+    return;
+  }
+
+  // Random delay between 7 and 15 seconds
+  const delayMs = 7000 + Math.random() * 8000;
+  idleActionTimer = setTimeout(() => {
+    triggerRandomIdleAction();
+  }, delayMs);
+}
+
+function triggerRandomIdleAction(forcedAction?: IdleMicroAction) {
+  if (currentMood.value !== 'idle' && !forcedAction) {
+    scheduleNextIdleAction();
+    return;
+  }
+  if (isTyping.value || isScratching.value) {
+    scheduleNextIdleAction();
+    return;
+  }
+
+  const actions: IdleMicroAction[] = [
+    'curious-look',
+    'ear-twitch',
+    'tail-wag',
+    'bouncy-hop',
+    'paw-clean',
+    'happy-wiggle',
+  ];
+  const chosen = forcedAction || actions[Math.floor(Math.random() * actions.length)];
+  currentIdleAction.value = chosen;
+
+  // Occasional adorable quip (40% chance or forced)
+  if (forcedAction || Math.random() > 0.6) {
+    const actionQuips: Record<IdleMicroAction, string> = {
+      'curious-look': '👀 *looking around curiously* 🐾',
+      'ear-twitch': '👂 *ear twitch* Listening for typing! ✨',
+      'tail-wag': '🐾 *happy tail wag* Ready whenever you are!',
+      'bouncy-hop': '✨ *boing!* Quick stretch hop!',
+      'paw-clean': '🐾 *grooming* Keeping my paws clean!',
+      'happy-wiggle': '🎵 *wiggle wiggle* Cute idle bop!',
+    };
+    activeBubbleQuip.value = actionQuips[chosen];
+    showBubbleBriefly(2400);
+  }
+
+  // Play animation for 2.6 seconds
+  const actionDuration = 2600;
+  if (idleActionTimeout) clearTimeout(idleActionTimeout);
+  idleActionTimeout = setTimeout(() => {
+    currentIdleAction.value = null;
+    idleActionTimeout = null;
+    scheduleNextIdleAction();
+  }, actionDuration);
+}
+
 // Current mood with full Codi-based emotional spectrum
 const currentMood = computed<MokiMood>(() => {
   if (isScratching.value || isBlissful.value) return 'blissful';
   if (state.mood && state.mood !== 'idle') return state.mood;
-  if (isTyping.value) return displayWpm.value >= 60 ? 'turbo' : 'typing';
+  if (isTyping.value) return 'typing';
   return 'idle';
 });
 
@@ -773,26 +822,32 @@ watch(
         morphTimer = null;
       }, 340);
     }
+    if (newMood === 'idle') {
+      scheduleNextIdleAction();
+    } else {
+      clearCurrentIdleAction();
+      if (idleActionTimer) {
+        clearTimeout(idleActionTimer);
+        idleActionTimer = null;
+      }
+    }
   }
 );
 
 const bubbleMoodIcon = computed(() => {
   if (isScratching.value || isBlissful.value) return '💖';
   switch (currentMood.value) {
-    case 'turbo': return '🔥';
     case 'celebrating': return '🎉';
     case 'thinking': return '💡';
     case 'waiting': return '⏳';
     case 'error': return '⚠️';
     case 'sleepy': return '💤';
-    case 'stretching': return '🌸';
     case 'typing': return '⚡';
     default: return '✨';
   }
 });
 
 const tierClass = computed(() => {
-  if (displayWpm.value >= 60 || currentMood.value === 'turbo') return 'turbo';
   if (displayWpm.value > 0 || currentMood.value === 'typing') return 'typing';
   return 'idle';
 });
@@ -802,8 +857,6 @@ const currentBubbleText = computed(() => {
     return 'Purrrrr~ that tickles so good! 💕🐾';
   }
   switch (currentMood.value) {
-    case 'turbo':
-      return `TURBO MODE! ${displayWpm.value} WPM! 🚀🔥`;
     case 'celebrating':
       return 'Task finished! High five! 🎉🐾';
     case 'thinking':
@@ -814,8 +867,6 @@ const currentBubbleText = computed(() => {
       return 'Oh no! A bug was detected! We can squash it! ⚠️⚡';
     case 'sleepy':
       return 'Zzz... Snoozing on the keyboard... 💤';
-    case 'stretching':
-      return 'Time to stretch paws and relax shoulders! Ahhh~ 🌸';
     default:
       return state.speechBubbleText || activeBubbleQuip.value;
   }
@@ -903,6 +954,7 @@ function onMouseDown(e: MouseEvent) {
   startX = e.screenX;
   startY = e.screenY;
   stopScratching();
+  clearCurrentIdleAction();
 
   try {
     const win = getCurrentWebviewWindow();
@@ -972,6 +1024,7 @@ function onMouseMove(e: MouseEvent) {
 
     const timeSpan = now - mouseHistory[0].time;
     if (totalDist >= 110 && timeSpan >= 60) {
+      clearCurrentIdleAction();
       startScratching();
     }
   }
@@ -1000,6 +1053,7 @@ let unlistenSettings: (() => void) | null = null;
 onMounted(async () => {
   window.addEventListener('keydown', onWindowKeyDown);
   animId = requestAnimationFrame(loopParticles);
+  scheduleNextIdleAction();
 
   try {
     unlistenTyping = await onEvent(EVENTS.userTyping, (payload) => {
@@ -1030,6 +1084,8 @@ onUnmounted(() => {
   if (morphTimer) clearTimeout(morphTimer);
   if (scratchTimeout) clearTimeout(scratchTimeout);
   if (blissTimeout) clearTimeout(blissTimeout);
+  if (idleActionTimer) clearTimeout(idleActionTimer);
+  if (idleActionTimeout) clearTimeout(idleActionTimeout);
 });
 </script>
 
@@ -1128,13 +1184,89 @@ onUnmounted(() => {
   }
 }
 
-/* 3. TURBO MODE (60+ WPM): Hyper speed frenzy */
-.character-art.turbo {
-  animation: turboFrenzy 0.18s ease-in-out infinite alternate !important;
+/* ========================================================
+   IDLE RANDOM MICRO-ANIMATIONS (Plays during idle before sleep)
+   ======================================================== */
+
+/* 1. Ear Twitch */
+.idle-action-ear-twitch .left-ear {
+  animation: earTwitchLeft 0.2s ease-in-out 4 alternate !important;
 }
-@keyframes turboFrenzy {
-  0% { transform: translateY(0) rotate(-2deg) scale(1.02); }
-  100% { transform: translateY(-4.5px) rotate(2deg) scale(1.06); }
+.idle-action-ear-twitch .right-ear {
+  animation: earTwitchRight 0.2s ease-in-out 4 alternate 0.05s !important;
+}
+@keyframes earTwitchLeft {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-14deg) translateY(-2px); }
+}
+@keyframes earTwitchRight {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(14deg) translateY(-2px); }
+}
+
+/* 2. Curious Look (Looking around left and right with tilted head) */
+.idle-action-curious-look .idle-eyes {
+  animation: curiousLookEyes 2.5s ease-in-out forwards !important;
+}
+@keyframes curiousLookEyes {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-2.2px, -0.6px); }
+  45% { transform: translate(2.2px, -0.6px); }
+  70% { transform: translate(0, -1.2px); }
+}
+.idle-action-curious-look.character-art,
+.idle-action-curious-look .character-art {
+  animation: curiousTilt 2.5s ease-in-out forwards !important;
+}
+@keyframes curiousTilt {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  20% { transform: rotate(-3.5deg) translateY(-2px); }
+  45% { transform: rotate(3.5deg) translateY(-2px); }
+  70% { transform: rotate(0deg) translateY(-3px); }
+}
+
+/* 3. Tail Wag */
+.idle-action-tail-wag .pixel-tail {
+  animation: tailWagEnthusiastic 0.2s ease-in-out infinite alternate !important;
+  transform-origin: 14px 48px;
+}
+@keyframes tailWagEnthusiastic {
+  0% { transform: rotate(-16deg); }
+  100% { transform: rotate(18deg); }
+}
+
+/* 4. Bouncy Hop */
+.idle-action-bouncy-hop.character-art,
+.idle-action-bouncy-hop .character-art {
+  animation: bouncyHopAnim 1.6s ease-in-out forwards !important;
+}
+@keyframes bouncyHopAnim {
+  0% { transform: translateY(0) scale(1, 1); }
+  18% { transform: translateY(2px) scale(1.08, 0.92); }
+  42% { transform: translateY(-8px) scale(0.95, 1.06); }
+  62% { transform: translateY(0) scale(1.04, 0.96); }
+  78% { transform: translateY(-2.5px) scale(0.98, 1.02); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+
+/* 5. Paw Groom / Clean */
+.idle-action-paw-clean .paw.left-paw {
+  animation: pawGroomAnim 0.3s ease-in-out infinite alternate !important;
+  transform-origin: 22px 50px;
+}
+@keyframes pawGroomAnim {
+  0% { transform: translate(1px, -7px) rotate(-22deg); }
+  100% { transform: translate(3px, -11px) rotate(-10deg); }
+}
+
+/* 6. Happy Body Wiggle */
+.idle-action-happy-wiggle.character-art,
+.idle-action-happy-wiggle .character-art {
+  animation: happyWiggleAnim 0.28s ease-in-out infinite alternate !important;
+}
+@keyframes happyWiggleAnim {
+  0% { transform: translateY(-1.5px) rotate(-3.5deg); }
+  100% { transform: translateY(-1.5px) rotate(3.5deg); }
 }
 
 /* 4. THINKING / PONDERING: Hypnotic levitation sway & orbit (Base Codi) */
@@ -1276,15 +1408,6 @@ onUnmounted(() => {
   100% { transform: translateY(-1px) rotate(1.5deg); }
 }
 
-/* 9. STRETCHING: Cat stretch pose */
-.character-art.stretching {
-  animation: catStretchPose 2.4s ease-in-out infinite alternate !important;
-}
-@keyframes catStretchPose {
-  0% { transform: scale(1, 1) translateY(0); }
-  50% { transform: scale(1.08, 0.92) translateY(2px); }
-  100% { transform: scale(0.96, 1.05) translateY(-3px); }
-}
 
 /* 10. SCRATCHING / PURRING: Ecstatic purr vibration */
 .character-art.scratching {
@@ -1369,14 +1492,7 @@ onUnmounted(() => {
   100% { transform: rotate(4deg) scaleY(1.06); }
 }
 
-.turbo .left-ear,
-.turbo .right-ear {
-  animation: turboEars 0.18s infinite alternate !important;
-}
-@keyframes turboEars {
-  0% { transform: rotate(-5deg); }
-  100% { transform: rotate(5deg); }
-}
+
 
 .pixel-tail {
   transform-origin: 14px 48px;
@@ -1387,8 +1503,7 @@ onUnmounted(() => {
   100% { transform: rotate(-8deg); }
 }
 
-.user-typing .pixel-tail,
-.turbo .pixel-tail {
+.user-typing .pixel-tail {
   animation: tailWagFast 0.3s steps(2, jump-none) infinite alternate;
 }
 @keyframes tailWagFast {
@@ -1648,15 +1763,6 @@ onUnmounted(() => {
 .z2 { top: 2px; right: 14px; font-size: 13px; font-weight: 800; color: #c084fc; text-shadow: 0 0 6px rgba(192, 132, 252, 0.6); animation: driftUp 2.4s 0.8s infinite ease-out; }
 .z3 { top: -10px; right: 4px; font-size: 12px; animation: driftUp 2.4s 1.6s infinite ease-out; }
 
-.stretch-particles-container {
-  position: absolute;
-  inset: -10px;
-  pointer-events: none;
-  z-index: 20;
-}
-.s1 { top: -6px; left: 8px; font-size: 13px; animation: pulseSparkle 1.6s infinite alternate; }
-.s2 { top: -10px; right: 8px; font-size: 12px; animation: pulseSparkle 1.8s 0.3s infinite alternate; }
-.s3 { bottom: 8px; right: -2px; font-size: 12px; animation: pulseSparkle 1.5s 0.6s infinite alternate; }
 
 @keyframes driftUp {
   0% { transform: translateY(4px) translateX(0) scale(0.65); opacity: 0; }
@@ -1694,16 +1800,7 @@ onUnmounted(() => {
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
 }
 
-.name-tag.turbo {
-  border-color: #f43f5e;
-  color: #f43f5e;
-  box-shadow: 0 0 12px rgba(244, 63, 94, 0.5);
-  animation: pulseTag 0.8s infinite alternate;
-}
-@keyframes pulseTag {
-  0% { transform: scale(0.98); }
-  100% { transform: scale(1.04); }
-}
+
 
 .status-dot {
   width: 6px;
@@ -1806,10 +1903,7 @@ onUnmounted(() => {
   word-break: break-word;
 }
 
-.speech-bubble.turbo {
-  border-color: #f43f5e;
-  box-shadow: 0 0 12px rgba(244, 63, 94, 0.45);
-}
+
 
 .speech-bubble.celebrating {
   border-color: #f59e0b;

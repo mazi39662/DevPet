@@ -176,7 +176,7 @@
                     <span class="b-nav-icon">✨</span>
                     <div class="b-nav-text">
                       <span class="b-nav-title">Moki Station</span>
-                      <span class="b-nav-sub">Typing WPM & Wellness</span>
+                      <span class="b-nav-sub">Typing WPM & Keyboard</span>
                     </div>
                   </button>
 
@@ -308,6 +308,18 @@ function navigateFromBurger(tab: any) {
 const allPets = computed<PetConfigItem[]>(() => {
   const basePets: PetConfigItem[] = [
     {
+      id: 'moki',
+      name: 'Moki',
+      icon: '✨',
+      role: 'Desktop Keyboard Mascot (Default)',
+      accentColor: '#f59e0b',
+      badge: props.mokiWpm > 0 ? `${props.mokiWpm} WPM` : undefined,
+      badgeClass: 'moki-speed',
+      badgePulse: props.mokiWpm >= 60,
+      companionVisible: props.mokiCompanionVisible,
+      toggleEvent: 'toggle-moki',
+    },
+    {
       id: 'monitor',
       name: 'Codi',
       icon: '🐾',
@@ -330,18 +342,6 @@ const allPets = computed<PetConfigItem[]>(() => {
       badgePulse: props.pomoRunning,
       companionVisible: props.pomodoroCompanionVisible,
       toggleEvent: 'toggle-pomo',
-    },
-    {
-      id: 'moki',
-      name: 'Moki',
-      icon: '✨',
-      role: 'Keyboard & Wellness Buddy',
-      accentColor: '#f59e0b',
-      badge: props.mokiWpm > 0 ? `${props.mokiWpm} WPM` : undefined,
-      badgeClass: 'moki-speed',
-      badgePulse: props.mokiWpm >= 60,
-      companionVisible: props.mokiCompanionVisible,
-      toggleEvent: 'toggle-moki',
     },
   ];
 

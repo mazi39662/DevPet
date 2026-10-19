@@ -11,7 +11,7 @@
       />
     </template>
 
-    <!-- Keyboard & Wellness Companion Pet (Moki) -->
+    <!-- Keyboard Companion Pet (Moki - Default) -->
     <template v-else-if="activePetType === 'moki'">
       <MokiPet
         :mini="settings.companionMini"
@@ -66,7 +66,18 @@ import { native, onEvent } from './services/native';
 import { notificationService } from './services/notifications';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 
-const activePetType = ref<'agent' | 'pomodoro' | 'moki'>('agent');
+function getInitialPetType(): 'agent' | 'pomodoro' | 'moki' {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const pet = urlParams.get('pet');
+    if (pet === 'pomodoro') return 'pomodoro';
+    if (pet === 'moki') return 'moki';
+    if (pet === 'agent' || pet === 'codi') return 'agent';
+  } catch {}
+  return 'agent';
+}
+
+const activePetType = ref<'agent' | 'pomodoro' | 'moki'>(getInitialPetType());
 
 const state = ref<CompanionState>({
   status: 'idle',
@@ -113,12 +124,16 @@ onMounted(async () => {
       activePetType.value = 'pomodoro';
     } else if (petParam === 'moki') {
       activePetType.value = 'moki';
+    } else if (petParam === 'agent' || petParam === 'codi') {
+      activePetType.value = 'agent';
     } else {
       const win = getCurrentWebviewWindow();
       if (win.label.includes('pomodoro')) {
         activePetType.value = 'pomodoro';
       } else if (win.label.includes('moki')) {
         activePetType.value = 'moki';
+      } else {
+        activePetType.value = 'agent';
       }
     }
   } catch {}
@@ -172,6 +187,9 @@ onMounted(async () => {
     }
     if (typeof newSettings.volume === 'number') {
       notificationService.setVolume(newSettings.volume / 100);
+    }
+    if (typeof newSettings.keyboardVolume === 'number') {
+      notificationService.setKeyboardVolume(newSettings.keyboardVolume / 100);
     }
   });
 });

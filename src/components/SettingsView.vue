@@ -82,6 +82,39 @@
             </div>
           </div>
 
+          <!-- Keyboard Volume Slider -->
+          <div class="setting-row volume-slider-row" :class="{ disabled: !settings.soundEnabled || !settings.soundEffects.typing }">
+            <div class="setting-info">
+              <div class="label-with-val">
+                <span class="setting-label">Keyboard Sound Volume</span>
+                <span class="volume-val-badge">{{ settings.keyboardVolume ?? 80 }}%</span>
+              </div>
+              <span class="setting-sub">Dedicated volume slider for mechanical typing switch clicks & key sounds</span>
+            </div>
+
+            <div class="slider-control-group">
+              <span class="vol-icon">⌨️</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                v-model.number="settings.keyboardVolume"
+                :disabled="!settings.soundEnabled || !settings.soundEffects.typing"
+                class="range-slider"
+                @input="onKeyboardVolumeInput"
+              />
+              <button
+                class="test-btn"
+                :disabled="!settings.soundEnabled || !settings.soundEffects.typing"
+                @click="testKeyboardSound"
+                title="Test keyboard sound"
+              >
+                Audition
+              </button>
+            </div>
+          </div>
+
           <!-- Granular Sound Effects -->
           <div class="sound-effects-group">
             <h4 class="subgroup-title">Individual Sound Effects</h4>
@@ -512,14 +545,14 @@
       </div>
 
       <!-- ======================================================== -->
-      <!-- SECTION 4: MOKI WELLNESS & TARGETS                       -->
+      <!-- SECTION 4: MOKI KEYBOARD TARGETS                         -->
       <!-- ======================================================== -->
-      <div class="settings-card wellness-card">
+      <div class="settings-card moki-card">
         <div class="card-header">
-          <div class="card-icon moki-icon">✨</div>
+          <div class="card-icon moki-icon">⌨️</div>
           <div>
-            <h3 class="card-title">Moki Typing & Wellness</h3>
-            <p class="card-desc">Keystroke targets, stretch intervals, and ergonomics</p>
+            <h3 class="card-title">Moki Keyboard Targets</h3>
+            <p class="card-desc">Keystroke targets, velocity thresholds, and typing audio</p>
           </div>
         </div>
 
@@ -542,23 +575,30 @@
 
           <div class="slider-field">
             <div class="field-label-row">
-              <span class="setting-label">Posture & Stretch Reminder</span>
+              <span class="setting-label">Keyboard Sound Volume</span>
               <div class="field-action-group">
-                <button class="mini-audition-btn" @click="testZenBowlSound" title="Audition zen singing bowl chime">
-                  Play Chime
+                <button
+                  class="mini-audition-btn"
+                  :disabled="!settings.soundEnabled || !settings.soundEffects.typing"
+                  @click="testKeyboardSound"
+                  title="Audition keyboard switch sound"
+                >
+                  Play
                 </button>
-                <span class="field-val">Every {{ settings.stretchIntervalMinutes || 30 }} minutes</span>
+                <span class="field-val">{{ settings.keyboardVolume ?? 80 }}%</span>
               </div>
             </div>
             <input
               type="range"
-              min="15"
-              max="90"
-              step="15"
-              v-model.number="settings.stretchIntervalMinutes"
+              min="0"
+              max="100"
+              step="1"
+              v-model.number="settings.keyboardVolume"
+              :disabled="!settings.soundEnabled || !settings.soundEffects.typing"
               class="range-slider"
+              @input="onKeyboardVolumeInput"
             />
-            <span class="setting-sub">Moki will gently remind you to hydrate and take deep breaths</span>
+            <span class="setting-sub">Dedicated volume slider for mechanical typing switch clicks</span>
           </div>
         </div>
       </div>
@@ -639,7 +679,7 @@ const volumeIcon = computed(() => {
   return '🔊';
 });
 
-// Keyboard Switch Acoustic Profiles
+// 12 Keyboard Switch Acoustic Profiles
 const keyboardProfiles = [
   {
     id: 'clicky' as KeyboardSoundProfile,
@@ -656,6 +696,46 @@ const keyboardProfiles = [
     icon: '🪵',
     desc: 'Deep acoustic wooden resonance and rich low-frequency bottom-out',
     soundColor: '#fb923c',
+  },
+  {
+    id: 'marbly' as KeyboardSoundProfile,
+    name: 'Hi-Fi Marbly',
+    badge: 'PE Foam / Jelly Epoch',
+    icon: '🔮',
+    desc: 'Rich resonant marbly clack with high-frequency pop and hollow chamber snap',
+    soundColor: '#c084fc',
+  },
+  {
+    id: 'creamy' as KeyboardSoundProfile,
+    name: 'Lubed Creamy',
+    badge: 'Milky Yellow / Alpaca',
+    icon: '🍦',
+    desc: 'Silky butter-smooth linear switch with cushioned bottom-out and warm tone',
+    soundColor: '#fde047',
+  },
+  {
+    id: 'waterdrop' as KeyboardSoundProfile,
+    name: 'Waterdrop',
+    badge: 'Crystal Dewdrop',
+    icon: '💧',
+    desc: 'Soothing clean water droplet plink with crisp crystal acoustic resonance',
+    soundColor: '#06b6d4',
+  },
+  {
+    id: 'synthwave' as KeyboardSoundProfile,
+    name: '80s Synthwave',
+    badge: 'Analog Poly-Synth',
+    icon: '🕹️',
+    desc: 'Neon 80s retro FM synth keyboard clack with dual-harmonic vintage tone',
+    soundColor: '#ec4899',
+  },
+  {
+    id: 'wooden' as KeyboardSoundProfile,
+    name: 'Bamboo Wood',
+    badge: 'Natural Woodblock',
+    icon: '🪵',
+    desc: 'Organic hollow bamboo tap with dry percussive mechanical knock',
+    soundColor: '#a16207',
   },
   {
     id: 'typewriter' as KeyboardSoundProfile,
@@ -745,12 +825,17 @@ function testBackspaceSound() {
   notificationService.playBackspaceSound(props.settings.soundEffects.keyboardProfile);
 }
 
-function testZenBowlSound() {
-  notificationService.playStretchZenChime();
-}
-
 function onVolumeInput() {
   notificationService.setVolume(props.settings.volume / 100);
+}
+
+function onKeyboardVolumeInput() {
+  notificationService.setKeyboardVolume((props.settings.keyboardVolume ?? 80) / 100);
+}
+
+function testKeyboardSound() {
+  notificationService.setKeyboardVolume((props.settings.keyboardVolume ?? 80) / 100);
+  notificationService.playKeyClick(' ', props.settings.soundEffects.keyboardProfile);
 }
 
 function testVolume() {

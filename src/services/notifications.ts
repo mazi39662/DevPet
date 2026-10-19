@@ -6,7 +6,9 @@ class NotificationService {
   private hasPermission = false;
   private audioCtx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
+  private keyboardGain: GainNode | null = null;
   private volume = 0.8;
+  private keyboardVolume = 0.8;
   private soundEffectsConfig: SoundEffectsConfig = { ...DEFAULT_SOUND_EFFECTS };
 
   public setVolume(vol: number): void {
@@ -20,6 +22,19 @@ class NotificationService {
 
   public getVolume(): number {
     return this.volume;
+  }
+
+  public setKeyboardVolume(vol: number): void {
+    this.keyboardVolume = Math.max(0, Math.min(1, vol));
+    if (this.keyboardGain && this.audioCtx) {
+      try {
+        this.keyboardGain.gain.setValueAtTime(this.keyboardVolume, this.audioCtx.currentTime);
+      } catch {}
+    }
+  }
+
+  public getKeyboardVolume(): number {
+    return this.keyboardVolume;
   }
 
   public getSoundEffectsConfig(): SoundEffectsConfig {
@@ -46,6 +61,7 @@ class NotificationService {
       if (!this.audioCtx || this.audioCtx.state === 'closed') {
         this.audioCtx = new AudioContextClass();
         this.masterGain = null;
+        this.keyboardGain = null;
       }
       if (this.audioCtx.state === 'suspended') {
         this.audioCtx.resume();
@@ -54,6 +70,11 @@ class NotificationService {
         this.masterGain = this.audioCtx.createGain();
         this.masterGain.gain.setValueAtTime(this.volume, this.audioCtx.currentTime);
         this.masterGain.connect(this.audioCtx.destination);
+      }
+      if (!this.keyboardGain && this.audioCtx && this.masterGain) {
+        this.keyboardGain = this.audioCtx.createGain();
+        this.keyboardGain.gain.setValueAtTime(this.keyboardVolume, this.audioCtx.currentTime);
+        this.keyboardGain.connect(this.masterGain);
       }
       return this.audioCtx;
     } catch {
@@ -65,6 +86,12 @@ class NotificationService {
     const ctx = this.getAudioContext();
     if (!ctx) return null;
     return this.masterGain || ctx.destination;
+  }
+
+  private getKeyboardDestination(): AudioNode | null {
+    const ctx = this.getAudioContext();
+    if (!ctx) return null;
+    return this.keyboardGain || this.masterGain || ctx.destination;
   }
 
   public async init(): Promise<void> {
@@ -354,10 +381,10 @@ class NotificationService {
 
   /** Plays sound for a specific keyboard sound profile */
   public playKeyboardProfileSound(profile: KeyboardSoundProfile, pitchVariation = true): void {
-    if (!this.soundEffectsConfig.typing || this.volume <= 0.001) return;
+    if (!this.soundEffectsConfig.typing || this.volume <= 0.001 || this.keyboardVolume <= 0.001) return;
     try {
       const ctx = this.getAudioContext();
-      const dest = this.getDestination();
+      const dest = this.getKeyboardDestination();
       if (!ctx || !dest) return;
       const now = ctx.currentTime;
       const pitchRnd = pitchVariation ? (Math.random() - 0.5) * 50 : 0;
@@ -439,7 +466,7 @@ class NotificationService {
         }
 
         case 'arcade': {
-          // 8-bit retro arcade switch blip (consistent square wave transient with subtle tactile pitch variance)
+          // 8-bit retro arcade switch blip
           const baseTone = 659.25 + pitchRnd * 0.3;
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -507,6 +534,175 @@ class NotificationService {
           break;
         }
 
+        case 'marbly': {
+          // Hi-Fi PE Foam marbly pop clack (Jelly Epoch acoustic profile)
+          const snapOsc = ctx.createOscillator();
+          const snapGain = ctx.createGain();
+          const snapFilter = ctx.createBiquadFilter();
+          snapFilter.type = 'bandpass';
+          snapFilter.frequency.setValueAtTime(2500, now);
+          snapFilter.Q.setValueAtTime(3.0, now);
+
+          snapOsc.type = 'triangle';
+          snapOsc.frequency.setValueAtTime(3200 + pitchRnd * 6, now);
+          snapOsc.frequency.exponentialRampToValueAtTime(1100, now + 0.012);
+          snapGain.gain.setValueAtTime(0.0001, now);
+          snapGain.gain.linearRampToValueAtTime(0.08, now + 0.001);
+          snapGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.016);
+
+          snapOsc.connect(snapFilter);
+          snapFilter.connect(snapGain);
+          snapGain.connect(dest);
+
+          const bodyOsc = ctx.createOscillator();
+          const bodyGain = ctx.createGain();
+          bodyOsc.type = 'sine';
+          bodyOsc.frequency.setValueAtTime(460 + pitchRnd, now);
+          bodyOsc.frequency.exponentialRampToValueAtTime(140, now + 0.038);
+          bodyGain.gain.setValueAtTime(0.0001, now);
+          bodyGain.gain.linearRampToValueAtTime(0.12, now + 0.002);
+          bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.042);
+
+          bodyOsc.connect(bodyGain);
+          bodyGain.connect(dest);
+
+          snapOsc.start(now);
+          bodyOsc.start(now);
+          snapOsc.stop(now + 0.02);
+          bodyOsc.stop(now + 0.045);
+          break;
+        }
+
+        case 'creamy': {
+          // Ultra-smooth lubricated linear switch (Milky Yellow / Alpaca)
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(750, now);
+          filter.Q.setValueAtTime(1.8, now);
+
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(360 + pitchRnd, now);
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.035);
+
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.linearRampToValueAtTime(0.11, now + 0.002);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(dest);
+          osc.start(now);
+          osc.stop(now + 0.044);
+          break;
+        }
+
+        case 'waterdrop': {
+          // Soothing clean water droplet / dewdrop plink
+          const osc1 = ctx.createOscillator();
+          const gain1 = ctx.createGain();
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(520 + pitchRnd, now);
+          osc1.frequency.exponentialRampToValueAtTime(1650 + pitchRnd * 1.5, now + 0.016);
+
+          gain1.gain.setValueAtTime(0.0001, now);
+          gain1.gain.linearRampToValueAtTime(0.1, now + 0.002);
+          gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(1760 + pitchRnd * 2, now + 0.012);
+
+          gain2.gain.setValueAtTime(0.0001, now + 0.012);
+          gain2.gain.linearRampToValueAtTime(0.06, now + 0.014);
+          gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.055);
+
+          osc1.connect(gain1);
+          gain1.connect(dest);
+          osc2.connect(gain2);
+          gain2.connect(dest);
+
+          osc1.start(now);
+          osc2.start(now + 0.012);
+          osc1.stop(now + 0.035);
+          osc2.stop(now + 0.06);
+          break;
+        }
+
+        case 'synthwave': {
+          // 80s neon analog poly-synth FM keyboard clack
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(3600, now);
+          filter.frequency.exponentialRampToValueAtTime(550, now + 0.04);
+          filter.Q.setValueAtTime(3.8, now);
+
+          const rootOsc = ctx.createOscillator();
+          const fifthOsc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          rootOsc.type = 'sawtooth';
+          rootOsc.frequency.setValueAtTime(440 + pitchRnd, now);
+          fifthOsc.type = 'square';
+          fifthOsc.frequency.setValueAtTime(659.25 + pitchRnd * 1.2, now);
+
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.linearRampToValueAtTime(0.07, now + 0.002);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
+
+          rootOsc.connect(filter);
+          fifthOsc.connect(filter);
+          filter.connect(gain);
+          gain.connect(dest);
+
+          rootOsc.start(now);
+          fifthOsc.start(now);
+          rootOsc.stop(now + 0.048);
+          fifthOsc.stop(now + 0.048);
+          break;
+        }
+
+        case 'wooden': {
+          // Hollow bamboo / walnut woodblock tactile knock
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(1180, now);
+          filter.Q.setValueAtTime(4.2, now);
+
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(950 + pitchRnd * 2, now);
+          osc.frequency.exponentialRampToValueAtTime(260, now + 0.022);
+
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.linearRampToValueAtTime(0.12, now + 0.001);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
+
+          const bodyOsc = ctx.createOscillator();
+          const bodyGain = ctx.createGain();
+          bodyOsc.type = 'sine';
+          bodyOsc.frequency.setValueAtTime(240 + pitchRnd, now);
+          bodyOsc.frequency.exponentialRampToValueAtTime(85, now + 0.03);
+          bodyGain.gain.setValueAtTime(0.0001, now);
+          bodyGain.gain.linearRampToValueAtTime(0.06, now + 0.002);
+          bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.032);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(dest);
+          bodyOsc.connect(bodyGain);
+          bodyGain.connect(dest);
+
+          osc.start(now);
+          bodyOsc.start(now);
+          osc.stop(now + 0.038);
+          bodyOsc.stop(now + 0.035);
+          break;
+        }
+
         case 'clicky':
         default: {
           // Crisp mechanical blue switch (Cherry MX Blue / Kailh Box White)
@@ -547,11 +743,11 @@ class NotificationService {
 
   /** Distinct deep stabilized sound for the Spacebar */
   public playSpacebarSound(profile?: KeyboardSoundProfile): void {
-    if (!this.soundEffectsConfig.typing || this.volume <= 0.001) return;
+    if (!this.soundEffectsConfig.typing || this.volume <= 0.001 || this.keyboardVolume <= 0.001) return;
     try {
       const activeProf = profile || this.soundEffectsConfig.keyboardProfile || 'clicky';
       const ctx = this.getAudioContext();
-      const dest = this.getDestination();
+      const dest = this.getKeyboardDestination();
       if (!ctx || !dest) return;
       const now = ctx.currentTime;
 
@@ -567,7 +763,7 @@ class NotificationService {
 
       const barOsc = ctx.createOscillator();
       const barGain = ctx.createGain();
-      barOsc.type = activeProf === 'thock' ? 'sine' : 'triangle';
+      barOsc.type = activeProf === 'thock' || activeProf === 'creamy' ? 'sine' : 'triangle';
       barOsc.frequency.setValueAtTime(activeProf === 'thock' ? 170 : 260, now);
       barOsc.frequency.exponentialRampToValueAtTime(65, now + 0.055);
       barGain.gain.setValueAtTime(0.0001, now);
@@ -588,11 +784,11 @@ class NotificationService {
 
   /** Satisfying carriage return bell or affirmative chord for Enter key */
   public playEnterSound(profile?: KeyboardSoundProfile): void {
-    if (!this.soundEffectsConfig.typing || this.volume <= 0.001) return;
+    if (!this.soundEffectsConfig.typing || this.volume <= 0.001 || this.keyboardVolume <= 0.001) return;
     try {
       const activeProf = profile || this.soundEffectsConfig.keyboardProfile || 'clicky';
       const ctx = this.getAudioContext();
-      const dest = this.getDestination();
+      const dest = this.getKeyboardDestination();
       if (!ctx || !dest) return;
       const now = ctx.currentTime;
 
@@ -646,17 +842,17 @@ class NotificationService {
 
   /** Distinct downward blip / erase sound for Backspace key */
   public playBackspaceSound(profile?: KeyboardSoundProfile): void {
-    if (!this.soundEffectsConfig.typing || this.volume <= 0.001) return;
+    if (!this.soundEffectsConfig.typing || this.volume <= 0.001 || this.keyboardVolume <= 0.001) return;
     try {
       const activeProf = profile || this.soundEffectsConfig.keyboardProfile || 'clicky';
       const ctx = this.getAudioContext();
-      const dest = this.getDestination();
+      const dest = this.getKeyboardDestination();
       if (!ctx || !dest) return;
       const now = ctx.currentTime;
 
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = activeProf === 'arcade' ? 'square' : 'triangle';
+      osc.type = activeProf === 'arcade' || activeProf === 'synthwave' ? 'square' : 'triangle';
       osc.frequency.setValueAtTime(540, now);
       osc.frequency.exponentialRampToValueAtTime(160, now + 0.035);
 
@@ -673,7 +869,7 @@ class NotificationService {
 
   /** Main entry point for playing keyboard sound effects */
   public playKeyClick(key?: string, overrideProfile?: KeyboardSoundProfile): void {
-    if (!this.soundEffectsConfig.typing || this.volume <= 0.001) return;
+    if (!this.soundEffectsConfig.typing || this.volume <= 0.001 || this.keyboardVolume <= 0.001) return;
     const profile = overrideProfile || this.soundEffectsConfig.keyboardProfile || 'clicky';
 
     const normalizedKey = (key || '').toLowerCase();
@@ -699,10 +895,10 @@ class NotificationService {
 
   /** Celebratory milestone chime when user hits typing combo streaks */
   public playComboMilestone(combo: number): void {
-    if (!this.soundEffectsConfig.comboMilestones || this.volume <= 0.001) return;
+    if (!this.soundEffectsConfig.comboMilestones || this.volume <= 0.001 || this.keyboardVolume <= 0.001) return;
     try {
       const ctx = this.getAudioContext();
-      const dest = this.getDestination();
+      const dest = this.getKeyboardDestination();
       if (!ctx || !dest) return;
       const now = ctx.currentTime;
 
@@ -753,10 +949,10 @@ class NotificationService {
 
   /** Uplifting power-up riser whoosh when user reaches Turbo WPM speed */
   public playTurboPowerup(): void {
-    if (!this.soundEffectsConfig.turboPowerup || this.volume <= 0.001) return;
+    if (!this.soundEffectsConfig.turboPowerup || this.volume <= 0.001 || this.keyboardVolume <= 0.001) return;
     try {
       const ctx = this.getAudioContext();
-      const dest = this.getDestination();
+      const dest = this.getKeyboardDestination();
       if (!ctx || !dest) return;
       const now = ctx.currentTime;
 

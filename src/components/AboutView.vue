@@ -94,15 +94,16 @@
             <div class="pet-card-avatar moki-bg">✨</div>
             <div>
               <h4 class="pet-title">Moki</h4>
-              <span class="pet-subtitle">Keystroke & Wellness Mascot</span>
+              <span class="pet-subtitle">Default Keyboard Companion</span>
             </div>
           </div>
           <p class="pet-desc">
-            Tracks real-time WPM and keystroke velocity with kinetic typing sparkles, rewarding steady rhythm and reminding developers to stretch and stay hydrated.
+            Tracks real-time WPM and keystroke velocity with kinetic typing sparkles, rewarding steady typing flow and playing rich procedural mechanical switch acoustics with dedicated volume control.
           </p>
           <div class="pet-tags">
+            <span class="mini-tag">Default Pet</span>
             <span class="mini-tag">Speedometer</span>
-            <span class="mini-tag">Ergonomic Stretch</span>
+            <span class="mini-tag">Mechanical Switches</span>
           </div>
         </div>
       </div>

@@ -105,7 +105,7 @@
       </section>
 
       <!-- ======================================================== -->
-      <!-- TAB 4: MOKI KEYBOARD & WELLNESS STATION                  -->
+      <!-- TAB 4: MOKI KEYBOARD STATION                             -->
       <!-- ======================================================== -->
       <section v-else-if="currentTab === 'moki'" class="tab-content moki-view">
         <MokiStationView :sound-enabled="settings.soundEnabled" :settings="settings" />
@@ -269,9 +269,9 @@ const pomodoro = new PomodoroCoordinator(() => settings.value, settings.value.po
 const pomoState = pomodoro.getState();
 
 const activeAgentId = ref<AgentId>('antigravity');
-const agentCompanionVisible = ref(true);
+const agentCompanionVisible = ref(false);
 const pomodoroCompanionVisible = ref(false);
-const mokiCompanionVisible = ref(false);
+const mokiCompanionVisible = ref(true);
 const mokiState = mokiCoordinator.getState();
 const history = ref<HistoryEntry[]>([]);
 const antigravityHookInstalled = ref(false);
@@ -517,7 +517,7 @@ onMounted(async () => {
   try {
     agentCompanionVisible.value = await native.isCompanionVisible();
   } catch {
-    agentCompanionVisible.value = settings.value.agentPetVisible ?? true;
+    agentCompanionVisible.value = settings.value.agentPetVisible ?? false;
   }
 
   try {
@@ -529,7 +529,7 @@ onMounted(async () => {
   try {
     mokiCompanionVisible.value = await native.isMokiCompanionVisible();
   } catch {
-    mokiCompanionVisible.value = false;
+    mokiCompanionVisible.value = settings.value.mokiPetVisible ?? true;
   }
 
   // Hook checks

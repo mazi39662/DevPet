@@ -1,5 +1,5 @@
 /**
- * Types and contracts for Moki - Idle Keyboard & Wellness Pet Companion
+ * Types and contracts for Moki - Idle Desktop Keyboard Companion Pet
  */
 
 export type MokiMood =
@@ -11,11 +11,10 @@ export type MokiMood =
   | 'celebrating'
   | 'error'
   | 'sleepy'
-  | 'stretching'
   | 'booped'
   | 'blissful';
 
-export type TypingSpeedTier = 'idle' | 'casual' | 'flow' | 'turbo' | 'godspeed';
+export type TypingSpeedTier = 'idle' | 'casual' | 'flow' | 'fast' | 'godspeed';
 
 export interface KeystrokeParticle {
   id: number;
@@ -32,22 +31,11 @@ export interface KeystrokeParticle {
   isWpm?: boolean;
 }
 
-export interface StretchReminderState {
-  intervalMinutes: number;
-  activeSecondsElapsed: number;
-  isPrompting: boolean;
-  promptMessage: string;
-  stretchStreak: number;
-  lastStretchedAt: number | null;
-}
-
 export interface MokiState {
   mood: MokiMood;
   currentWpm: number;
   peakWpm: number;
   totalKeystrokes: number;
-  combo: number;
-  maxCombo: number;
   speedTier: TypingSpeedTier;
   speechBubbleText: string;
   isSpeechBubbleVisible: boolean;
@@ -64,8 +52,6 @@ export const DEFAULT_MOKI_STATE: MokiState = {
   currentWpm: 0,
   peakWpm: 0,
   totalKeystrokes: 0,
-  combo: 0,
-  maxCombo: 0,
   speedTier: 'idle',
   speechBubbleText: 'Hi, I am Moki! Ready to type with you! 🐾',
   isSpeechBubbleVisible: true,

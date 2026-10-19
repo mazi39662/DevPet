@@ -134,12 +134,12 @@ pub fn show_dashboard<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
 
 pub fn build_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let show = MenuItem::with_id(app, "show_dashboard", "Open Dashboard", true, None::<&str>)?;
+    let toggle_moki = MenuItem::with_id(app, "toggle_moki", "Toggle Moki (Keyboard Pet)", true, None::<&str>)?;
     let toggle_agent = MenuItem::with_id(app, "toggle_agent", "Toggle Codi (Coding Pet)", true, None::<&str>)?;
     let toggle_pomo = MenuItem::with_id(app, "toggle_pomo", "Toggle Momo (Pomodoro Pet)", true, None::<&str>)?;
-    let toggle_moki = MenuItem::with_id(app, "toggle_moki", "Toggle Moki (Keyboard & Wellness Pet)", true, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
     let quit = MenuItem::with_id(app, "quit", "Quit DevPet", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&show, &toggle_agent, &toggle_pomo, &toggle_moki, &sep, &quit])?;
+    let menu = Menu::with_items(app, &[&show, &toggle_moki, &toggle_agent, &toggle_pomo, &sep, &quit])?;
 
     let mut builder = TrayIconBuilder::with_id("devpet-tray")
         .tooltip("DevPet")

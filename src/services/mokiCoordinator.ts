@@ -1,7 +1,7 @@
 /**
- * MokiCoordinator - State Manager & Wellness Coach for Moki Companion
+ * MokiCoordinator - State Manager for Moki Companion
  * Handles live typing WPM calculation, keystroke particle events,
- * and prolonged computer usage stretch reminders.
+ * typing streaks, and speed tiers.
  */
 
 import { reactive } from 'vue';
@@ -19,7 +19,6 @@ class MokiCoordinatorService {
   private recentKeystrokes: number[] = [];
   private idleCheckTimer: ReturnType<typeof setInterval> | null = null;
   private lastKeystrokeTime = 0;
-  private comboResetTimer: ReturnType<typeof setTimeout> | null = null;
   private celebrationTimer: ReturnType<typeof setTimeout> | null = null;
   private bubbleTimer: ReturnType<typeof setTimeout> | null = null;
   private moodTimer: ReturnType<typeof setTimeout> | null = null;
@@ -51,7 +50,6 @@ class MokiCoordinatorService {
         const stats = JSON.parse(savedStats);
         this.state.peakWpm = stats.peakWpm || 0;
         this.state.totalKeystrokes = stats.totalKeystrokes || 0;
-        this.state.maxCombo = stats.maxCombo || 0;
       }
     } catch {}
   }
@@ -63,7 +61,6 @@ class MokiCoordinatorService {
         JSON.stringify({
           peakWpm: this.state.peakWpm,
           totalKeystrokes: this.state.totalKeystrokes,
-          maxCombo: this.state.maxCombo,
         })
       );
     } catch {}
@@ -80,14 +77,14 @@ class MokiCoordinatorService {
       this.recentKeystrokes = this.recentKeystrokes.filter((ts) => now - ts <= 6000);
       this.recalculateWpm(now);
 
-      // Idle mood progression
+      // Idle mood progression (stays in lively idle with random animations for 8 minutes before snoozing)
       if (this.state.mood !== 'celebrating' && this.state.mood !== 'blissful' && this.state.mood !== 'booped') {
-        if (elapsedSinceKeystroke > 180000) {
-          // > 3 minutes idle -> sleepy
+        if (elapsedSinceKeystroke > 480000) {
+          // > 8 minutes deep idle -> sleepy
           this.state.mood = 'sleepy';
           this.state.speechBubbleText = 'Zzz... Snoozing... 💤';
         } else if (elapsedSinceKeystroke > 12000) {
-          // > 12 seconds idle -> resting idle
+          // > 12 seconds idle -> resting idle (pet executes random idle micro-animations)
           this.state.mood = 'idle';
         }
       }
@@ -102,27 +99,11 @@ class MokiCoordinatorService {
     this.recentKeystrokes.push(now);
     this.state.totalKeystrokes++;
 
-    // Combo streak tracking
-    this.state.combo++;
-    if (this.state.combo > this.state.maxCombo) {
-      this.state.maxCombo = this.state.combo;
-    }
-
-    if (this.comboResetTimer) clearTimeout(this.comboResetTimer);
-    this.comboResetTimer = setTimeout(() => {
-      this.state.combo = 0;
-      this.broadcastState();
-    }, 2800);
-
     this.recalculateWpm(now);
 
-    // Dynamic mood update based on typing pace
+    // Dynamic mood update: actively typing
     if (this.state.mood !== 'celebrating' && this.state.mood !== 'booped') {
-      if (this.state.currentWpm >= 65) {
-        this.state.mood = 'turbo';
-      } else {
-        this.state.mood = 'typing';
-      }
+      this.state.mood = 'typing';
     }
 
     this.persistData();
@@ -154,7 +135,7 @@ class MokiCoordinatorService {
     // Speed tier calculation
     let tier: TypingSpeedTier = 'idle';
     if (this.state.currentWpm >= 96) tier = 'godspeed';
-    else if (this.state.currentWpm >= 66) tier = 'turbo';
+    else if (this.state.currentWpm >= 66) tier = 'fast';
     else if (this.state.currentWpm >= 36) tier = 'flow';
     else if (this.state.currentWpm > 0) tier = 'casual';
 
@@ -250,10 +231,6 @@ class MokiCoordinatorService {
     if (this.idleCheckTimer) {
       clearInterval(this.idleCheckTimer);
       this.idleCheckTimer = null;
-    }
-    if (this.comboResetTimer) {
-      clearTimeout(this.comboResetTimer);
-      this.comboResetTimer = null;
     }
     if (this.celebrationTimer) {
       clearTimeout(this.celebrationTimer);

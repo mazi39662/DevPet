@@ -16,6 +16,7 @@ function loadStored(): Settings {
         ...DEFAULT_SETTINGS,
         ...parsed,
         volume: typeof parsed.volume === 'number' ? parsed.volume : DEFAULT_SETTINGS.volume,
+        keyboardVolume: typeof parsed.keyboardVolume === 'number' ? parsed.keyboardVolume : DEFAULT_SETTINGS.keyboardVolume,
         soundEffects: {
           ...DEFAULT_SOUND_EFFECTS,
           ...(parsed.soundEffects || {}),
@@ -40,6 +41,7 @@ export function useSettings() {
 
   // Apply initial volume & sound configs
   notificationService.setVolume(settings.value.volume / 100);
+  notificationService.setKeyboardVolume((settings.value.keyboardVolume ?? 80) / 100);
   notificationService.setSoundEffectsConfig(settings.value.soundEffects);
 
   watch(
@@ -48,6 +50,7 @@ export function useSettings() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(val));
         notificationService.setVolume(val.volume / 100);
+        notificationService.setKeyboardVolume((val.keyboardVolume ?? 80) / 100);
         notificationService.setSoundEffectsConfig(val.soundEffects);
         emitEvent(EVENTS.settings, val);
       } catch (e) {

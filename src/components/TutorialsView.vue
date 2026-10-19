@@ -730,6 +730,11 @@ const activeTutorialProfile = ref<KeyboardSoundProfile>(
 const previewProfiles: { id: KeyboardSoundProfile; name: string; icon: string }[] = [
   { id: 'clicky', name: 'Blue Clicky', icon: '🔵' },
   { id: 'thock', name: 'Creamy Thock', icon: '🪵' },
+  { id: 'marbly', name: 'Hi-Fi Marbly', icon: '🔮' },
+  { id: 'creamy', name: 'Lubed Creamy', icon: '🍦' },
+  { id: 'waterdrop', name: 'Waterdrop', icon: '💧' },
+  { id: 'synthwave', name: '80s Synthwave', icon: '🕹️' },
+  { id: 'wooden', name: 'Bamboo Wood', icon: '🪵' },
   { id: 'typewriter', name: 'Typewriter', icon: '📜' },
   { id: 'bubble', name: 'Bubble Pop', icon: '🫧' },
   { id: 'arcade', name: '8-Bit Arcade', icon: '👾' },

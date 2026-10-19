@@ -8,7 +8,7 @@
         </div>
         <h2 class="arcade-title">Companion Pet Manager</h2>
         <p class="arcade-subtitle">
-          Deploy your desktop companions side-by-side! <strong>Codi</strong> tracks coding agents, <strong>Momo</strong> keeps you in pomodoro flow, and <strong>Moki</strong> bursts typing particles & reminds you to stretch.
+          Deploy your desktop companions side-by-side! <strong>Moki</strong> bursts typing particles & mechanical switch sounds, <strong>Codi</strong> tracks coding agents, and <strong>Momo</strong> keeps you in pomodoro flow.
         </p>
       </div>
       <div class="arcade-hero-actions">
@@ -26,7 +26,48 @@
 
     <!-- Pet Cards Grid (Discord Server Cards) -->
     <div class="pet-cards-grid">
-      <!-- PET 1: Codi (Coding Agent Mascot) -->
+      <!-- PET 1: Moki (Keyboard Mascot - Default) -->
+      <PetManagerCard
+        pet-name="Moki"
+        role-tag="Default Pet"
+        banner-tag="KEYBOARD (DEFAULT)"
+        theme-class="moki"
+        :deployed="mokiCompanionVisible"
+        @toggle-deploy="$emit('toggle-moki')"
+      >
+        <template #avatar>
+          <MokiPet
+            :interactive="false"
+            :sound-enabled="soundEnabled"
+          />
+        </template>
+
+        <template #description>
+          Your default desktop companion! Spawns colorful letter particles with every key typed, tracks live WPM speed, and plays customizable mechanical switch acoustics!
+        </template>
+
+        <template #stats>
+          <div class="stat-badge">
+            <span class="stat-lbl">TYPING</span>
+            <span class="stat-val font-mono">{{ mokiWpm }} WPM</span>
+          </div>
+          <div class="stat-badge">
+            <span class="stat-lbl">KEYS TYPED</span>
+            <span class="stat-val font-mono">{{ mokiKeystrokes }}</span>
+          </div>
+        </template>
+
+        <template #actions>
+          <button class="arcade-btn secondary" @click="$emit('test-key-sound')" title="Play test mechanical key sound">
+            ⌨️ Test Sound
+          </button>
+          <button class="arcade-btn primary" @click="$emit('open-moki')" title="Open Moki keyboard station">
+            ✨ Settings
+          </button>
+        </template>
+      </PetManagerCard>
+
+      <!-- PET 2: Codi (Coding Agent Mascot) -->
       <PetManagerCard
         pet-name="Codi"
         role-tag="Code Companion"
@@ -64,16 +105,13 @@
           <button class="arcade-btn secondary" @click="$emit('test-chime')" title="Play test celebration chime">
             🔊 Test Sound
           </button>
-          <!-- <button class="arcade-btn primary" @click="$emit('focus-app')" title="Focus AI coding application window">
-            🚀 Focus App
-          </button> -->
           <button class="arcade-btn primary" @click="$emit('open-monitor')" title="Open Codi monitor channel">
             🐾 Settings
           </button>
         </template>
       </PetManagerCard>
 
-      <!-- PET 2: Momo (Pomodoro Mascot) -->
+      <!-- PET 3: Momo (Pomodoro Mascot) -->
       <PetManagerCard
         pet-name="Momo"
         role-tag="Sprint Mascot"
@@ -110,47 +148,6 @@
           </button>
           <button class="arcade-btn accent" @click="$emit('open-timer')" title="Open Momo sprint station">
             🍅 Settings
-          </button>
-        </template>
-      </PetManagerCard>
-
-      <!-- PET 3: Moki (Keyboard & Wellness Mascot) -->
-      <PetManagerCard
-        pet-name="Moki"
-        role-tag="Typing Companion"
-        banner-tag="KEYBOARD"
-        theme-class="moki"
-        :deployed="mokiCompanionVisible"
-        @toggle-deploy="$emit('toggle-moki')"
-      >
-        <template #avatar>
-          <MokiPet
-            :interactive="false"
-            :sound-enabled="soundEnabled"
-          />
-        </template>
-
-        <template #description>
-          Spawns colorful letter particles with every key typed, tracks live WPM typing speed, and expresses playful animations & emotions!
-        </template>
-
-        <template #stats>
-          <div class="stat-badge">
-            <span class="stat-lbl">TYPING</span>
-            <span class="stat-val font-mono">{{ mokiWpm }} WPM</span>
-          </div>
-          <div class="stat-badge">
-            <span class="stat-lbl">KEYS TYPED</span>
-            <span class="stat-val font-mono">{{ mokiKeystrokes }}</span>
-          </div>
-        </template>
-
-        <template #actions>
-          <button class="arcade-btn secondary" @click="$emit('test-key-sound')" title="Play test mechanical key sound">
-            ⌨️ Test Sound
-          </button>
-          <button class="arcade-btn primary" @click="$emit('open-moki')" title="Open Moki keyboard & wellness station">
-            ✨ Settings
           </button>
         </template>
       </PetManagerCard>

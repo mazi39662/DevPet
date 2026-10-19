@@ -68,8 +68,8 @@
                     <div class="trio-avatar">✨</div>
                     <div class="trio-info">
                       <h4>Moki</h4>
-                      <span class="trio-role">Typing Velocity & Ergonomics</span>
-                      <p>Measures your real-time WPM, triggers tactile keystroke particles, and alerts you to stretch.</p>
+                      <span class="trio-role">Typing Velocity & Keyboard Mascot</span>
+                      <p>Measures your real-time WPM, triggers tactile keystroke particles, and plays mechanical switch acoustics.</p>
                     </div>
                   </div>
                 </div>
@@ -209,7 +209,7 @@
                           <strong>Tactile Mechanical Feedback:</strong> Spawns bouncy pixel keystroke bursts and optional mechanical switch sound clicks.
                         </li>
                         <li>
-                          <strong>Wellness & Posture Checks:</strong> Reminds you to take eye rests, stretch wrists, and drink water to stay healthy during marathon coding.
+                          <strong>Acoustic Switch Customization:</strong> Choose from 12 procedural switch profiles including Creamy, Marbly, Thock, and Typewriter with dedicated volume control.
                         </li>
                       </ul>
                       <div class="sample-action-row">
@@ -286,9 +286,9 @@
                       <div class="deploy-text">
                         <div class="deploy-title-line">
                           <span class="deploy-name">Moki</span>
-                          <span class="deploy-tag">WPM & WELLNESS</span>
+                          <span class="deploy-tag">KEYBOARD (DEFAULT)</span>
                         </div>
-                        <p class="deploy-desc">Visualizes typing velocity and sends health reminders.</p>
+                        <p class="deploy-desc">Visualizes typing velocity and plays customizable mechanical switch acoustics.</p>
                       </div>
                     </div>
                     <button

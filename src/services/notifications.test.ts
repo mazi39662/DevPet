@@ -26,19 +26,30 @@ describe('notificationService - Keyboard Sound Customization', () => {
     });
   });
 
-  it('updates and retrieves keyboard sound profile', () => {
+  it('updates and retrieves keyboard sound volume and profile', () => {
+    notificationService.setKeyboardVolume(0.65);
+    expect(notificationService.getKeyboardVolume()).toBe(0.65);
+
     expect(notificationService.getSoundEffectsConfig().keyboardProfile).toBe('clicky');
     notificationService.setKeyboardProfile('thock');
     expect(notificationService.getSoundEffectsConfig().keyboardProfile).toBe('thock');
+
+    notificationService.setKeyboardProfile('marbly');
+    expect(notificationService.getSoundEffectsConfig().keyboardProfile).toBe('marbly');
 
     notificationService.setKeyboardProfile('typewriter');
     expect(notificationService.getSoundEffectsConfig().keyboardProfile).toBe('typewriter');
   });
 
-  it('handles playing all 7 keyboard switch acoustic profiles without throwing', () => {
+  it('handles playing all 12 keyboard switch acoustic profiles without throwing', () => {
     const profiles: KeyboardSoundProfile[] = [
       'clicky',
       'thock',
+      'marbly',
+      'creamy',
+      'waterdrop',
+      'synthwave',
+      'wooden',
       'typewriter',
       'bubble',
       'arcade',

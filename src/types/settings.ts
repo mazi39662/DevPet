@@ -8,7 +8,12 @@ export type KeyboardSoundProfile =
   | 'bubble'
   | 'arcade'
   | 'cyber'
-  | 'muted';
+  | 'muted'
+  | 'marbly'
+  | 'creamy'
+  | 'waterdrop'
+  | 'synthwave'
+  | 'wooden';
 
 export interface SoundEffectsConfig {
   completion: boolean;
@@ -30,6 +35,7 @@ export interface Settings {
   notificationsEnabled: boolean;
   soundEnabled: boolean;
   volume: number; // 0 to 100
+  keyboardVolume: number; // 0 to 100 dedicated keyboard sound volume
   soundEffects: SoundEffectsConfig;
   companionMini: boolean;
   alwaysOnTop: boolean;
@@ -37,12 +43,11 @@ export interface Settings {
   agentPetVisible: boolean;
   /** Momo — pomodoro pet */
   pomodoroPetVisible: boolean;
-  /** Moki — typing & wellness pet */
+  /** Moki — keyboard companion pet (Default) */
   mokiPetVisible: boolean;
   hasSeenOnboarding?: boolean;
   pomodoroConfig: PomodoroConfig;
   autoStartBreaks?: boolean;
-  stretchIntervalMinutes?: number;
   targetWpm?: number;
 }
 
@@ -66,16 +71,16 @@ export const DEFAULT_SETTINGS: Settings = {
   notificationsEnabled: true,
   soundEnabled: true,
   volume: 80,
+  keyboardVolume: 80,
   soundEffects: { ...DEFAULT_SOUND_EFFECTS },
   companionMini: false,
   alwaysOnTop: true,
-  agentPetVisible: true,
+  agentPetVisible: false,
   pomodoroPetVisible: false,
-  mokiPetVisible: false,
+  mokiPetVisible: true,
   hasSeenOnboarding: false,
   pomodoroConfig: { ...DEFAULT_POMODORO_CONFIG },
   autoStartBreaks: false,
-  stretchIntervalMinutes: 30,
   targetWpm: 75,
 };
 

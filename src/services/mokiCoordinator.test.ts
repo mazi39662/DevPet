@@ -31,7 +31,7 @@ describe('mokiCoordinator', () => {
     expect(state.currentWpm).toBe(0);
   });
 
-  it('records keystrokes and increments counts & combo', () => {
+  it('records keystrokes and increments counts', () => {
     const initialStrokes = mokiCoordinator.getState().totalKeystrokes;
     mokiCoordinator.recordKeystroke('A');
     mokiCoordinator.recordKeystroke('B');
@@ -39,7 +39,6 @@ describe('mokiCoordinator', () => {
 
     const state = mokiCoordinator.getState();
     expect(state.totalKeystrokes).toBe(initialStrokes + 3);
-    expect(state.combo).toBeGreaterThanOrEqual(3);
     expect(state.mood).toBe('typing');
   });
 
@@ -68,7 +67,7 @@ describe('mokiCoordinator', () => {
     mokiCoordinator.setMood('error');
     expect(mokiCoordinator.getState().mood).toBe('error');
 
-    mokiCoordinator.setMood('stretching');
-    expect(mokiCoordinator.getState().mood).toBe('stretching');
+    mokiCoordinator.setMood('turbo');
+    expect(mokiCoordinator.getState().mood).toBe('turbo');
   });
 });

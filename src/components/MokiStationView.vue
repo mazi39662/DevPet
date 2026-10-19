@@ -5,7 +5,7 @@
       <div class="hero-left">
         <div class="hero-badge">
           <span class="badge-dot" :class="state.speedTier"></span>
-          <span>KEYBOARD & WELLNESS ARCADE</span>
+          <span>KEYBOARD ARCADE</span>
         </div>
         <h2 class="hero-title">Moki Station</h2>
         <p class="hero-sub">
@@ -38,9 +38,10 @@
           </div>
 
           <div class="h-stat-card">
-            <span class="stat-label">MAX COMBO</span>
+            <span class="stat-label">PET MOOD</span>
             <div class="stat-main">
-              <span class="stat-num combo-num">x{{ state.maxCombo }}</span>
+              <span class="stat-num mood-pill-text">{{ state.mood.toUpperCase() }}</span>
+              <span class="stat-unit">🐾</span>
             </div>
           </div>
         </div>
@@ -74,9 +75,6 @@
               <span class="pill-name">{{ activeProfileMeta.name }}</span>
               <span class="pill-switch-tag">Switch 🔄</span>
             </button>
-            <div class="live-combo-pill" v-if="state.combo > 0">
-              <span>🔥 COMBO x{{ state.combo }}</span>
-            </div>
           </div>
         </div>
 
@@ -124,9 +122,25 @@
             <span class="e-icon">💻</span>
             <span class="e-label">Typing Focus</span>
           </button>
-          <button class="emotion-trigger-btn" @click="testMokiEmotion('turbo')">
-            <span class="e-icon">🔥</span>
-            <span class="e-label">Turbo 60+ WPM</span>
+          <button class="emotion-trigger-btn" @click="testMokiEmotion('ear-twitch')">
+            <span class="e-icon">👂</span>
+            <span class="e-label">Ear Twitch</span>
+          </button>
+          <button class="emotion-trigger-btn" @click="testMokiEmotion('curious-look')">
+            <span class="e-icon">👀</span>
+            <span class="e-label">Curious Look</span>
+          </button>
+          <button class="emotion-trigger-btn" @click="testMokiEmotion('tail-wag')">
+            <span class="e-icon">🐾</span>
+            <span class="e-label">Tail Wag</span>
+          </button>
+          <button class="emotion-trigger-btn" @click="testMokiEmotion('bouncy-hop')">
+            <span class="e-icon">💫</span>
+            <span class="e-label">Bouncy Hop</span>
+          </button>
+          <button class="emotion-trigger-btn" @click="testMokiEmotion('paw-clean')">
+            <span class="e-icon">🐾</span>
+            <span class="e-label">Paw Groom</span>
           </button>
           <button class="emotion-trigger-btn" @click="testMokiEmotion('thinking')">
             <span class="e-icon">🧠</span>
@@ -147,10 +161,6 @@
           <button class="emotion-trigger-btn" @click="testMokiEmotion('sleepy')">
             <span class="e-icon">💤</span>
             <span class="e-label">Sleepy</span>
-          </button>
-          <button class="emotion-trigger-btn" @click="testMokiEmotion('stretching')">
-            <span class="e-icon">🌸</span>
-            <span class="e-label">Cat Stretch</span>
           </button>
           <button class="emotion-trigger-btn" @click="testMokiEmotion('blissful')">
             <span class="e-icon">💖</span>
@@ -180,7 +190,47 @@
           </div>
         </div>
 
-        <!-- 7 Acoustic Profiles Grid -->
+        <!-- Keyboard Sound Volume Slider Control -->
+        <div class="studio-volume-card">
+          <div class="vol-card-left">
+            <div class="vol-icon-box">🎚️</div>
+            <div class="vol-text-block">
+              <div class="vol-header-row">
+                <span class="vol-title">Keyboard Sound Volume</span>
+                <span class="vol-badge">{{ keyboardVolumeVal }}%</span>
+              </div>
+              <p class="vol-desc">Dedicated sliding bar to fine-tune tactile mechanical switch clicks and special key sound effects</p>
+            </div>
+          </div>
+
+          <div class="vol-card-right">
+            <div class="vol-slider-wrapper">
+              <span class="vol-sub-label">0%</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                v-model.number="keyboardVolumeVal"
+                :disabled="!soundEnabled"
+                class="range-slider vol-range-slider"
+                @input="onKeyboardVolumeInput"
+                aria-label="Keyboard sound volume"
+              />
+              <span class="vol-sub-label">100%</span>
+            </div>
+            <button
+              class="vol-audition-btn"
+              :disabled="!soundEnabled"
+              @click="testKeyboardVolumeSound"
+              title="Test current keyboard switch volume"
+            >
+              🔊 Test Sound
+            </button>
+          </div>
+        </div>
+
+        <!-- 12 Acoustic Switch Profiles Grid -->
         <div class="profiles-section-title">
           <span>Acoustic Switch Profiles (Click to Select & Audition)</span>
           <span class="profiles-hint">Procedural Web Audio synthesis • Zero asset latency</span>
@@ -295,7 +345,7 @@ const state = mokiCoordinator.getState();
 const sandboxText = ref('');
 const sandboxLastKey = ref('');
 
-// 7 Keyboard Switch Acoustic Profiles
+// 12 Keyboard Switch Acoustic Profiles
 const keyboardProfiles = [
   {
     id: 'clicky' as KeyboardSoundProfile,
@@ -310,6 +360,41 @@ const keyboardProfiles = [
     badge: 'Lubed Linear / Holy Panda',
     icon: '🪵',
     desc: 'Deep acoustic wooden resonance and rich low-frequency bottom-out',
+  },
+  {
+    id: 'marbly' as KeyboardSoundProfile,
+    name: 'Hi-Fi Marbly',
+    badge: 'PE Foam / Jelly Epoch',
+    icon: '🔮',
+    desc: 'Rich resonant marbly clack with high-frequency pop and hollow chamber snap',
+  },
+  {
+    id: 'creamy' as KeyboardSoundProfile,
+    name: 'Lubed Creamy',
+    badge: 'Milky Yellow / Alpaca',
+    icon: '🍦',
+    desc: 'Silky butter-smooth linear switch with cushioned bottom-out and warm tone',
+  },
+  {
+    id: 'waterdrop' as KeyboardSoundProfile,
+    name: 'Waterdrop',
+    badge: 'Crystal Dewdrop',
+    icon: '💧',
+    desc: 'Soothing clean water droplet plink with crisp crystal acoustic resonance',
+  },
+  {
+    id: 'synthwave' as KeyboardSoundProfile,
+    name: '80s Synthwave',
+    badge: 'Analog Poly-Synth',
+    icon: '🕹️',
+    desc: 'Neon 80s retro FM synth keyboard clack with dual-harmonic vintage tone',
+  },
+  {
+    id: 'wooden' as KeyboardSoundProfile,
+    name: 'Bamboo Wood',
+    badge: 'Natural Woodblock',
+    icon: '🪵',
+    desc: 'Organic hollow bamboo tap with dry percussive mechanical knock',
   },
   {
     id: 'typewriter' as KeyboardSoundProfile,
@@ -347,6 +432,42 @@ const keyboardProfiles = [
     desc: 'Soft cushioned rubber-dome bottom-out for quiet late-night sessions',
   },
 ];
+
+const keyboardVolumeVal = computed<number>({
+  get() {
+    if (props.settings && typeof props.settings.keyboardVolume === 'number') {
+      return props.settings.keyboardVolume;
+    }
+    return Math.round(notificationService.getKeyboardVolume() * 100);
+  },
+  set(val: number) {
+    if (props.settings) {
+      props.settings.keyboardVolume = val;
+    }
+    notificationService.setKeyboardVolume(val / 100);
+    try {
+      const raw = localStorage.getItem('devpet:settings:v1');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        parsed.keyboardVolume = val;
+        localStorage.setItem('devpet:settings:v1', JSON.stringify(parsed));
+        emitEvent(EVENTS.settings, parsed).catch(() => {});
+      }
+    } catch {}
+  },
+});
+
+function onKeyboardVolumeInput(e: Event) {
+  const target = e.target as HTMLInputElement;
+  const val = Number(target.value);
+  keyboardVolumeVal.value = val;
+}
+
+function testKeyboardVolumeSound() {
+  if (props.soundEnabled) {
+    notificationService.playKeyClick(' ', currentProfile.value);
+  }
+}
 
 const currentProfile = computed<KeyboardSoundProfile>({
   get() {
@@ -446,16 +567,45 @@ function testMokiEmotion(emotion: string) {
         durationMs: 3500,
       });
       break;
-    case 'turbo':
-      mokiCoordinator.dispatchAction({ type: 'set-mood', mood: 'turbo', durationMs: 4500 });
+    case 'ear-twitch':
+      mokiCoordinator.dispatchAction({ type: 'set-mood', mood: 'idle', durationMs: 3500 });
       mokiCoordinator.dispatchAction({
         type: 'set-speech-bubble',
-        text: 'TURBO SPEED UNLOCKED! 🚀⚡ 85+ WPM!',
-        durationMs: 4000,
+        text: '👂 *ear twitch* Listening closely to keystrokes! ✨',
+        durationMs: 3000,
       });
-      if (props.soundEnabled) {
-        notificationService.playTurboPowerup();
-      }
+      break;
+    case 'curious-look':
+      mokiCoordinator.dispatchAction({ type: 'set-mood', mood: 'idle', durationMs: 3500 });
+      mokiCoordinator.dispatchAction({
+        type: 'set-speech-bubble',
+        text: '👀 *curious look* What will you write next? 🐾',
+        durationMs: 3000,
+      });
+      break;
+    case 'tail-wag':
+      mokiCoordinator.dispatchAction({ type: 'set-mood', mood: 'idle', durationMs: 3500 });
+      mokiCoordinator.dispatchAction({
+        type: 'set-speech-bubble',
+        text: '🐾 *wag wag* Super happy to code together! ✨',
+        durationMs: 3000,
+      });
+      break;
+    case 'bouncy-hop':
+      mokiCoordinator.dispatchAction({ type: 'set-mood', mood: 'idle', durationMs: 3500 });
+      mokiCoordinator.dispatchAction({
+        type: 'set-speech-bubble',
+        text: '✨ *boing!* Little stretch hop for focus!',
+        durationMs: 3000,
+      });
+      break;
+    case 'paw-clean':
+      mokiCoordinator.dispatchAction({ type: 'set-mood', mood: 'idle', durationMs: 3500 });
+      mokiCoordinator.dispatchAction({
+        type: 'set-speech-bubble',
+        text: '🐾 *grooming* Polishing my typing paws!',
+        durationMs: 3000,
+      });
       break;
     case 'thinking':
       mokiCoordinator.dispatchAction({ type: 'set-mood', mood: 'thinking', durationMs: 5000 });
@@ -502,17 +652,6 @@ function testMokiEmotion(emotion: string) {
         text: 'Zzz... Snoozing on the keyboard... 💤',
         durationMs: 3500,
       });
-      break;
-    case 'stretching':
-      mokiCoordinator.dispatchAction({ type: 'set-mood', mood: 'stretching', durationMs: 5000 });
-      mokiCoordinator.dispatchAction({
-        type: 'set-speech-bubble',
-        text: 'Cat stretch break! Stretch paws & breathe! 🌸🐾',
-        durationMs: 3500,
-      });
-      if (props.soundEnabled) {
-        notificationService.playStretchZenChime();
-      }
       break;
     case 'blissful':
       mokiCoordinator.dispatchAction({ type: 'set-mood', mood: 'blissful', durationMs: 4000 });
@@ -596,7 +735,7 @@ function onSandboxKeydown(e: KeyboardEvent) {
   border-radius: 50%;
   background: #22c55e;
 }
-.badge-dot.turbo { background: #f97316; box-shadow: 0 0 8px #f97316; }
+.badge-dot.fast { background: #0284c7; box-shadow: 0 0 8px #0284c7; }
 .badge-dot.godspeed { background: #ec4899; box-shadow: 0 0 10px #ec4899; }
 
 .hero-title {
@@ -663,12 +802,14 @@ function onSandboxKeydown(e: KeyboardEvent) {
   background: #313338;
   color: #dbdee1;
 }
-.stat-tier-tag.turbo { background: #ea580c; color: #ffffff; }
+.stat-tier-tag.fast { background: #0284c7; color: #ffffff; }
 .stat-tier-tag.godspeed { background: #db2777; color: #ffffff; }
 
-.combo-num {
-  color: #f43f5e;
-  text-shadow: 0 0 8px rgba(244, 63, 94, 0.4);
+.mood-pill-text {
+  font-size: 16px;
+  font-weight: 900;
+  color: #38bdf8;
+  letter-spacing: 0.5px;
 }
 
 .hero-mascot-preview {
@@ -774,21 +915,6 @@ function onSandboxKeydown(e: KeyboardEvent) {
 .sandbox-hint {
   font-size: 11px;
   color: #949ba4;
-}
-
-.live-combo-pill {
-  background: linear-gradient(135deg, #f43f5e 0%, #ea580c 100%);
-  color: #ffffff;
-  font-weight: 900;
-  font-size: 11px;
-  padding: 4px 10px;
-  border-radius: 14px;
-  box-shadow: 0 0 10px rgba(244, 63, 94, 0.5);
-  animation: pulseCombo 0.7s infinite alternate;
-}
-@keyframes pulseCombo {
-  0% { transform: scale(0.96); }
-  100% { transform: scale(1.04); }
 }
 
 /* Panel 2: Emotion Showcase */
@@ -928,6 +1054,128 @@ function onSandboxKeydown(e: KeyboardEvent) {
   font-size: 11px;
   color: #949ba4;
   font-weight: normal;
+}
+
+/* Studio Dedicated Keyboard Volume Slider Card */
+.studio-volume-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  background: #18191c;
+  border: 1.5px solid rgba(168, 85, 247, 0.35);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin: 10px 0 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  flex-wrap: wrap;
+}
+
+.vol-card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 260px;
+  flex: 1;
+}
+
+.vol-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(168, 85, 247, 0.16);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.vol-header-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vol-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.vol-badge {
+  font-size: 11px;
+  font-weight: 800;
+  color: #c084fc;
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  padding: 1px 8px;
+  border-radius: 10px;
+}
+
+.vol-desc {
+  margin: 3px 0 0;
+  font-size: 11px;
+  color: #949ba4;
+}
+
+.vol-card-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1.2;
+  min-width: 280px;
+  justify-content: flex-end;
+}
+
+.vol-slider-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  max-width: 320px;
+}
+
+.vol-sub-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6d6f78;
+  font-family: monospace;
+}
+
+.vol-range-slider {
+  flex: 1;
+  accent-color: #a855f7;
+  cursor: pointer;
+  height: 6px;
+  border-radius: 3px;
+  background: #313338;
+}
+
+.vol-audition-btn {
+  background: rgba(168, 85, 247, 0.18);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  color: #e9d5ff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.vol-audition-btn:hover:not(:disabled) {
+  background: #a855f7;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.35);
+}
+
+.vol-audition-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .studio-profiles-grid {
