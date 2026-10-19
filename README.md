@@ -28,6 +28,13 @@
 >
 > 🪟 **Windows 10/11 only for now.** See [Platform Support](#-platform-support).
 
+<p align="center">
+  <a href="https://github.com/mazi39662/DevPet/releases/latest"><img src="https://img.shields.io/badge/%E2%AC%87%20Download%20for%20Windows-latest%20release-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Download DevPet for Windows" /></a>
+</p>
+
+> **⬇ [Download the latest Windows installer](https://github.com/mazi39662/DevPet/releases/latest)** (`DevPet_x.y.z_x64-setup.exe`).  
+> The installer isn't code-signed yet, so Windows SmartScreen may say *"Windows protected your PC"*. Click **More info → Run anyway**. You can check the file against the SHA256 in the release notes, or build it yourself from source (see [Quickstart](#-quickstart)).
+
 ---
 
 </div>
