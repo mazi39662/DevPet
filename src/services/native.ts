@@ -24,8 +24,13 @@ export const native = {
   focusTargetApp: (agentId?: string | null) => invoke<boolean>('focus_target_app', { agentId: agentId || null }),
   playSystemSound: () => invoke<void>('play_system_sound'),
   setKeyboardHookEnabled: (enabled: boolean) => invoke<void>('set_keyboard_hook_enabled', { enabled }),
+  getSystemMemory: () =>
+    invoke<{ totalBytes: number; usedBytes: number; usedPercent: number }>('get_system_memory'),
   quitApp: () => invoke<void>('quit_app'),
   startWindowDragging: () => invoke<void>('start_window_dragging'),
+  snapPetsToBottomRight: () => invoke<void>('snap_pets_to_bottom_right'),
+  isAutostartEnabled: () => invoke<boolean>('is_autostart_enabled'),
+  setAutostartEnabled: (enabled: boolean) => invoke<void>('set_autostart_enabled', { enabled }),
 };
 
 export function onEvent<E extends EventName>(

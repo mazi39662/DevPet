@@ -34,9 +34,16 @@ export interface RawSourceEvent {
   payload: unknown;
 }
 
+export interface SystemMemoryInfo {
+  totalBytes: number;
+  usedBytes: number;
+  usedPercent: number;
+}
+
 export interface TickPayload {
   at: number;
   apps: AppDetection[];
+  memory?: SystemMemoryInfo;
 }
 
 export interface MonitorInfo {

@@ -474,6 +474,38 @@
               <span class="slider round"></span>
             </label>
           </div>
+
+          <!-- Windows Startup Autostart Toggle -->
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="label-with-val">
+                <span class="setting-label">Launch Automatically on Windows Startup</span>
+                <span class="status-pill" :class="{ 'pill-active': settings.autostartEnabled }">
+                  {{ settings.autostartEnabled ? '⚡ AUTOSTART ACTIVE' : 'DISABLED' }}
+                </span>
+              </div>
+              <span class="setting-sub">
+                Automatically start DevPet on system boot so companions are ready whenever you log in
+              </span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" v-model="settings.autostartEnabled" @change="onAutostartToggle" />
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <!-- Pet Desktop Window Positioning Action -->
+          <div class="setting-row action-row">
+            <div class="setting-info">
+              <span class="setting-label">Default Desktop Placement</span>
+              <span class="setting-sub">
+                Default anchor for companions is bottom-right above the Windows taskbar (Moki closest, then Momo, then Codi)
+              </span>
+            </div>
+            <button class="snap-pets-btn" @click="snapPetsToBottomRight" title="Reposition all pets back to their default bottom-right layout">
+              📌 Snap Pets to Bottom Right
+            </button>
+          </div>
         </div>
       </div>
 
@@ -670,6 +702,7 @@ import { ref, computed } from 'vue';
 import type { Settings, KeyboardSoundProfile } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../types/settings';
 import { notificationService } from '../services/notifications';
+import { native } from '../services/native';
 
 const props = defineProps<{
   settings: Settings;
@@ -876,6 +909,29 @@ function testAlertSound() {
 
 function saveFeedback() {
   showToast('✓ Settings configurations saved successfully!');
+}
+
+async function onAutostartToggle() {
+  try {
+    await native.setAutostartEnabled(props.settings.autostartEnabled);
+    if (props.settings.autostartEnabled) {
+      showToast('⚡ DevPet registered to run automatically on Windows startup!');
+    } else {
+      showToast('DevPet removed from Windows startup.');
+    }
+  } catch (e) {
+    showToast(`⚠️ Autostart update failed: ${e}`);
+  }
+}
+
+async function snapPetsToBottomRight() {
+  try {
+    await native.snapPetsToBottomRight();
+    notificationService.playChime();
+    showToast('📌 All pets snapped to bottom right desktop corner!');
+  } catch (e) {
+    showToast(`⚠️ Failed to snap pets: ${e}`);
+  }
 }
 
 function resetDefaults() {
@@ -1148,6 +1204,59 @@ function showToast(msg: string) {
   font-weight: 800;
   padding: 2px 7px;
   border-radius: 6px;
+}
+
+.status-pill {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  text-transform: uppercase;
+}
+
+.status-pill.pill-active {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.snap-pets-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.2));
+  color: #c4b5fd;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.snap-pets-btn:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(59, 130, 246, 0.35));
+  border-color: #a78bfa;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3);
+}
+
+.snap-pets-btn:active {
+  transform: translateY(0);
 }
 
 /* Volume Slider Controls */

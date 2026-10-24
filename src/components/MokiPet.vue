@@ -5,6 +5,7 @@
     :class="[
       `mood-${currentMood}`,
       currentMood,
+      `ram-${activeRamTier}`,
       currentIdleAction ? `idle-action-${currentIdleAction}` : '',
       {
         mini,
@@ -14,6 +15,8 @@
         hovered: isHovered,
         'user-typing': isTyping,
         'status-morphing': isMorphing,
+        'ram-meltdown': activeRamTier === 'meltdown',
+        'ram-heavy': activeRamTier === 'heavy',
       },
     ]"
     @mousedown="onMouseDown"
@@ -60,6 +63,7 @@
       class="character-art"
       :class="[
         currentMood,
+        `ram-art-${activeRamTier}`,
         currentIdleAction ? `idle-action-${currentIdleAction}` : '',
         {
           scratching: isScratching,
@@ -67,6 +71,8 @@
           booped: isBooped,
           'user-typing': isTyping,
           'status-morphing': isMorphing,
+          'meltdown-shake': activeRamTier === 'meltdown',
+          'heavy-strain': activeRamTier === 'heavy',
         }
       ]"
     >
@@ -150,8 +156,58 @@
         </div>
       </Transition>
 
+      <!-- 4 RAM Usage Animated Overlays -->
+      <!-- Tier 1: Breeze (<45%) - Cool Mint Aura, Gentle Spinning Fan & Floating Leaves -->
+      <Transition name="fade">
+        <div v-if="activeRamTier === 'breeze'" class="ram-overlay ram-breeze-overlay">
+          <div class="ram-gadget ram-fan-gadget breeze" title="Cooling Fan Active (<45% RAM)">
+            <span class="fan-blade">❄️</span>
+          </div>
+          <span class="ram-particle r-leaf">🍃</span>
+          <span class="ram-particle r-sparkle">✨</span>
+          <span class="ram-particle r-cool">01</span>
+        </div>
+      </Transition>
 
+      <!-- Tier 2: Warm (45-70%) - Golden Energy Core, Rotating Memory Gears & Data Sparks -->
+      <Transition name="fade">
+        <div v-if="activeRamTier === 'warm'" class="ram-overlay ram-warm-overlay">
+          <div class="ram-gadget ram-gear-gadget warm" title="Memory Core Active (45-70% RAM)">
+            <span class="gear-icon">⚙️</span>
+          </div>
+          <span class="ram-particle r-volt">⚡</span>
+          <span class="ram-particle r-chip">💾</span>
+          <span class="ram-particle r-data">0xFF</span>
+        </div>
+      </Transition>
 
+      <!-- Tier 3: Heavy (70-85%) - Strained Orange Aura, Steaming Exhaust & Flying Sweat Drops -->
+      <Transition name="fade">
+        <div v-if="activeRamTier === 'heavy'" class="ram-overlay ram-heavy-overlay">
+          <div class="ram-gadget ram-fan-gadget heavy fast-spin" title="Exhaust Fan High Speed (70-85% RAM)!">
+            <span class="fan-blade">💨</span>
+          </div>
+          <span class="ram-particle r-sweat-1">💧</span>
+          <span class="ram-particle r-sweat-2">💦</span>
+          <span class="ram-particle r-steam-l">💨</span>
+          <span class="ram-particle r-steam-r">💨</span>
+        </div>
+      </Transition>
+
+      <!-- Tier 4: Meltdown (>85%) - Flashing Emergency Siren, Sizzle Sparks & Panic Smoke -->
+      <Transition name="fade">
+        <div v-if="activeRamTier === 'meltdown'" class="ram-overlay ram-meltdown-overlay">
+          <div class="ram-gadget ram-siren-gadget meltdown" title="EMERGENCY RAM OVERLOAD (>85% RAM)!">
+            <span class="siren-light">🚨</span>
+            <span class="siren-shockwave"></span>
+            <span class="siren-shockwave wave-2"></span>
+          </div>
+          <span class="ram-particle r-fire">🔥</span>
+          <span class="ram-particle r-spark">💥</span>
+          <span class="ram-particle r-oom">[OOM!]</span>
+          <span class="ram-particle r-lightning">⚡</span>
+        </div>
+      </Transition>
 
       <svg
         viewBox="0 0 72 72"
@@ -259,6 +315,27 @@
 
 
 
+          <!-- RAM Meltdown: Flustered Crossed Dizzy Red Eyes X_X -->
+          <template v-else-if="activeRamTier === 'meltdown'">
+            <path d="M 23 29 L 31 37 M 31 29 L 23 37" stroke="#ef4444" stroke-width="2.6" stroke-linecap="round" />
+            <path d="M 41 29 L 49 37 M 49 29 L 41 37" stroke="#ef4444" stroke-width="2.6" stroke-linecap="round" />
+          </template>
+
+          <!-- RAM Heavy: Strained Furrowed Brows & Sweat Bead on Cheek -->
+          <template v-else-if="activeRamTier === 'heavy'">
+            <line x1="22" y1="26" x2="31" y2="29" stroke="#451a03" stroke-width="1.8" stroke-linecap="round" />
+            <line x1="50" y1="26" x2="41" y2="29" stroke="#451a03" stroke-width="1.8" stroke-linecap="round" />
+            <rect x="25" y="30" width="4" height="6" fill="#1e1f22" />
+            <rect x="43" y="30" width="4" height="6" fill="#1e1f22" />
+            <circle cx="21" cy="33" r="1.5" fill="#38bdf8" />
+          </template>
+
+          <!-- RAM Breeze: Content Curved Closed Eyes (◠ ◠) when idle -->
+          <template v-else-if="activeRamTier === 'breeze' && currentMood === 'idle' && !isTyping">
+            <path d="M 23 34 Q 27 30 31 34" stroke="#451a03" stroke-width="2.2" fill="none" stroke-linecap="round" />
+            <path d="M 41 34 Q 45 30 49 34" stroke="#451a03" stroke-width="2.2" fill="none" stroke-linecap="round" />
+          </template>
+
           <!-- 8. Typing Focus with Determined Brows & Cyber Screen Glint -->
           <template v-else-if="isTyping">
             <line x1="23" y1="27" x2="30" y2="29" stroke="#451a03" stroke-width="1.5" stroke-linecap="round" />
@@ -286,8 +363,18 @@
         <rect x="35" y="36" width="2" height="2" fill="#be123c" />
 
         <!-- Dynamic Mouths per emotion -->
+        <!-- Meltdown screaming panic mouth -->
+        <template v-if="activeRamTier === 'meltdown'">
+          <rect x="32" y="39" width="8" height="5" fill="#b91c1c" rx="2" />
+          <rect x="34" y="40" width="4" height="2" fill="#fca5a5" />
+        </template>
+        <!-- Heavy panting mouth -->
+        <template v-else-if="activeRamTier === 'heavy'">
+          <rect x="33" y="39" width="6" height="4" fill="#451a03" rx="1" />
+          <rect x="34" y="41" width="4" height="2" fill="#f43f5e" />
+        </template>
         <!-- Error wavy mouth -->
-        <template v-if="currentMood === 'error'">
+        <template v-else-if="currentMood === 'error'">
           <path d="M 31 40 Q 34 38 36 40 Q 38 42 41 40" stroke="#d63031" stroke-width="2" fill="none" stroke-linecap="round" />
         </template>
         <!-- Thinking "o" mouth -->
@@ -328,8 +415,8 @@
           <rect x="50" y="26" width="6" height="5" fill="#fffbeb" class="cheer-paw right" rx="1" />
         </g>
 
-        <!-- Flailing distress paws when error -->
-        <g v-else-if="currentMood === 'error'" class="error-paws">
+        <!-- Flailing distress paws when error or meltdown -->
+        <g v-else-if="currentMood === 'error' || activeRamTier === 'meltdown'" class="error-paws">
           <rect x="15" y="34" width="6" height="5" fill="#fffbeb" stroke="#d63031" stroke-width="0.8" class="flail-paw left" rx="1" />
           <rect x="51" y="34" width="6" height="5" fill="#fffbeb" stroke="#d63031" stroke-width="0.8" class="flail-paw right" rx="1" />
         </g>
@@ -349,10 +436,27 @@
       </svg>
     </div>
 
-    <!-- Status Pill Underneath (Matches Momo & Codi 1:1, strictly pet's name) -->
-    <div class="name-tag" :class="tierClass" @click.stop="triggerRandomQuip">
-      <span class="status-dot" :class="{ active: isTyping }"></span>
-      <span class="tag-label">Moki</span>
+    <!-- Status Pill Row: Name Tag + RAM Usage Indicator -->
+    <div class="moki-tags-row">
+      <!-- Mascot Name Tag -->
+      <div class="name-tag" :class="tierClass" @click.stop="triggerRandomQuip">
+        <span class="status-dot" :class="{ active: isTyping }"></span>
+        <span class="tag-label">Moki</span>
+      </div>
+
+      <!-- RAM Status Pill Tag -->
+      <div
+        v-if="showRamBadge"
+        class="ram-status-pill"
+        :class="activeRamTier"
+        :title="`RAM: ${activeRamUsage.percentage}% (${formatBytes(activeRamUsage.usedBytes)} / ${formatBytes(activeRamUsage.totalBytes)}). Click to cycle RAM animation!`"
+        @click.stop="cycleRamTier"
+        @mousedown.stop
+      >
+        <span class="ram-pill-dot" :class="activeRamTier"></span>
+        <span class="ram-pill-icon">{{ ramTierMeta.icon }}</span>
+        <span class="ram-pill-label">{{ activeRamUsage.percentage }}%</span>
+      </div>
     </div>
 
     <!-- Hover Quick Buttons: Sound Profile, Settings, Close -->
@@ -372,7 +476,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import type { KeystrokeParticle, MokiMood } from '../types/moki';
+import type { KeystrokeParticle, MokiMood, MokiRamTier } from '../types/moki';
+import { DEFAULT_MOKI_STATE } from '../types/moki';
 import type { KeyboardSoundProfile, Settings } from '../types/settings';
 import { mokiCoordinator } from '../services/mokiCoordinator';
 import { EVENTS } from '../types/events';
@@ -385,11 +490,14 @@ const props = withDefaults(
     mini?: boolean;
     interactive?: boolean;
     soundEnabled?: boolean;
+    ramTier?: MokiRamTier;
+    showRamBadge?: boolean;
   }>(),
   {
     mini: false,
     interactive: true,
     soundEnabled: true,
+    showRamBadge: true,
   }
 );
 
@@ -399,6 +507,53 @@ const emit = defineEmits<{
 }>();
 
 const containerRef = ref<HTMLElement | null>(null);
+
+const state = mokiCoordinator.getState();
+
+const activeRamTier = computed<MokiRamTier>(() => {
+  if (props.ramTier) return props.ramTier;
+  return state.ramUsage?.tier || 'breeze';
+});
+
+const activeRamUsage = computed(() => {
+  return state.ramUsage || DEFAULT_MOKI_STATE.ramUsage!;
+});
+
+const RAM_TIERS_META: Record<MokiRamTier, { icon: string; label: string; name: string }> = {
+  breeze: { icon: '🍃', label: 'BREEZE', name: 'Cool Breeze (<45%)' },
+  warm: { icon: '⚙️', label: 'ACTIVE', name: 'Warm Flow (45-70%)' },
+  heavy: { icon: '💦', label: 'HEAVY', name: 'Heavy Load (70-85%)' },
+  meltdown: { icon: '🚨', label: 'MELTDOWN', name: 'Meltdown Overload (>85%)' },
+};
+
+const ramTierMeta = computed(() => {
+  return RAM_TIERS_META[activeRamTier.value];
+});
+
+function formatBytes(bytes?: number): string {
+  if (!bytes || bytes <= 0) return '0 GB';
+  return (bytes / 1073741824).toFixed(1) + ' GB';
+}
+
+function cycleRamTier() {
+  const tiers: MokiRamTier[] = ['breeze', 'warm', 'heavy', 'meltdown'];
+  const curIdx = tiers.indexOf(activeRamTier.value);
+  const nextTier = tiers[(curIdx + 1) % tiers.length];
+  mokiCoordinator.dispatchAction({
+    type: 'set-ram-tier',
+    tier: nextTier,
+    autoTracking: false,
+  });
+  if (props.soundEnabled) {
+    if (nextTier === 'meltdown') {
+      notificationService.playAlertChime();
+    } else if (nextTier === 'heavy') {
+      notificationService.playKeyClick('Enter');
+    } else {
+      notificationService.playKeyClick(' ');
+    }
+  }
+}
 
 // Keyboard Sound Customization Profiles
 const SOUND_PROFILES: { id: KeyboardSoundProfile; label: string; icon: string }[] = [
@@ -446,7 +601,6 @@ function cycleSoundProfile() {
   }
   mokiCoordinator.showSpeechBubble(`Sound: ${nextProfile.label} ${nextProfile.icon}`, 3000);
 }
-const state = mokiCoordinator.getState();
 
 // Reactive pet interaction states
 const isBooped = ref(false);
@@ -1930,4 +2084,384 @@ onUnmounted(() => {
 .pop-enter-from, .pop-leave-to { opacity: 0; transform: translateY(6px); }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+/* ======================================================== */
+/* 4 RAM USAGE ANIMATION SUITE                              */
+/* ======================================================== */
+
+/* Tags row underneath Moki */
+.moki-tags-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+  position: relative;
+  z-index: 25;
+}
+
+/* RAM Status Pill */
+.ram-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(17, 18, 20, 0.88);
+  backdrop-filter: blur(4px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.ram-status-pill:hover {
+  transform: scale(1.08) translateY(-1px);
+}
+
+.ram-pill-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.ram-status-pill.breeze {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.4);
+}
+.ram-status-pill.breeze .ram-pill-dot {
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.ram-status-pill.warm {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.45);
+}
+.ram-status-pill.warm .ram-pill-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 6px #f59e0b;
+}
+
+.ram-status-pill.heavy {
+  color: #fb923c;
+  border-color: rgba(251, 146, 60, 0.5);
+}
+.ram-status-pill.heavy .ram-pill-dot {
+  background: #f97316;
+  box-shadow: 0 0 8px #f97316;
+}
+
+.ram-status-pill.meltdown {
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.7);
+  background: rgba(40, 10, 10, 0.92);
+  animation: ram-pill-meltdown-flash 0.8s infinite alternate;
+}
+.ram-status-pill.meltdown .ram-pill-dot {
+  background: #ef4444;
+  box-shadow: 0 0 10px #ef4444;
+}
+
+@keyframes ram-pill-meltdown-flash {
+  from { border-color: rgba(239, 68, 68, 0.4); box-shadow: 0 0 4px rgba(239, 68, 68, 0.2); }
+  to { border-color: rgba(239, 68, 68, 0.9); box-shadow: 0 0 12px rgba(239, 68, 68, 0.6); }
+}
+
+/* Character Art Dynamic Body Animations */
+.character-art.heavy-strain {
+  animation: moki-heavy-strain 0.35s ease-in-out infinite alternate;
+}
+
+.character-art.meltdown-shake {
+  animation: moki-meltdown-jitter 0.12s infinite linear;
+}
+
+/* RAM Overlays & Gadgets */
+.ram-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.ram-gadget {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Tier 1: Breeze */
+.ram-breeze-overlay .ram-fan-gadget {
+  top: 4px;
+  left: 12px;
+  font-size: 14px;
+  animation: ram-fan-spin 3s linear infinite;
+}
+
+.ram-particle.r-leaf {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-size: 13px;
+  animation: breeze-drift 2.4s ease-in-out infinite;
+}
+
+.ram-particle.r-sparkle {
+  position: absolute;
+  bottom: 24px;
+  left: 8px;
+  font-size: 11px;
+  animation: breeze-sparkle 1.8s ease-in-out infinite alternate;
+}
+
+.ram-particle.r-cool {
+  position: absolute;
+  top: 28px;
+  right: 8px;
+  font-family: monospace;
+  font-size: 9px;
+  font-weight: 800;
+  color: #34d399;
+  opacity: 0.7;
+  animation: breeze-drift 3s ease-in-out infinite;
+}
+
+/* Tier 2: Warm */
+.ram-warm-overlay .ram-gear-gadget {
+  top: 6px;
+  right: 14px;
+  font-size: 14px;
+  animation: ram-gear-spin 2s linear infinite;
+}
+
+.ram-particle.r-volt {
+  position: absolute;
+  top: 20px;
+  left: 8px;
+  font-size: 12px;
+  animation: warm-flicker 1.4s ease-in-out infinite alternate;
+}
+
+.ram-particle.r-chip {
+  position: absolute;
+  bottom: 22px;
+  right: 8px;
+  font-size: 11px;
+  animation: warm-flicker 2s ease-in-out infinite;
+}
+
+.ram-particle.r-data {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  font-family: monospace;
+  font-size: 9px;
+  font-weight: 800;
+  color: #fbbf24;
+  opacity: 0.8;
+}
+
+/* Tier 3: Heavy */
+.ram-heavy-overlay .ram-fan-gadget {
+  top: 4px;
+  right: 12px;
+  font-size: 15px;
+  animation: ram-fan-spin 0.45s linear infinite;
+}
+
+.ram-particle.r-sweat-1 {
+  position: absolute;
+  top: 22px;
+  left: 12px;
+  font-size: 14px;
+  animation: sweat-drop 1.1s ease-in-out infinite;
+}
+
+.ram-particle.r-sweat-2 {
+  position: absolute;
+  top: 16px;
+  right: 22px;
+  font-size: 12px;
+  animation: sweat-drop 1.4s 0.4s ease-in-out infinite;
+}
+
+.ram-particle.r-steam-l {
+  position: absolute;
+  top: 28px;
+  left: 2px;
+  font-size: 13px;
+  animation: steam-puff-left 1.2s ease-out infinite;
+}
+
+.ram-particle.r-steam-r {
+  position: absolute;
+  top: 28px;
+  right: 2px;
+  font-size: 13px;
+  animation: steam-puff-right 1.2s 0.3s ease-out infinite;
+}
+
+/* Tier 4: Meltdown */
+.ram-meltdown-overlay .ram-siren-gadget {
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 18px;
+  z-index: 20;
+}
+
+.siren-shockwave {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #ef4444;
+  animation: siren-shockwave-pulse 0.9s ease-out infinite;
+  pointer-events: none;
+}
+.siren-shockwave.wave-2 {
+  animation-delay: 0.45s;
+}
+
+.ram-particle.r-fire {
+  position: absolute;
+  bottom: 24px;
+  left: 6px;
+  font-size: 14px;
+  animation: fire-flicker 0.6s infinite alternate;
+}
+
+.ram-particle.r-spark {
+  position: absolute;
+  top: 14px;
+  right: 6px;
+  font-size: 14px;
+  animation: spark-burst 0.7s infinite alternate;
+}
+
+.ram-particle.r-oom {
+  position: absolute;
+  top: 24px;
+  right: -8px;
+  font-family: monospace;
+  font-size: 10px;
+  font-weight: 900;
+  color: #ff4757;
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid #ff4757;
+  padding: 1px 4px;
+  border-radius: 4px;
+  animation: oom-tag-bounce 0.8s infinite alternate;
+}
+
+.ram-particle.r-lightning {
+  position: absolute;
+  top: 18px;
+  left: 8px;
+  font-size: 13px;
+  animation: spark-burst 0.5s infinite alternate;
+}
+
+/* Ambient Auras on Moki Container */
+.moki-container.ram-breeze .character-torso {
+  filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.45));
+}
+
+.moki-container.ram-warm .character-torso {
+  filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.5));
+}
+
+.moki-container.ram-heavy .character-torso {
+  filter: drop-shadow(0 0 14px rgba(249, 115, 22, 0.65));
+}
+
+.moki-container.ram-meltdown .character-torso {
+  filter: drop-shadow(0 0 18px rgba(239, 68, 68, 0.85));
+}
+
+/* Keyframes */
+@keyframes ram-fan-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ram-gear-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes moki-heavy-strain {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(1.5px) scale(1.02, 0.98); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes moki-meltdown-jitter {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-2px, 2px) rotate(-2deg); }
+  40% { transform: translate(2px, -1.5px) rotate(1.5deg); }
+  60% { transform: translate(-2.5px, -1px) rotate(-1.5deg); }
+  80% { transform: translate(2.5px, 1.5px) rotate(2deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+@keyframes breeze-drift {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
+  50% { transform: translateY(-8px) rotate(15deg); opacity: 1; }
+  100% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
+}
+
+@keyframes breeze-sparkle {
+  from { opacity: 0.3; transform: scale(0.7); }
+  to { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes warm-flicker {
+  0% { opacity: 0.4; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1.1); }
+}
+
+@keyframes sweat-drop {
+  0% { transform: translateY(0) scale(0.5); opacity: 0; }
+  30% { opacity: 1; transform: translateY(2px) scale(1.1); }
+  100% { transform: translateY(12px) scale(0.6); opacity: 0; }
+}
+
+@keyframes steam-puff-left {
+  0% { transform: translate(0, 0) scale(0.5); opacity: 0; }
+  40% { opacity: 0.8; }
+  100% { transform: translate(-10px, -12px) scale(1.3); opacity: 0; }
+}
+
+@keyframes steam-puff-right {
+  0% { transform: translate(0, 0) scale(0.5); opacity: 0; }
+  40% { opacity: 0.8; }
+  100% { transform: translate(10px, -12px) scale(1.3); opacity: 0; }
+}
+
+@keyframes siren-shockwave-pulse {
+  0% { transform: scale(0.6); opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+@keyframes fire-flicker {
+  from { transform: scale(0.85) rotate(-5deg); opacity: 0.7; }
+  to { transform: scale(1.2) rotate(5deg); opacity: 1; }
+}
+
+@keyframes spark-burst {
+  0% { transform: scale(0.6); opacity: 0.3; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0.5; }
+}
+
+@keyframes oom-tag-bounce {
+  from { transform: translateY(0) rotate(-4deg); }
+  to { transform: translateY(-3px) rotate(4deg); }
+}
 </style>

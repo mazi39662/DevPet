@@ -1,3 +1,4 @@
+mod autostart;
 mod hook_cli;
 mod hook_install;
 mod monitor;
@@ -105,6 +106,27 @@ fn start_window_dragging(window: tauri::WebviewWindow) -> Result<(), String> {
     windows::start_window_dragging(&window)
 }
 
+#[tauri::command]
+fn get_system_memory() -> monitor::SystemMemoryInfo {
+    let mut sys = sysinfo::System::new();
+    monitor::get_memory_info(&mut sys)
+}
+
+#[tauri::command]
+fn snap_pets_to_bottom_right(app: AppHandle) -> Result<(), String> {
+    windows::snap_pets_to_bottom_right(&app)
+}
+
+#[tauri::command]
+fn is_autostart_enabled() -> bool {
+    autostart::is_autostart_enabled()
+}
+
+#[tauri::command]
+fn set_autostart_enabled(enabled: bool) -> Result<(), String> {
+    autostart::set_autostart_enabled(enabled)
+}
+
 // ---------------------------------------------------------------------- app
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -114,6 +136,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             start_monitoring,
             get_hook_status,
+            get_system_memory,
             install_antigravity_hook,
             uninstall_antigravity_hook,
             set_companion_visible,
@@ -131,18 +154,31 @@ pub fn run() {
             set_keyboard_hook_enabled,
             quit_app,
             start_window_dragging,
+            snap_pets_to_bottom_right,
+            is_autostart_enabled,
+            set_autostart_enabled,
         ])
         .setup(|app| {
             windows::build_tray(app.handle())?;
-            if let Some(c) = app.get_webview_window(windows::COMPANION) {
-                let _ = c.set_always_on_top(true);
+
+            // Task 3: Initialize all companion windows to bottom-right default positions
+            if let Some(m) = app.get_webview_window(windows::MOKI_COMPANION) {
+                let _ = windows::position_companion_bottom_right(&m, 0);
+                let _ = m.set_always_on_top(true);
+                let _ = m.show();
             }
             if let Some(p) = app.get_webview_window(windows::POMODORO_COMPANION) {
+                let _ = windows::position_companion_bottom_right(&p, 1);
                 let _ = p.set_always_on_top(true);
             }
-            if let Some(m) = app.get_webview_window(windows::MOKI_COMPANION) {
-                let _ = m.set_always_on_top(true);
+            if let Some(c) = app.get_webview_window(windows::COMPANION) {
+                let _ = windows::position_companion_bottom_right(&c, 2);
+                let _ = c.set_always_on_top(true);
             }
+
+            // Task 4: Ensure DevPet is configured to run on Windows startup
+            let _ = autostart::set_autostart_enabled(true);
+
             let st = hook_install::status();
             if st.installed && !st.up_to_date {
                 let _ = hook_install::install();

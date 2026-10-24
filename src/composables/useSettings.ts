@@ -1,7 +1,7 @@
 import { ref, watch } from 'vue';
 import type { Settings } from '../types/settings';
 import { DEFAULT_SETTINGS, DEFAULT_SOUND_EFFECTS } from '../types/settings';
-import { emitEvent } from '../services/native';
+import { emitEvent, native } from '../services/native';
 import { notificationService } from '../services/notifications';
 import { EVENTS } from '../types/events';
 
@@ -17,6 +17,7 @@ function loadStored(): Settings {
         ...parsed,
         volume: typeof parsed.volume === 'number' ? parsed.volume : DEFAULT_SETTINGS.volume,
         keyboardVolume: typeof parsed.keyboardVolume === 'number' ? parsed.keyboardVolume : DEFAULT_SETTINGS.keyboardVolume,
+        autostartEnabled: typeof parsed.autostartEnabled === 'boolean' ? parsed.autostartEnabled : DEFAULT_SETTINGS.autostartEnabled,
         soundEffects: {
           ...DEFAULT_SOUND_EFFECTS,
           ...(parsed.soundEffects || {}),
@@ -44,14 +45,30 @@ export function useSettings() {
   notificationService.setKeyboardVolume((settings.value.keyboardVolume ?? 80) / 100);
   notificationService.setSoundEffectsConfig(settings.value.soundEffects);
 
+  // Sync initial autostart status with backend
+  native
+    .isAutostartEnabled()
+    .then((enabled) => {
+      // If system autostart state is known, align with settings
+      if (settings.value.autostartEnabled !== enabled) {
+        native.setAutostartEnabled(settings.value.autostartEnabled).catch(() => {});
+      }
+    })
+    .catch(() => {});
+
   watch(
     settings,
-    (val) => {
+    (val, oldVal) => {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(val));
         notificationService.setVolume(val.volume / 100);
         notificationService.setKeyboardVolume((val.keyboardVolume ?? 80) / 100);
         notificationService.setSoundEffectsConfig(val.soundEffects);
+        if (oldVal && val.autostartEnabled !== oldVal.autostartEnabled) {
+          native.setAutostartEnabled(val.autostartEnabled).catch((err) => {
+            console.error('Failed to toggle autostart:', err);
+          });
+        }
         emitEvent(EVENTS.settings, val);
       } catch (e) {
         console.error('Failed to persist settings:', e);

@@ -163,7 +163,86 @@
         </div>
       </div>
 
-      <!-- Panel 3: Keyboard Sound Studio & Switch Acoustics -->
+      <!-- Panel 3: RAM Memory Sentinel & 4 Animation Suite -->
+      <div class="moki-card ram-sentinel-card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-icon ram-icon">🧠</span>
+            <div>
+              <div class="title-with-badge">
+                <h3 class="card-title">RAM Sentinel & Memory Load Animations</h3>
+                <span class="active-ram-tag" :class="ramState.tier">
+                  {{ ramState.tier.toUpperCase() }} ({{ ramState.percentage }}%)
+                </span>
+              </div>
+              <p class="card-desc">
+                Moki dynamically reacts to system memory pressure across 4 distinct animations! Test any animation state below or toggle live system tracking.
+              </p>
+            </div>
+          </div>
+
+          <div class="card-header-actions">
+            <button
+              class="auto-ram-toggle-pill"
+              :class="{ active: ramState.autoTracking }"
+              @click="toggleRamAutoTracking"
+              :title="ramState.autoTracking ? 'Live Windows System RAM tracking is ACTIVE. Click for manual test mode.' : 'Manual test mode is active. Click to resume auto system tracking.'"
+            >
+              <span class="track-dot" :class="{ on: ramState.autoTracking }"></span>
+              <span>{{ ramState.autoTracking ? 'Auto Sync: ON' : 'Manual Mode' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Live RAM Progress Meter -->
+        <div class="ram-meter-box">
+          <div class="ram-meter-top">
+            <div class="ram-meter-stat">
+              <span class="ram-large-pct font-mono">{{ ramState.percentage }}%</span>
+              <span class="ram-tier-pill" :class="ramState.tier">{{ ramState.tier.toUpperCase() }}</span>
+              <span class="ram-bytes-label">
+                {{ formatRamBytes(ramState.usedBytes) }} used of {{ formatRamBytes(ramState.totalBytes) }} total
+              </span>
+            </div>
+            <span class="ram-state-hint">
+              {{ ramState.autoTracking ? '🛰️ Real-Time System RAM' : '🧪 Manual Simulation State' }}
+            </span>
+          </div>
+
+          <!-- Progress Bar Fill -->
+          <div class="ram-track-bar">
+            <div
+              class="ram-fill-bar"
+              :class="ramState.tier"
+              :style="{ width: `${Math.min(Math.max(ramState.percentage, 4), 100)}%` }"
+            ></div>
+          </div>
+        </div>
+
+        <!-- 4 Animation Cards Grid -->
+        <div class="ram-tiers-grid">
+          <div
+            v-for="t in ramTiersList"
+            :key="t.id"
+            class="ram-tier-card"
+            :class="[t.id, { active: ramState.tier === t.id }]"
+            @click="selectRamTier(t.id)"
+          >
+            <div class="tier-card-header">
+              <span class="tier-card-icon">{{ t.icon }}</span>
+              <span class="tier-range-chip">{{ t.range }}</span>
+            </div>
+            <h4 class="tier-card-title">{{ t.name }}</h4>
+            <p class="tier-card-desc">{{ t.animDetails }}</p>
+            <div class="tier-card-action">
+              <span v-if="ramState.tier === t.id" class="now-active-tag">● ACTIVE ANIMATION</span>
+              <span v-else class="play-cue">Play Animation ▶</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 4: Keyboard Sound Studio & Switch Acoustics -->
       <div class="moki-card keyboard-studio-card">
         <div class="card-header">
           <div class="card-title-group">
@@ -325,6 +404,8 @@ import { notificationService } from '../services/notifications';
 import { emitEvent } from '../services/native';
 import { EVENTS } from '../types/events';
 import type { KeyboardSoundProfile, Settings } from '../types/settings';
+import type { MokiRamTier } from '../types/moki';
+import { DEFAULT_MOKI_STATE } from '../types/moki';
 
 const props = defineProps<{
   soundEnabled: boolean;
@@ -337,6 +418,77 @@ const emit = defineEmits<{
 }>();
 
 const state = mokiCoordinator.getState();
+
+const ramState = computed(() => {
+  return state.ramUsage || DEFAULT_MOKI_STATE.ramUsage!;
+});
+
+const ramTiersList: {
+  id: MokiRamTier;
+  name: string;
+  range: string;
+  icon: string;
+  animDetails: string;
+}[] = [
+  {
+    id: 'breeze',
+    name: 'Cool Breeze',
+    range: '< 45% RAM',
+    icon: '🍃',
+    animDetails: 'Gentle mint cooling fan, floating leaves & sparkles, peaceful content eyes',
+  },
+  {
+    id: 'warm',
+    name: 'Active Flow',
+    range: '45% – 70% RAM',
+    icon: '⚙️',
+    animDetails: 'Amber energy aura, revolving memory gear, electric data sparks & focused screen glint',
+  },
+  {
+    id: 'heavy',
+    name: 'Heavy Load',
+    range: '70% – 85% RAM',
+    icon: '💦',
+    animDetails: 'High-speed exhaust fan, puffing side steam, cartoon sweat droplets & panting cheeks',
+  },
+  {
+    id: 'meltdown',
+    name: 'Meltdown Panic',
+    range: '> 85% RAM',
+    icon: '🚨',
+    animDetails: 'Flashing emergency siren beacon, shockwave radar rings, sizzle sparks & frantic earthquake jitter!',
+  },
+];
+
+function selectRamTier(tier: MokiRamTier) {
+  mokiCoordinator.dispatchAction({
+    type: 'set-ram-tier',
+    tier,
+    autoTracking: false,
+  });
+  if (props.soundEnabled) {
+    if (tier === 'meltdown') {
+      notificationService.playAlertChime();
+    } else if (tier === 'heavy') {
+      notificationService.playKeyClick('Enter');
+    } else {
+      notificationService.playKeyClick(' ');
+    }
+  }
+}
+
+function toggleRamAutoTracking() {
+  const current = ramState.value.autoTracking;
+  mokiCoordinator.dispatchAction({
+    type: 'set-ram-tracking',
+    autoTracking: !current,
+  });
+}
+
+function formatRamBytes(bytes?: number): string {
+  if (!bytes || bytes <= 0) return '0 GB';
+  return (bytes / 1073741824).toFixed(1) + ' GB';
+}
 
 const sandboxText = ref('');
 const sandboxLastKey = ref('');
@@ -1428,5 +1580,274 @@ input:checked + .slider:before {
 
 .slider.round:before {
   border-radius: 50%;
+}
+
+/* ======================================================== */
+/* RAM SENTINEL & ANIMATION LAB PANEL                       */
+/* ======================================================== */
+
+.ram-sentinel-card {
+  background: #1e1f22;
+  border: 1px solid #383a40;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.28);
+}
+
+.ram-icon {
+  background: rgba(168, 85, 247, 0.14);
+  color: #c084fc;
+}
+
+.active-ram-tag {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 5px;
+  letter-spacing: 0.5px;
+}
+.active-ram-tag.breeze { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.35); }
+.active-ram-tag.warm { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+.active-ram-tag.heavy { background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.35); }
+.active-ram-tag.meltdown { background: rgba(239, 68, 68, 0.18); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.45); }
+
+.auto-ram-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #111214;
+  border: 1px solid #383a40;
+  color: #949ba4;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auto-ram-toggle-pill:hover {
+  background: #2b2d31;
+  color: #ffffff;
+  border-color: #4e5058;
+}
+
+.auto-ram-toggle-pill.active {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #4ade80;
+}
+
+.track-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #64748b;
+}
+
+.track-dot.on {
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+}
+
+/* Meter Box */
+.ram-meter-box {
+  background: #111214;
+  border: 1px solid #2b2d31;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ram-meter-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ram-meter-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.ram-large-pct {
+  font-size: 26px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.ram-tier-pill {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+.ram-tier-pill.breeze { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+.ram-tier-pill.warm { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.ram-tier-pill.heavy { background: rgba(249, 115, 22, 0.15); color: #fb923c; }
+.ram-tier-pill.meltdown { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+.ram-bytes-label {
+  font-size: 12px;
+  color: #949ba4;
+  font-weight: 600;
+}
+
+.ram-state-hint {
+  font-size: 11px;
+  color: #949ba4;
+  font-weight: 700;
+}
+
+.ram-track-bar {
+  width: 100%;
+  height: 10px;
+  background: #1e1f22;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid #383a40;
+}
+
+.ram-fill-bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
+}
+
+.ram-fill-bar.breeze {
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.5);
+}
+.ram-fill-bar.warm {
+  background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+}
+.ram-fill-bar.heavy {
+  background: linear-gradient(90deg, #ea580c 0%, #fb923c 100%);
+  box-shadow: 0 0 12px rgba(251, 146, 60, 0.6);
+}
+.ram-fill-bar.meltdown {
+  background: linear-gradient(90deg, #dc2626 0%, #f87171 100%);
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.8);
+}
+
+/* 4 Tiers Grid */
+.ram-tiers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+}
+
+.ram-tier-card {
+  background: #111214;
+  border: 1px solid #2b2d31;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.ram-tier-card:hover {
+  transform: translateY(-2px);
+  border-color: #4e5058;
+}
+
+.ram-tier-card.active.breeze {
+  border-color: #10b981;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
+  background: linear-gradient(135deg, #111214 0%, rgba(16, 185, 129, 0.08) 100%);
+}
+
+.ram-tier-card.active.warm {
+  border-color: #f59e0b;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+  background: linear-gradient(135deg, #111214 0%, rgba(245, 158, 11, 0.08) 100%);
+}
+
+.ram-tier-card.active.heavy {
+  border-color: #f97316;
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.25);
+  background: linear-gradient(135deg, #111214 0%, rgba(249, 115, 22, 0.08) 100%);
+}
+
+.ram-tier-card.active.meltdown {
+  border-color: #ef4444;
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.35);
+  background: linear-gradient(135deg, #111214 0%, rgba(239, 68, 68, 0.12) 100%);
+}
+
+.tier-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tier-card-icon {
+  font-size: 22px;
+}
+
+.tier-range-chip {
+  font-size: 10px;
+  font-weight: 800;
+  color: #949ba4;
+  background: #1e1f22;
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid #383a40;
+}
+
+.tier-card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.tier-card-desc {
+  margin: 0;
+  font-size: 12px;
+  color: #949ba4;
+  line-height: 1.45;
+  flex: 1;
+}
+
+.tier-card-action {
+  margin-top: 4px;
+}
+
+.now-active-tag {
+  font-size: 10px;
+  font-weight: 800;
+  color: #4ade80;
+  letter-spacing: 0.5px;
+}
+
+.ram-tier-card.meltdown .now-active-tag {
+  color: #f87171;
+}
+
+.play-cue {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  transition: color 0.15s ease;
+}
+
+.ram-tier-card:hover .play-cue {
+  color: #38bdf8;
 }
 </style>

@@ -57,9 +57,34 @@ pub struct AppDetection {
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct SystemMemoryInfo {
+    pub total_bytes: u64,
+    pub used_bytes: u64,
+    pub used_percent: f64,
+}
+
+pub fn get_memory_info(sys: &mut System) -> SystemMemoryInfo {
+    sys.refresh_memory();
+    let total = sys.total_memory();
+    let used = sys.used_memory();
+    let percent = if total > 0 {
+        (used as f64 / total as f64) * 100.0
+    } else {
+        0.0
+    };
+    SystemMemoryInfo {
+        total_bytes: total,
+        used_bytes: used,
+        used_percent: percent,
+    }
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct TickPayload {
     pub at: u64,
     pub apps: Vec<AppDetection>,
+    pub memory: Option<SystemMemoryInfo>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -384,7 +409,8 @@ fn run_loop(app: AppHandle) {
 
         if force_replay || last_process_scan.is_none_or(|t| t.elapsed() >= PROCESS_INTERVAL) {
             last_process_scan = Some(Instant::now());
-            let _ = app.emit(EVT_TICK, TickPayload { at: now_ms(), apps: scan_apps(&mut sys) });
+            let memory = get_memory_info(&mut sys);
+            let _ = app.emit(EVT_TICK, TickPayload { at: now_ms(), apps: scan_apps(&mut sys), memory: Some(memory) });
         }
         std::thread::sleep(LOOP_INTERVAL);
     }

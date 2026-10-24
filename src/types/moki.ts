@@ -15,6 +15,17 @@ export type MokiMood =
 
 export type TypingSpeedTier = 'idle' | 'casual' | 'flow' | 'fast' | 'godspeed';
 
+export type MokiRamTier = 'breeze' | 'warm' | 'heavy' | 'meltdown';
+
+export interface MokiRamState {
+  enabled: boolean;
+  tier: MokiRamTier;
+  percentage: number;
+  usedBytes: number;
+  totalBytes: number;
+  autoTracking: boolean;
+}
+
 export interface KeystrokeParticle {
   id: number;
   char: string;
@@ -38,12 +49,15 @@ export interface MokiState {
   speedTier: TypingSpeedTier;
   speechBubbleText: string;
   isSpeechBubbleVisible: boolean;
+  ramUsage?: MokiRamState;
 }
 
 export type MokiAction =
   | { type: 'keystroke'; key?: string }
   | { type: 'set-mood'; mood: MokiMood; durationMs?: number }
   | { type: 'set-speech-bubble'; text: string; durationMs?: number }
+  | { type: 'set-ram-tier'; tier: MokiRamTier; percentage?: number; autoTracking?: boolean }
+  | { type: 'set-ram-tracking'; autoTracking: boolean }
   | { type: 'sync' };
 
 export const DEFAULT_MOKI_STATE: MokiState = {
@@ -54,4 +68,12 @@ export const DEFAULT_MOKI_STATE: MokiState = {
   speedTier: 'idle',
   speechBubbleText: '...hmmm',
   isSpeechBubbleVisible: true,
+  ramUsage: {
+    enabled: true,
+    tier: 'breeze',
+    percentage: 36,
+    usedBytes: 11800000000,
+    totalBytes: 34359738368,
+    autoTracking: true,
+  },
 };

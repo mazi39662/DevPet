@@ -24,6 +24,62 @@ pub struct CompanionVisibility {
     pub visible: bool,
 }
 
+pub fn calculate_bottom_right_position<R: Runtime>(
+    window: &WebviewWindow<R>,
+    slot: usize,
+) -> Option<tauri::PhysicalPosition<i32>> {
+    let monitor = window
+        .current_monitor()
+        .ok()
+        .flatten()
+        .or_else(|| window.primary_monitor().ok().flatten())?;
+
+    let mon_pos = monitor.position();
+    let mon_size = monitor.size();
+    let scale = monitor.scale_factor();
+
+    let win_size = window.outer_size().unwrap_or_else(|_| {
+        tauri::PhysicalSize::new(
+            (COMPANION_SIZE.0 * scale).round() as u32,
+            (COMPANION_SIZE.1 * scale).round() as u32,
+        )
+    });
+
+    // Windows taskbar is typically 48-64px high.
+    // Margin from right edge: 24px logical. Margin above bottom edge: 68px logical.
+    let margin_right = (24.0 * scale).round() as i32;
+    let margin_bottom = (68.0 * scale).round() as i32;
+    let slot_spacing = ((COMPANION_SIZE.0 + 12.0) * scale).round() as i32;
+
+    let x = mon_pos.x + (mon_size.width as i32) - (win_size.width as i32) - margin_right - (slot as i32 * slot_spacing);
+    let y = mon_pos.y + (mon_size.height as i32) - (win_size.height as i32) - margin_bottom;
+
+    Some(tauri::PhysicalPosition::new(x, y))
+}
+
+pub fn position_companion_bottom_right<R: Runtime>(
+    window: &WebviewWindow<R>,
+    slot: usize,
+) -> Result<(), String> {
+    if let Some(pos) = calculate_bottom_right_position(window, slot) {
+        window.set_position(pos).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+pub fn snap_pets_to_bottom_right<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
+    if let Ok(moki) = moki_companion(app) {
+        let _ = position_companion_bottom_right(&moki, 0);
+    }
+    if let Ok(pomo) = pomodoro_companion(app) {
+        let _ = position_companion_bottom_right(&pomo, 1);
+    }
+    if let Ok(agent) = companion(app) {
+        let _ = position_companion_bottom_right(&agent, 2);
+    }
+    Ok(())
+}
+
 fn companion<R: Runtime>(app: &AppHandle<R>) -> Result<WebviewWindow<R>, String> {
     app.get_webview_window(COMPANION).ok_or_else(|| "companion window not found".into())
 }
@@ -39,6 +95,12 @@ fn moki_companion<R: Runtime>(app: &AppHandle<R>) -> Result<WebviewWindow<R>, St
 pub fn set_companion_visible<R: Runtime>(app: &AppHandle<R>, visible: bool) -> Result<bool, String> {
     let win = companion(app)?;
     if visible {
+        // Position at bottom-right slot 2 if near origin or unpositioned
+        if let Ok(cur_pos) = win.outer_position() {
+            if cur_pos.x <= 20 && cur_pos.y <= 20 {
+                let _ = position_companion_bottom_right(&win, 2);
+            }
+        }
         win.show().map_err(|e| e.to_string())?;
         // Re-assert topmost after showing; some shells drop it on hide/show.
         let _ = win.set_always_on_top(true);
@@ -61,15 +123,9 @@ pub fn set_companion_mini<R: Runtime>(app: &AppHandle<R>, mini: bool) -> Result<
 pub fn set_pomodoro_companion_visible<R: Runtime>(app: &AppHandle<R>, visible: bool) -> Result<bool, String> {
     let win = pomodoro_companion(app)?;
     if visible {
-        // If main companion is visible, offset pomodoro companion to the left so they don't overlap
-        if let Ok(main_win) = companion(app) {
-            if let Ok(main_pos) = main_win.outer_position() {
-                if let Ok(cur_pos) = win.outer_position() {
-                    // If at the exact same spot, offset pomodoro companion by 180px to the left
-                    if (cur_pos.x - main_pos.x).abs() < 10 && (cur_pos.y - main_pos.y).abs() < 10 {
-                        let _ = win.set_position(tauri::PhysicalPosition::new(main_pos.x - 180, main_pos.y));
-                    }
-                }
+        if let Ok(cur_pos) = win.outer_position() {
+            if cur_pos.x <= 20 && cur_pos.y <= 20 {
+                let _ = position_companion_bottom_right(&win, 1);
             }
         }
         win.show().map_err(|e| e.to_string())?;
@@ -93,14 +149,9 @@ pub fn set_pomodoro_companion_mini<R: Runtime>(app: &AppHandle<R>, mini: bool) -
 pub fn set_moki_companion_visible<R: Runtime>(app: &AppHandle<R>, visible: bool) -> Result<bool, String> {
     let win = moki_companion(app)?;
     if visible {
-        // Offset if other companions are visible so they don't overlap
-        if let Ok(main_win) = companion(app) {
-            if let Ok(main_pos) = main_win.outer_position() {
-                if let Ok(cur_pos) = win.outer_position() {
-                    if (cur_pos.x - main_pos.x).abs() < 15 && (cur_pos.y - main_pos.y).abs() < 15 {
-                        let _ = win.set_position(tauri::PhysicalPosition::new(main_pos.x - 360, main_pos.y));
-                    }
-                }
+        if let Ok(cur_pos) = win.outer_position() {
+            if cur_pos.x <= 20 && cur_pos.y <= 20 {
+                let _ = position_companion_bottom_right(&win, 0);
             }
         }
         win.show().map_err(|e| e.to_string())?;
@@ -134,12 +185,14 @@ pub fn show_dashboard<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
 
 pub fn build_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let show = MenuItem::with_id(app, "show_dashboard", "Open Dashboard", true, None::<&str>)?;
+    let snap = MenuItem::with_id(app, "snap_pets", "📌 Snap Pets to Bottom Right", true, None::<&str>)?;
+    let sep1 = PredefinedMenuItem::separator(app)?;
     let toggle_moki = MenuItem::with_id(app, "toggle_moki", "Toggle Moki (Keyboard Pet)", true, None::<&str>)?;
     let toggle_agent = MenuItem::with_id(app, "toggle_agent", "Toggle Codi (Coding Pet)", true, None::<&str>)?;
     let toggle_pomo = MenuItem::with_id(app, "toggle_pomo", "Toggle Momo (Pomodoro Pet)", true, None::<&str>)?;
-    let sep = PredefinedMenuItem::separator(app)?;
+    let sep2 = PredefinedMenuItem::separator(app)?;
     let quit = MenuItem::with_id(app, "quit", "Quit DevPet", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&show, &toggle_moki, &toggle_agent, &toggle_pomo, &sep, &quit])?;
+    let menu = Menu::with_items(app, &[&show, &snap, &sep1, &toggle_moki, &toggle_agent, &toggle_pomo, &sep2, &quit])?;
 
     let mut builder = TrayIconBuilder::with_id("devpet-tray")
         .tooltip("DevPet")
@@ -148,6 +201,9 @@ pub fn build_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         .on_menu_event(|app, event| match event.id.as_ref() {
             "show_dashboard" => {
                 let _ = show_dashboard(app);
+            }
+            "snap_pets" => {
+                let _ = snap_pets_to_bottom_right(app);
             }
             "toggle_agent" => {
                 let visible = is_companion_visible(app);

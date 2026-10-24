@@ -5,10 +5,10 @@
  */
 
 import { reactive } from 'vue';
-import type { MokiAction, MokiMood, MokiState, TypingSpeedTier } from '../types/moki';
+import type { MokiAction, MokiMood, MokiRamTier, MokiState, TypingSpeedTier } from '../types/moki';
 import { DEFAULT_MOKI_STATE } from '../types/moki';
 import { EVENTS } from '../types/events';
-import { emitEvent, onEvent } from './native';
+import { emitEvent, native, onEvent } from './native';
 
 const STORAGE_KEYS = {
   stats: 'devpet_moki_stats',
@@ -35,12 +35,14 @@ class MokiCoordinatorService {
     if (this.isCoordinatorHost) {
       this.startHeartbeat();
       this.listenForRemoteActions();
+      this.fetchInitialMemory();
     } else {
       this.listenForStateBroadcasts();
       this.dispatchAction({ type: 'sync' });
     }
 
     this.listenForTyping();
+    this.listenForSystemMemory();
   }
 
   private loadPersistedData(): void {
@@ -182,12 +184,89 @@ class MokiCoordinatorService {
         this.broadcastState();
         break;
 
+      case 'set-ram-tier':
+        this.setRamTier(action.tier, action.percentage, action.autoTracking ?? false);
+        break;
+
+      case 'set-ram-tracking':
+        this.setRamAutoTracking(action.autoTracking);
+        break;
+
       case 'sync':
         this.broadcastState();
         break;
     }
 
     this.broadcastState();
+  }
+
+  public updateMemoryUsage(mem: { totalBytes: number; usedBytes: number; usedPercent: number }): void {
+    if (!this.state.ramUsage) {
+      this.state.ramUsage = { ...DEFAULT_MOKI_STATE.ramUsage! };
+    }
+    // Only update automatically if autoTracking is active
+    if (!this.state.ramUsage.autoTracking) return;
+
+    this.state.ramUsage.totalBytes = mem.totalBytes;
+    this.state.ramUsage.usedBytes = mem.usedBytes;
+    this.state.ramUsage.percentage = Math.round(mem.usedPercent);
+
+    // Compute tier based on thresholds
+    let tier: MokiRamTier = 'breeze';
+    if (this.state.ramUsage.percentage >= 85) tier = 'meltdown';
+    else if (this.state.ramUsage.percentage >= 70) tier = 'heavy';
+    else if (this.state.ramUsage.percentage >= 45) tier = 'warm';
+
+    this.state.ramUsage.tier = tier;
+    this.broadcastState();
+  }
+
+  public setRamTier(tier: MokiRamTier, percentage?: number, autoTracking = false): void {
+    if (!this.state.ramUsage) {
+      this.state.ramUsage = { ...DEFAULT_MOKI_STATE.ramUsage! };
+    }
+    this.state.ramUsage.tier = tier;
+    this.state.ramUsage.autoTracking = autoTracking;
+
+    if (percentage !== undefined) {
+      this.state.ramUsage.percentage = percentage;
+    } else {
+      if (tier === 'breeze') this.state.ramUsage.percentage = 34;
+      else if (tier === 'warm') this.state.ramUsage.percentage = 58;
+      else if (tier === 'heavy') this.state.ramUsage.percentage = 78;
+      else if (tier === 'meltdown') this.state.ramUsage.percentage = 92;
+    }
+
+    // Trigger themed speech bubble
+    const quips: Record<MokiRamTier, string> = {
+      breeze: 'RAM is crisp and breezy! 🍃 Plenty of headroom.',
+      warm: 'Memory active and humming along nicely! ⚙️',
+      heavy: 'Whew! Chrome & Docker are getting heavy! 💦',
+      meltdown: 'RAM MELTDOWN!! Close some tabs before I explode! 🚨💥',
+    };
+    this.showSpeechBubble(quips[tier], 3500);
+    this.broadcastState();
+  }
+
+  public setRamAutoTracking(enabled: boolean): void {
+    if (!this.state.ramUsage) {
+      this.state.ramUsage = { ...DEFAULT_MOKI_STATE.ramUsage! };
+    }
+    this.state.ramUsage.autoTracking = enabled;
+    if (enabled) {
+      this.fetchInitialMemory();
+      this.showSpeechBubble('RAM Auto-Tracking synchronized! 🛰️', 3000);
+    }
+    this.broadcastState();
+  }
+
+  private async fetchInitialMemory(): Promise<void> {
+    try {
+      const mem = await native.getSystemMemory();
+      if (mem) {
+        this.updateMemoryUsage(mem);
+      }
+    } catch {}
   }
 
   public dispatchAction(action: MokiAction): void {
@@ -220,6 +299,14 @@ class MokiCoordinatorService {
     // Listen to global Windows low-level hook event
     onEvent(EVENTS.userTyping, (payload) => {
       this.recordKeystroke(payload.key);
+    }).catch(() => {});
+  }
+
+  private listenForSystemMemory(): void {
+    onEvent(EVENTS.tick, (payload) => {
+      if (payload.memory) {
+        this.updateMemoryUsage(payload.memory);
+      }
     }).catch(() => {});
   }
 

@@ -47,6 +47,8 @@ export interface Settings {
   mokiPetVisible: boolean;
   /** Global Windows keyboard hook that lets the pets react to typing in any app. */
   keyboardHookEnabled: boolean;
+  /** Launch DevPet automatically on Windows startup */
+  autostartEnabled: boolean;
   hasSeenOnboarding?: boolean;
   pomodoroConfig: PomodoroConfig;
   autoStartBreaks?: boolean;
@@ -81,6 +83,7 @@ export const DEFAULT_SETTINGS: Settings = {
   pomodoroPetVisible: false,
   mokiPetVisible: true,
   keyboardHookEnabled: true,
+  autostartEnabled: true,
   hasSeenOnboarding: false,
   pomodoroConfig: { ...DEFAULT_POMODORO_CONFIG },
   autoStartBreaks: false,
