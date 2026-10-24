@@ -985,11 +985,6 @@ const bubbleMoodIcon = computed(() => {
   }
 });
 
-const tierClass = computed(() => {
-  if (displayWpm.value > 0 || currentMood.value === 'typing') return 'typing';
-  return 'idle';
-});
-
 const currentBubbleText = computed(() => {
   if (isScratching.value || isBlissful.value) {
     return 'Purrrrr~ 💕🐾';
