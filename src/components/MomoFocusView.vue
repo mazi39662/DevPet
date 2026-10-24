@@ -1,7 +1,27 @@
 <template>
-  <div class="pomodoro-grid">
-    <!-- Left: Focus Timer Clock & Stepper Controls -->
-    <PomodoroTimerClock
+  <div class="momo-page-wrapper">
+    <!-- Momo HD Mascot Spotlight & Lore Banner -->
+    <PetProfileBanner
+      pet-id="momo"
+      name="Momo"
+      title="Pomodoro Flow Guardian"
+      badge-text="DEEP WORK & FOCUS"
+      image-src="/pets/momo-hd.jpg"
+      image-alt="Momo High-Definition Pomodoro Mascot"
+      description="Momo is your cozy deep-work companion who protects your focus state. Wearing glowing noise-canceling headphones with fresh tomato leaves, Momo keeps you locked into intense 25-minute coding sprints and gently reminds you to rest your eyes, stretch, and sip warm tea during restorative breaks."
+      :deployed="pomodoroCompanionVisible"
+      :traits="[
+        { icon: '🍅', label: '25m Focus Sprint', desc: 'Deep work interval with laptop typing animation' },
+        { icon: '🍵', label: '5m Restorative Break', desc: 'Warm tea drinking animation and eye rest nudges' },
+        { icon: '🎧', label: 'Distraction Shield', desc: 'Promotes uninterrupted coding flow' },
+        { icon: '🔔', label: 'Acoustic Chimes', desc: 'Procedural Web Audio bell notifications' }
+      ]"
+      @toggle-deploy="$emit('toggle-pomo')"
+    />
+
+    <div class="pomodoro-grid">
+      <!-- Left: Focus Timer Clock & Stepper Controls -->
+      <PomodoroTimerClock
       :phase="pomoState.phase"
       :status="pomoState.status"
       :time-remaining="pomoState.timeRemaining"
@@ -94,6 +114,7 @@
       </div>
     </div>
   </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -104,6 +125,7 @@
  */
 import PomodoroPet from './PomodoroPet.vue';
 import PomodoroTimerClock from './PomodoroTimerClock.vue';
+import PetProfileBanner from './PetProfileBanner.vue';
 import type { PomodoroPhase, PomodoroState } from '../types/pomodoro';
 import type { Settings } from '../types/settings';
 

@@ -7,9 +7,16 @@ class NotificationService {
   private audioCtx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private keyboardGain: GainNode | null = null;
+  private keyboardCompressor: DynamicsCompressorNode | null = null;
   private volume = 0.8;
   private keyboardVolume = 0.8;
   private soundEffectsConfig: SoundEffectsConfig = { ...DEFAULT_SOUND_EFFECTS };
+
+  /** Perceptual audio curve with boost so 100% keyboard volume is punchy and distinct */
+  private calculateKeyboardGain(vol: number): number {
+    if (vol <= 0.001) return 0;
+    return Math.pow(Math.max(0, Math.min(1, vol)), 1.25) * 2.4;
+  }
 
   public setVolume(vol: number): void {
     this.volume = Math.max(0, Math.min(1, vol));
@@ -28,7 +35,8 @@ class NotificationService {
     this.keyboardVolume = Math.max(0, Math.min(1, vol));
     if (this.keyboardGain && this.audioCtx) {
       try {
-        this.keyboardGain.gain.setValueAtTime(this.keyboardVolume, this.audioCtx.currentTime);
+        const targetGain = this.calculateKeyboardGain(this.keyboardVolume);
+        this.keyboardGain.gain.setValueAtTime(targetGain, this.audioCtx.currentTime);
       } catch {}
     }
   }
@@ -62,6 +70,7 @@ class NotificationService {
         this.audioCtx = new AudioContextClass();
         this.masterGain = null;
         this.keyboardGain = null;
+        this.keyboardCompressor = null;
       }
       if (this.audioCtx.state === 'suspended') {
         this.audioCtx.resume();
@@ -73,8 +82,25 @@ class NotificationService {
       }
       if (!this.keyboardGain && this.audioCtx && this.masterGain) {
         this.keyboardGain = this.audioCtx.createGain();
-        this.keyboardGain.gain.setValueAtTime(this.keyboardVolume, this.audioCtx.currentTime);
+        this.keyboardGain.gain.setValueAtTime(
+          this.calculateKeyboardGain(this.keyboardVolume),
+          this.audioCtx.currentTime
+        );
         this.keyboardGain.connect(this.masterGain);
+
+        try {
+          if (typeof this.audioCtx.createDynamicsCompressor === 'function') {
+            this.keyboardCompressor = this.audioCtx.createDynamicsCompressor();
+            this.keyboardCompressor.threshold.setValueAtTime(-6, this.audioCtx.currentTime);
+            this.keyboardCompressor.knee.setValueAtTime(10, this.audioCtx.currentTime);
+            this.keyboardCompressor.ratio.setValueAtTime(4, this.audioCtx.currentTime);
+            this.keyboardCompressor.attack.setValueAtTime(0.001, this.audioCtx.currentTime);
+            this.keyboardCompressor.release.setValueAtTime(0.05, this.audioCtx.currentTime);
+            this.keyboardCompressor.connect(this.keyboardGain);
+          }
+        } catch {
+          this.keyboardCompressor = null;
+        }
       }
       return this.audioCtx;
     } catch {
@@ -91,7 +117,7 @@ class NotificationService {
   private getKeyboardDestination(): AudioNode | null {
     const ctx = this.getAudioContext();
     if (!ctx) return null;
-    return this.keyboardGain || this.masterGain || ctx.destination;
+    return this.keyboardCompressor || this.keyboardGain || this.masterGain || ctx.destination;
   }
 
   public async init(): Promise<void> {
@@ -404,7 +430,7 @@ class NotificationService {
           osc.frequency.exponentialRampToValueAtTime(80, now + 0.045);
 
           gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.linearRampToValueAtTime(0.12, now + 0.002);
+          gain.gain.linearRampToValueAtTime(0.28, now + 0.002);
           gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.048);
 
           osc.connect(filter);
@@ -422,7 +448,7 @@ class NotificationService {
           clickOsc.type = 'square';
           clickOsc.frequency.setValueAtTime(1400 + pitchRnd * 4, now);
           clickGain.gain.setValueAtTime(0.0001, now);
-          clickGain.gain.linearRampToValueAtTime(0.045, now + 0.001);
+          clickGain.gain.linearRampToValueAtTime(0.18, now + 0.001);
           clickGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.015);
 
           const bodyOsc = ctx.createOscillator();
@@ -431,7 +457,7 @@ class NotificationService {
           bodyOsc.frequency.setValueAtTime(320 + pitchRnd, now);
           bodyOsc.frequency.exponentialRampToValueAtTime(95, now + 0.038);
           bodyGain.gain.setValueAtTime(0.0001, now);
-          bodyGain.gain.linearRampToValueAtTime(0.08, now + 0.002);
+          bodyGain.gain.linearRampToValueAtTime(0.25, now + 0.002);
           bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
 
           clickOsc.connect(clickGain);
@@ -455,7 +481,7 @@ class NotificationService {
           osc.frequency.exponentialRampToValueAtTime(860 + pitchRnd * 1.5, now + 0.028);
 
           gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.linearRampToValueAtTime(0.11, now + 0.003);
+          gain.gain.linearRampToValueAtTime(0.26, now + 0.003);
           gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.038);
 
           osc.connect(gain);
@@ -475,7 +501,7 @@ class NotificationService {
           osc.frequency.setValueAtTime(baseTone * 1.25, now + 0.015);
 
           gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.linearRampToValueAtTime(0.05, now + 0.001);
+          gain.gain.linearRampToValueAtTime(0.20, now + 0.001);
           gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
 
           osc.connect(gain);
@@ -499,7 +525,7 @@ class NotificationService {
           osc.frequency.setValueAtTime(220 + pitchRnd, now);
 
           gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.linearRampToValueAtTime(0.07, now + 0.002);
+          gain.gain.linearRampToValueAtTime(0.24, now + 0.002);
           gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.042);
 
           osc.connect(filter);
@@ -523,7 +549,7 @@ class NotificationService {
           osc.frequency.exponentialRampToValueAtTime(65, now + 0.025);
 
           gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.linearRampToValueAtTime(0.05, now + 0.002);
+          gain.gain.linearRampToValueAtTime(0.20, now + 0.002);
           gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.028);
 
           osc.connect(filter);
@@ -547,7 +573,7 @@ class NotificationService {
           snapOsc.frequency.setValueAtTime(3200 + pitchRnd * 6, now);
           snapOsc.frequency.exponentialRampToValueAtTime(1100, now + 0.012);
           snapGain.gain.setValueAtTime(0.0001, now);
-          snapGain.gain.linearRampToValueAtTime(0.08, now + 0.001);
+          snapGain.gain.linearRampToValueAtTime(0.22, now + 0.001);
           snapGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.016);
 
           snapOsc.connect(snapFilter);
@@ -560,7 +586,7 @@ class NotificationService {
           bodyOsc.frequency.setValueAtTime(460 + pitchRnd, now);
           bodyOsc.frequency.exponentialRampToValueAtTime(140, now + 0.038);
           bodyGain.gain.setValueAtTime(0.0001, now);
-          bodyGain.gain.linearRampToValueAtTime(0.12, now + 0.002);
+          bodyGain.gain.linearRampToValueAtTime(0.28, now + 0.002);
           bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.042);
 
           bodyOsc.connect(bodyGain);
@@ -587,7 +613,7 @@ class NotificationService {
           osc.frequency.exponentialRampToValueAtTime(110, now + 0.035);
 
           gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.linearRampToValueAtTime(0.11, now + 0.002);
+          gain.gain.linearRampToValueAtTime(0.26, now + 0.002);
           gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
 
           osc.connect(filter);
@@ -607,7 +633,7 @@ class NotificationService {
           osc1.frequency.exponentialRampToValueAtTime(1650 + pitchRnd * 1.5, now + 0.016);
 
           gain1.gain.setValueAtTime(0.0001, now);
-          gain1.gain.linearRampToValueAtTime(0.1, now + 0.002);
+          gain1.gain.linearRampToValueAtTime(0.24, now + 0.002);
           gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
 
           const osc2 = ctx.createOscillator();
@@ -616,7 +642,7 @@ class NotificationService {
           osc2.frequency.setValueAtTime(1760 + pitchRnd * 2, now + 0.012);
 
           gain2.gain.setValueAtTime(0.0001, now + 0.012);
-          gain2.gain.linearRampToValueAtTime(0.06, now + 0.014);
+          gain2.gain.linearRampToValueAtTime(0.16, now + 0.014);
           gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.055);
 
           osc1.connect(gain1);
@@ -649,7 +675,7 @@ class NotificationService {
           fifthOsc.frequency.setValueAtTime(659.25 + pitchRnd * 1.2, now);
 
           gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.linearRampToValueAtTime(0.07, now + 0.002);
+          gain.gain.linearRampToValueAtTime(0.22, now + 0.002);
           gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
 
           rootOsc.connect(filter);
@@ -678,7 +704,7 @@ class NotificationService {
           osc.frequency.exponentialRampToValueAtTime(260, now + 0.022);
 
           gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.linearRampToValueAtTime(0.12, now + 0.001);
+          gain.gain.linearRampToValueAtTime(0.28, now + 0.001);
           gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
 
           const bodyOsc = ctx.createOscillator();
@@ -687,7 +713,7 @@ class NotificationService {
           bodyOsc.frequency.setValueAtTime(240 + pitchRnd, now);
           bodyOsc.frequency.exponentialRampToValueAtTime(85, now + 0.03);
           bodyGain.gain.setValueAtTime(0.0001, now);
-          bodyGain.gain.linearRampToValueAtTime(0.06, now + 0.002);
+          bodyGain.gain.linearRampToValueAtTime(0.18, now + 0.002);
           bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.032);
 
           osc.connect(filter);
@@ -713,7 +739,7 @@ class NotificationService {
           snapOsc.frequency.setValueAtTime(2200 + pitchRnd * 6, now);
           snapOsc.frequency.exponentialRampToValueAtTime(750, now + 0.012);
           snapGain.gain.setValueAtTime(0.0001, now);
-          snapGain.gain.linearRampToValueAtTime(0.065, now + 0.001);
+          snapGain.gain.linearRampToValueAtTime(0.22, now + 0.001);
           snapGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.015);
 
           // Stage 2: Housing bottom-out thud
@@ -723,7 +749,7 @@ class NotificationService {
           bodyOsc.frequency.setValueAtTime(520 + pitchRnd, now);
           bodyOsc.frequency.exponentialRampToValueAtTime(120, now + 0.035);
           bodyGain.gain.setValueAtTime(0.0001, now);
-          bodyGain.gain.linearRampToValueAtTime(0.075, now + 0.002);
+          bodyGain.gain.linearRampToValueAtTime(0.26, now + 0.002);
           bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
 
           snapOsc.connect(snapGain);
@@ -758,7 +784,7 @@ class NotificationService {
       wireOsc.frequency.setValueAtTime(1100, now);
       wireOsc.frequency.exponentialRampToValueAtTime(350, now + 0.015);
       wireGain.gain.setValueAtTime(0.0001, now);
-      wireGain.gain.linearRampToValueAtTime(0.05, now + 0.001);
+      wireGain.gain.linearRampToValueAtTime(0.18, now + 0.001);
       wireGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.018);
 
       const barOsc = ctx.createOscillator();
@@ -767,7 +793,7 @@ class NotificationService {
       barOsc.frequency.setValueAtTime(activeProf === 'thock' ? 170 : 260, now);
       barOsc.frequency.exponentialRampToValueAtTime(65, now + 0.055);
       barGain.gain.setValueAtTime(0.0001, now);
-      barGain.gain.linearRampToValueAtTime(0.12, now + 0.003);
+      barGain.gain.linearRampToValueAtTime(0.32, now + 0.003);
       barGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
 
       wireOsc.connect(wireGain);
@@ -804,7 +830,7 @@ class NotificationService {
         overtone.frequency.setValueAtTime(3135.96, now); // G7
 
         gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.linearRampToValueAtTime(0.14, now + 0.003);
+        gain.gain.linearRampToValueAtTime(0.28, now + 0.003);
         gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.55);
 
         bell.connect(gain);
@@ -818,8 +844,8 @@ class NotificationService {
       } else {
         // Affirmative 2-tone melodic harmonic chime on Enter
         const chord = [
-          { freq: 659.25, time: 0.0, gain: 0.09, dur: 0.12 }, // E5
-          { freq: 987.77, time: 0.04, gain: 0.12, dur: 0.22 }, // B5
+          { freq: 659.25, time: 0.0, gain: 0.20, dur: 0.12 }, // E5
+          { freq: 987.77, time: 0.04, gain: 0.26, dur: 0.22 }, // B5
         ];
         for (const note of chord) {
           const osc = ctx.createOscillator();
@@ -857,7 +883,7 @@ class NotificationService {
       osc.frequency.exponentialRampToValueAtTime(160, now + 0.035);
 
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(0.07, now + 0.002);
+      gain.gain.linearRampToValueAtTime(0.22, now + 0.002);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.038);
 
       osc.connect(gain);
@@ -906,23 +932,23 @@ class NotificationService {
       if (combo >= 100) {
         // Grand 4-note ascending sparkle arpeggio
         notes = [
-          { freq: 523.25, time: 0.0, gain: 0.12, dur: 0.15 },
-          { freq: 659.25, time: 0.08, gain: 0.14, dur: 0.18 },
-          { freq: 783.99, time: 0.16, gain: 0.16, dur: 0.22 },
-          { freq: 1046.5, time: 0.24, gain: 0.18, dur: 0.4 },
+          { freq: 523.25, time: 0.0, gain: 0.24, dur: 0.15 },
+          { freq: 659.25, time: 0.08, gain: 0.27, dur: 0.18 },
+          { freq: 783.99, time: 0.16, gain: 0.30, dur: 0.22 },
+          { freq: 1046.5, time: 0.24, gain: 0.34, dur: 0.4 },
         ];
       } else if (combo >= 50) {
         // Uplifting 3-note sparkle chord
         notes = [
-          { freq: 698.46, time: 0.0, gain: 0.11, dur: 0.14 },
-          { freq: 880.0, time: 0.09, gain: 0.13, dur: 0.18 },
-          { freq: 1046.5, time: 0.18, gain: 0.15, dur: 0.32 },
+          { freq: 698.46, time: 0.0, gain: 0.22, dur: 0.14 },
+          { freq: 880.0, time: 0.09, gain: 0.25, dur: 0.18 },
+          { freq: 1046.5, time: 0.18, gain: 0.28, dur: 0.32 },
         ];
       } else if (combo >= 25) {
         // Upbeat double chime
         notes = [
-          { freq: 783.99, time: 0.0, gain: 0.1, dur: 0.12 },
-          { freq: 1174.66, time: 0.09, gain: 0.13, dur: 0.25 },
+          { freq: 783.99, time: 0.0, gain: 0.22, dur: 0.12 },
+          { freq: 1174.66, time: 0.09, gain: 0.26, dur: 0.25 },
         ];
       } else {
         return;
@@ -963,7 +989,7 @@ class NotificationService {
       osc.frequency.exponentialRampToValueAtTime(880, now + 0.2);
 
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(0.12, now + 0.02);
+      gain.gain.linearRampToValueAtTime(0.26, now + 0.02);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
 
       osc.connect(gain);

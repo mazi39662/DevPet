@@ -1,57 +1,50 @@
 <template>
   <div class="moki-station-container">
-    <!-- Top Hero Banner: Moki Status & Live Speedometer -->
-    <div class="moki-hero-banner">
-      <div class="hero-left">
-        <div class="hero-badge">
-          <span class="badge-dot" :class="state.speedTier"></span>
-          <span>KEYBOARD ARCADE</span>
+    <!-- Top HD Mascot Showcase & Lore Banner -->
+    <PetProfileBanner
+      pet-id="moki"
+      name="Moki"
+      title="Live Typing Arcade Mascot"
+      badge-text="KEYBOARD COMPANION"
+      image-src="/pets/moki-hd.jpg"
+      image-alt="Moki High-Definition Keyboard Mascot"
+      description="Moki is your ultra-responsive desktop keyboard pet! Perched right on your screen, Moki reacts to every keystroke with colorful floating letter particles, tracks live & peak WPM velocity tiers (Casual → Flow → Fast → Godspeed), and plays 12 synthesized acoustic switch profiles. Boop Moki's nose or scratch its ears for loving purrs!"
+      :deployed="mokiCompanionVisible"
+      :traits="[
+        { icon: '⌨️', label: 'WPM Velocity Tracker', desc: 'Real-time typing speed and speed tiers' },
+        { icon: '🌈', label: '12 Switch Profiles', desc: 'Mechanical, thock, typewriter, and arcade sounds' },
+        { icon: '✨', label: 'Keystroke Particles', desc: 'Floating letter and burst particle physics' },
+        { icon: '🐾', label: 'Interactive Boops', desc: 'Petting purrs, affection hearts & sleep cycles' }
+      ]"
+      @toggle-deploy="$emit('toggle-moki')"
+    >
+      <template #stats>
+        <div class="stat-pill">
+          <span class="stat-lbl">CURRENT SPEED</span>
+          <span class="stat-val font-mono">{{ state.currentWpm }} <small>WPM</small></span>
+          <span class="stat-tier-tag" :class="state.speedTier">{{ state.speedTier.toUpperCase() }}</span>
         </div>
-        <h2 class="hero-title">Moki Station</h2>
-        <p class="hero-sub">
-          Your idle desktop typing companion! Spawns letter particle bursts, tracks typing speed, and expresses playful animations & emotions.
-        </p>
-
-        <div class="hero-stats-row">
-          <div class="h-stat-card">
-            <span class="stat-label">CURRENT SPEED</span>
-            <div class="stat-main">
-              <span class="stat-num">{{ state.currentWpm }}</span>
-              <span class="stat-unit">WPM</span>
-              <span class="stat-tier-tag" :class="state.speedTier">{{ state.speedTier.toUpperCase() }}</span>
-            </div>
-          </div>
-
-          <div class="h-stat-card">
-            <span class="stat-label">TODAY'S PEAK</span>
-            <div class="stat-main">
-              <span class="stat-num">{{ state.peakWpm }}</span>
-              <span class="stat-unit">WPM</span>
-            </div>
-          </div>
-
-          <div class="h-stat-card">
-            <span class="stat-label">KEYSTROKES</span>
-            <div class="stat-main">
-              <span class="stat-num font-mono">{{ state.totalKeystrokes.toLocaleString() }}</span>
-            </div>
-          </div>
-
-          <div class="h-stat-card">
-            <span class="stat-label">PET MOOD</span>
-            <div class="stat-main">
-              <span class="stat-num mood-pill-text">{{ state.mood.toUpperCase() }}</span>
-              <span class="stat-unit">🐾</span>
-            </div>
-          </div>
+        <div class="stat-pill">
+          <span class="stat-lbl">TODAY'S PEAK</span>
+          <span class="stat-val font-mono">{{ state.peakWpm }} <small>WPM</small></span>
         </div>
-      </div>
+        <div class="stat-pill">
+          <span class="stat-lbl">KEYSTROKES</span>
+          <span class="stat-val font-mono">{{ state.totalKeystrokes.toLocaleString() }}</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-lbl">PET MOOD</span>
+          <span class="stat-val mood-pill-text">{{ state.mood.toUpperCase() }} 🐾</span>
+        </div>
+      </template>
 
-      <!-- Mascot Live Preview in Hero -->
-      <div class="hero-mascot-preview">
-        <MokiPet :interactive="true" :sound-enabled="soundEnabled" />
-      </div>
-    </div>
+      <!-- Live interactive pixel pet preview on the right -->
+      <template #side>
+        <div class="hero-mascot-preview">
+          <MokiPet :interactive="true" :sound-enabled="soundEnabled" />
+        </div>
+      </template>
+    </PetProfileBanner>
 
     <!-- Main Grid: Typing Sandbox & Emotion Showcase -->
     <div class="moki-grid">
@@ -326,6 +319,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import MokiPet from './MokiPet.vue';
+import PetProfileBanner from './PetProfileBanner.vue';
 import { mokiCoordinator } from '../services/mokiCoordinator';
 import { notificationService } from '../services/notifications';
 import { emitEvent } from '../services/native';
@@ -335,6 +329,11 @@ import type { KeyboardSoundProfile, Settings } from '../types/settings';
 const props = defineProps<{
   soundEnabled: boolean;
   settings?: Settings;
+  mokiCompanionVisible?: boolean;
+}>();
+
+const emit = defineEmits<{
+  (e: 'toggle-moki'): void;
 }>();
 
 const state = mokiCoordinator.getState();

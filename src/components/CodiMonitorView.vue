@@ -1,9 +1,29 @@
 <template>
-  <div class="monitor-columns">
-    <!-- Left Column: Status Hero + Activity Feed -->
-    <div class="monitor-col primary-col">
-      <!-- Active Status Hero Card & Codi Preview -->
-      <section class="arcade-panel status-hero-card">
+  <div class="codi-page-wrapper">
+    <!-- Codi HD Mascot Spotlight & Lore Banner -->
+    <PetProfileBanner
+      pet-id="codi"
+      name="Codi"
+      title="Autonomous AI Agent Watchdog"
+      badge-text="AI PAIR PROGRAMMER"
+      image-src="/pets/codi-hd.jpg"
+      image-alt="Codi High-Definition Cyber Mascot"
+      description="Codi is your cybernetic AI pair programming companion. Floating on your desktop, Codi hooks directly into Google Antigravity and Codex lifecycles in real-time—radiating curiosity while reasoning, typing with electric particles during tool execution, sounding pulsing radar pings when your approval is needed, and launching victory fanfare when tasks succeed."
+      :deployed="agentCompanionVisible"
+      :traits="[
+        { icon: '💡', label: 'Reasoning Aura', desc: 'Glows when the agent is reasoning through prompts' },
+        { icon: '⚡', label: 'Tool Execution', desc: 'Types rapidly on glowing laptop while running tools' },
+        { icon: '🚨', label: 'Action Radar', desc: 'Pulsing radar alert when tool approval is required' },
+        { icon: '🚀', label: '1-Click IDE Focus', desc: 'Double-click mascot to instantly foreground your editor' }
+      ]"
+      @toggle-deploy="$emit('toggle-agent')"
+    />
+
+    <div class="monitor-columns">
+      <!-- Left Column: Status Hero + Activity Feed -->
+      <div class="monitor-col primary-col">
+        <!-- Active Status Hero Card & Codi Preview -->
+        <section class="arcade-panel status-hero-card">
         <div class="panel-header">
           <div class="panel-title-group">
             <span class="panel-icon">🐾</span>
@@ -222,6 +242,7 @@
       </section>
     </div>
   </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -232,6 +253,7 @@
  */
 import CompanionPet from './CompanionPet.vue';
 import StatusBadge from './StatusBadge.vue';
+import PetProfileBanner from './PetProfileBanner.vue';
 import type { AgentAdapter } from '../adapters/types';
 import type { AgentId, AgentStatus, AppDetection, HistoryEntry, StatusUpdate } from '../types/status';
 import type { Settings } from '../types/settings';
@@ -251,12 +273,14 @@ defineProps<{
   getApp: (id: AgentId) => AppDetection | undefined;
   getAgentName: (id: AgentId | 'system') => string;
   formatTime: (ts: number) => string;
+  agentCompanionVisible?: boolean;
 }>();
 
 defineEmits<{
   (e: 'select-agent', id: AgentId): void;
   (e: 'refresh-integrations'): void;
   (e: 'toggle-hook'): void;
+  (e: 'toggle-agent'): void;
   (e: 'simulate-state', status: AgentStatus): void;
   (e: 'test-chime'): void;
   (e: 'update:monitoringEnabled', val: boolean): void;

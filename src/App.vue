@@ -86,6 +86,7 @@
           :history="history"
           :settings="settings"
           :antigravity-hook-installed="antigravityHookInstalled"
+          :agent-companion-visible="agentCompanionVisible"
           :last-update-time="lastUpdateTime"
           :is-dev-mode="isDevMode"
           :test-states="testStates"
@@ -96,6 +97,7 @@
           @select-agent="selectAgent"
           @refresh-integrations="refreshAllIntegrations"
           @toggle-hook="toggleAntigravityHook"
+          @toggle-agent="toggleAgentCompanion"
           @simulate-state="simulateState"
           @test-chime="testChime"
           @update:monitoring-enabled="settings.monitoringEnabled = $event"
@@ -108,7 +110,12 @@
       <!-- TAB 4: MOKI KEYBOARD STATION                             -->
       <!-- ======================================================== -->
       <section v-else-if="currentTab === 'moki'" class="tab-content moki-view">
-        <MokiStationView :sound-enabled="settings.soundEnabled" :settings="settings" />
+        <MokiStationView
+          :sound-enabled="settings.soundEnabled"
+          :settings="settings"
+          :moki-companion-visible="mokiCompanionVisible"
+          @toggle-moki="toggleMokiCompanion"
+        />
       </section>
 
       <!-- ======================================================== -->
