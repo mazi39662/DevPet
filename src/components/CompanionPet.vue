@@ -1476,7 +1476,6 @@ onUnmounted(() => {
 
 /* Agent tag badge */
 .agent-tag {
-  margin-top: 16px;
   background: rgba(15, 18, 26, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 2px 8px;

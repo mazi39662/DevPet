@@ -274,7 +274,6 @@
       @click.stop="togglePlay"
     >
       <span class="dot" :class="{ pulsing: state.status === 'running' }"></span>
-      <span class="name">Momo</span>
       <span class="time">{{ formatTime(state.timeRemaining) }}</span>
       <span class="play">{{ state.status === 'running' ? '⏸' : '▶' }}</span>
     </div>
@@ -1033,7 +1032,6 @@ onUnmounted(() => {
 
 /* Name + timer tag */
 .name-tag {
-  margin-top: 16px;
   background: rgba(15, 18, 26, 0.88);
   border: 1px solid rgba(255, 118, 117, 0.5);
   border-radius: 12px;

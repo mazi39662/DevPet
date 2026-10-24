@@ -438,11 +438,7 @@
 
     <!-- Status Pill Row: Name Tag + RAM Usage Indicator -->
     <div class="moki-tags-row">
-      <!-- Mascot Name Tag -->
-      <div class="name-tag" :class="tierClass" @click.stop="triggerRandomQuip">
-        <span class="status-dot" :class="{ active: isTyping }"></span>
-        <span class="tag-label">Moki</span>
-      </div>
+     
 
       <!-- RAM Status Pill Tag -->
       <div
@@ -453,10 +449,10 @@
         @click.stop="cycleRamTier"
         @mousedown.stop
       >
-        <span class="ram-pill-dot" :class="activeRamTier"></span>
         <span class="ram-pill-icon">{{ ramTierMeta.icon }}</span>
         <span class="ram-pill-label">{{ activeRamUsage.percentage }}%</span>
       </div>
+
     </div>
 
     <!-- Hover Quick Buttons: Sound Profile, Settings, Close -->
@@ -2092,10 +2088,9 @@ onUnmounted(() => {
 /* Tags row underneath Moki */
 .moki-tags-row {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  margin-top: 4px;
   position: relative;
   z-index: 25;
 }
