@@ -10,7 +10,7 @@
  * approval) and outputs {} as a safe pass-through without blocking.
  */
 import type { RawSourceEvent, HookStatus } from '../types/events';
-import type { AgentStatus, AppDetection, IntegrationState, StatusUpdate } from '../types/status';
+import type { AgentStatus, AppDetection, ApprovalInfo, IntegrationState, StatusUpdate } from '../types/status';
 import { native } from '../services/native';
 import { SessionTracker } from './sessionTracker';
 import type { AdapterContext, AgentAdapter } from './types';
@@ -28,6 +28,8 @@ export interface AntigravityRecord {
   fullyIdle: boolean | null;
   error: string | null;
   toolName: string | null;
+  toolSummary?: string | null;
+  targetDetail?: string | null;
 }
 
 const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
@@ -50,6 +52,8 @@ export function parseAntigravityRecord(payload: unknown): AntigravityRecord | nu
     fullyIdle: typeof p.fullyIdle === 'boolean' ? p.fullyIdle : null,
     error: str(p.error),
     toolName: str(p.toolName),
+    toolSummary: str(p.toolSummary),
+    targetDetail: str(p.targetDetail),
   };
 }
 
@@ -57,6 +61,7 @@ export interface MappedStatus {
   status: AgentStatus;
   detail: string;
   completionKey?: string;
+  approval?: ApprovalInfo | null;
 }
 
 /** Pure mapping from a hook record to a normalized status. */
@@ -76,21 +81,54 @@ export function mapAntigravityRecord(r: AntigravityRecord): MappedStatus | null 
         tool.includes('approval') || tool.includes('permission');
 
       if (isQuestion) {
+        const summary = r.toolSummary || r.targetDetail || 'Action needed: Question waiting for reply';
         return {
           status: 'waiting',
           detail: 'Action needed: Question waiting for reply',
+          approval: {
+            type: 'question',
+            title: 'Input Needed',
+            summary,
+            toolName: r.toolName ?? 'ask_question',
+            targetDetail: r.targetDetail ?? undefined,
+            actions: [
+              { id: 'open', label: 'Open', variant: 'open', primary: true },
+            ],
+          },
         };
       }
       if (isCommand) {
+        const summary = r.targetDetail || r.toolSummary || 'Run terminal command';
         return {
           status: 'waiting',
           detail: 'Approval needed: Command waiting for run/allow',
+          approval: {
+            type: 'command',
+            title: 'Command Approval',
+            summary,
+            toolName: r.toolName ?? 'run_command',
+            targetDetail: r.targetDetail ?? undefined,
+            actions: [
+              { id: 'open', label: 'Open', variant: 'open', primary: true },
+            ],
+          },
         };
       }
       if (isApprovalOrEdit) {
+        const summary = r.targetDetail ? `Edit: ${r.targetDetail}` : (r.toolSummary || 'Waiting for approval or review');
         return {
           status: 'waiting',
           detail: 'Action needed: Waiting for approval or review',
+          approval: {
+            type: 'edit',
+            title: 'Review Required',
+            summary,
+            toolName: r.toolName ?? 'edit_file',
+            targetDetail: r.targetDetail ?? undefined,
+            actions: [
+              { id: 'open', label: 'Open', variant: 'open', primary: true },
+            ],
+          },
         };
       }
       return {
@@ -178,6 +216,7 @@ export class AntigravityAdapter implements AgentAdapter {
       detail: mapped.detail,
       completionKey: mapped.completionKey,
       replay: event.replay,
+      approval: mapped.approval,
     };
     const { completion, aggregate } = this.tracker.apply(rec.conversationId ?? 'default', update);
     if (aggregate) this.ctx?.emit(aggregate);

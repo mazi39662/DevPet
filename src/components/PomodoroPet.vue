@@ -441,9 +441,7 @@ async function hidePet() {
   } catch {}
 }
 
-// ---- interactions (drag, petting, double click) -----------------------
-interface MouseSample { x: number; y: number; time: number }
-const mouseHistory: MouseSample[] = [];
+// ---- interactions (drag, double click) -----------------------
 let scratchTimeout: ReturnType<typeof setTimeout> | null = null;
 let blissTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -466,26 +464,17 @@ function stopScratching() {
 function onMouseLeave() {
   eyeLookX.value = 0;
   eyeLookY.value = 0;
-  mouseHistory.length = 0;
   stopScratching();
 }
 
 function onMouseMove(e: MouseEvent) {
   if (!props.interactive) return;
-  const now = Date.now();
+
+  // Interactive eye tracking: Momo's eyes follow the mouse cursor smoothly
   if (containerRef.value) {
     const r = containerRef.value.getBoundingClientRect();
     eyeLookX.value = Math.max(-2, Math.min(2, ((e.clientX - (r.left + r.width / 2)) / (r.width / 2)) * 2));
     eyeLookY.value = Math.max(-1.5, Math.min(1.5, ((e.clientY - (r.top + r.height / 2)) / (r.height / 2)) * 1.5));
-  }
-  mouseHistory.push({ x: e.clientX, y: e.clientY, time: now });
-  while (mouseHistory.length && now - mouseHistory[0].time > 360) mouseHistory.shift();
-  if (mouseHistory.length >= 4) {
-    let dist = 0;
-    for (let i = 1; i < mouseHistory.length; i++) {
-      dist += Math.hypot(mouseHistory[i].x - mouseHistory[i - 1].x, mouseHistory[i].y - mouseHistory[i - 1].y);
-    }
-    if (dist >= 110 && now - mouseHistory[0].time >= 60) startScratching();
   }
 }
 
@@ -570,6 +559,10 @@ onUnmounted(() => {
     clearTimeout(userTypingTimer);
     userTypingTimer = null;
   }
+});
+
+defineExpose({
+  startScratching,
 });
 </script>
 

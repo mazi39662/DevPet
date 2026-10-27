@@ -73,13 +73,44 @@ pub fn build_record(event: &str, raw: &str, ts: u64, pid: u32) -> Result<Value, 
         .and_then(Value::as_str)
         .map(str::to_owned);
 
-    let tool_name = input
-        .get("toolCall")
+    let tool_call = input.get("toolCall");
+    let tool_name = tool_call
         .and_then(|t| t.get("name"))
         .and_then(Value::as_str)
         .or_else(|| input.get("tool_name").and_then(Value::as_str))
         .or_else(|| input.get("toolName").and_then(Value::as_str))
         .map(str::to_owned);
+
+    let tool_args = tool_call
+        .and_then(|t| t.get("args").or_else(|| t.get("parameters")))
+        .or_else(|| input.get("toolArgs"))
+        .or_else(|| input.get("parameters"))
+        .or_else(|| input.get("args"));
+
+    let tool_summary = tool_args
+        .and_then(|a| a.get("toolSummary").or_else(|| a.get("toolAction")))
+        .and_then(Value::as_str)
+        .or_else(|| input.get("toolSummary").or_else(|| input.get("toolAction")).and_then(Value::as_str))
+        .map(str::to_owned);
+
+    let target_detail = tool_args
+        .and_then(|a| {
+            a.get("CommandLine")
+                .or_else(|| a.get("commandLine"))
+                .or_else(|| a.get("TargetFile"))
+                .or_else(|| a.get("targetFile"))
+                .or_else(|| a.get("TargetDirectory"))
+                .or_else(|| a.get("question"))
+                .or_else(|| a.get("query"))
+        })
+        .and_then(Value::as_str)
+        .map(|s| {
+            if s.len() > 80 {
+                format!("{}...", &s[..77])
+            } else {
+                s.to_string()
+            }
+        });
 
     Ok(json!({
         "v": 1,
@@ -96,6 +127,8 @@ pub fn build_record(event: &str, raw: &str, ts: u64, pid: u32) -> Result<Value, 
         "fullyIdle": input.get("fullyIdle").and_then(Value::as_bool),
         "error": get_str("error").filter(|e| !e.is_empty()),
         "toolName": tool_name,
+        "toolSummary": tool_summary,
+        "targetDetail": target_detail,
     }))
 }
 
@@ -146,5 +179,25 @@ mod tests {
     #[test]
     fn invalid_json_is_an_error() {
         assert!(build_record("Stop", "{not json", 1, 1).is_err());
+    }
+
+    #[test]
+    fn pre_tool_use_extracts_summary_and_target_detail() {
+        let raw = r#"{
+            "conversationId": "test-conv",
+            "toolCall": {
+                "name": "run_command",
+                "args": {
+                    "CommandLine": "cargo test --all",
+                    "toolAction": "Running cargo test",
+                    "toolSummary": "Cargo test"
+                }
+            }
+        }"#;
+        let rec = build_record("PreToolUse", raw, 100, 200).unwrap();
+        assert_eq!(rec["event"], "PreToolUse");
+        assert_eq!(rec["toolName"], "run_command");
+        assert_eq!(rec["toolSummary"], "Cargo test");
+        assert_eq!(rec["targetDetail"], "cargo test --all");
     }
 }

@@ -3,12 +3,37 @@
 
 use std::path::PathBuf;
 
-/// `%LOCALAPPDATA%\DevPet` (falls back to the temp dir if unset).
+/// Stable application data directory:
+/// - Windows: `%LOCALAPPDATA%\DevPet`
+/// - macOS: `~/Library/Application Support/DevPet`
+/// - Linux: `$XDG_DATA_HOME/devpet` or `~/.local/share/devpet`
+/// (falls back to system temp dir if unset)
 pub fn data_dir() -> PathBuf {
-    std::env::var_os("LOCALAPPDATA")
-        .map(PathBuf::from)
-        .unwrap_or_else(std::env::temp_dir)
-        .join("DevPet")
+    #[cfg(target_os = "windows")]
+    {
+        if let Some(val) = std::env::var_os("LOCALAPPDATA") {
+            return PathBuf::from(val).join("DevPet");
+        }
+        if let Some(home) = home_dir() {
+            return home.join("AppData").join("Local").join("DevPet");
+        }
+    }
+    #[cfg(target_os = "macos")]
+    {
+        if let Some(home) = home_dir() {
+            return home.join("Library").join("Application Support").join("DevPet");
+        }
+    }
+    #[cfg(target_os = "linux")]
+    {
+        if let Some(val) = std::env::var_os("XDG_DATA_HOME") {
+            return PathBuf::from(val).join("devpet");
+        }
+        if let Some(home) = home_dir() {
+            return home.join(".local").join("share").join("devpet");
+        }
+    }
+    std::env::temp_dir().join("DevPet")
 }
 
 /// JSONL file the Antigravity hook appends lifecycle events to.
@@ -16,11 +41,17 @@ pub fn antigravity_events_file() -> PathBuf {
     data_dir().join("antigravity-events.jsonl")
 }
 
-/// Stable location the hook executable is copied to. Using a copy (instead of
-/// pointing at the build output) means rebuilding DevPet never locks or breaks
-/// a running agent's hook, and the path contains no spaces for `cmd /c`.
+/// Stable location the hook executable is copied to.
+/// Uses .exe on Windows and no extension on Unix/macOS/Linux.
 pub fn hook_exe_path() -> PathBuf {
-    data_dir().join("bin").join("devpet-hook.exe")
+    #[cfg(target_os = "windows")]
+    {
+        data_dir().join("bin").join("devpet-hook.exe")
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        data_dir().join("bin").join("devpet-hook")
+    }
 }
 
 pub fn home_dir() -> Option<PathBuf> {

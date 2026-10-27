@@ -330,12 +330,12 @@ fn push_antigravity(out: &mut Vec<RawSourceEvent>, lines: Vec<String>, replay: b
 // ---------------------------------------------------------------------------
 
 const APP_PATTERNS: [(&str, &[&str]); 6] = [
-    ("antigravity", &["antigravity ide.exe", "antigravity.exe", "antigravity"]),
-    ("vscode", &["code.exe", "code"]),
+    ("antigravity", &["antigravity ide.exe", "antigravity.exe", "antigravity", "antigravity ide"]),
+    ("vscode", &["code.exe", "code", "visual studio code"]),
     ("codex", &["codex.exe", "codex"]),
     ("cursor", &["cursor.exe", "cursor"]),
     ("opencode", &["opencode.exe", "opencode", "claude.exe", "claude"]),
-    ("ollama", &["ollama.exe", "ollama_app.exe", "ollama"]),
+    ("ollama", &["ollama.exe", "ollama_app.exe", "ollama", "ollama_app"]),
 ];
 
 pub fn scan_apps(sys: &mut System) -> Vec<AppDetection> {

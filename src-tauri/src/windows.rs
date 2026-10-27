@@ -46,8 +46,11 @@ pub fn calculate_bottom_right_position<R: Runtime>(
     });
 
     // Windows taskbar is typically 48-64px high.
-    // Margin from right edge: 24px logical. Margin above bottom edge: 68px logical.
+    // Margin from right edge: 24px logical. Margin above bottom edge: 42px on macOS, 68px on others.
     let margin_right = (24.0 * scale).round() as i32;
+    #[cfg(target_os = "macos")]
+    let margin_bottom = (42.0 * scale).round() as i32;
+    #[cfg(not(target_os = "macos"))]
     let margin_bottom = (68.0 * scale).round() as i32;
     let slot_spacing = ((COMPANION_SIZE.0 + 12.0) * scale).round() as i32;
 
@@ -385,7 +388,65 @@ mod win_focus {
     }
 }
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "macos")]
+mod win_focus {
+    use std::process::Command;
+
+    pub fn focus(target_agent: Option<&str>) -> bool {
+        let agent = target_agent.unwrap_or("antigravity").to_lowercase();
+        let app_names: Vec<&str> = match agent.as_str() {
+            "vscode" => vec!["Visual Studio Code", "Code"],
+            "cursor" => vec!["Cursor"],
+            "codex" => vec!["Codex", "Terminal", "iTerm2", "Ghostty"],
+            "opencode" => vec!["OpenCode", "Claude", "Terminal", "iTerm2"],
+            "ollama" => vec!["Ollama", "Terminal"],
+            _ => vec!["Antigravity", "Antigravity IDE", "Visual Studio Code"],
+        };
+
+        for name in app_names {
+            let script = format!("tell application \"{}\" to activate", name);
+            if let Ok(output) = Command::new("osascript").args(["-e", &script]).output() {
+                if output.status.success() {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+}
+
+#[cfg(target_os = "linux")]
+mod win_focus {
+    use std::process::Command;
+
+    pub fn focus(target_agent: Option<&str>) -> bool {
+        let agent = target_agent.unwrap_or("antigravity").to_lowercase();
+        let title_patterns: Vec<&str> = match agent.as_str() {
+            "vscode" => vec!["Visual Studio Code", "Code"],
+            "cursor" => vec!["Cursor"],
+            "codex" => vec!["Codex", "Terminal", "bash"],
+            "opencode" => vec!["OpenCode", "Claude", "Terminal"],
+            "ollama" => vec!["Ollama", "Terminal"],
+            _ => vec!["Antigravity", "Visual Studio Code"],
+        };
+
+        for pat in title_patterns {
+            if let Ok(output) = Command::new("wmctrl").args(["-a", pat]).output() {
+                if output.status.success() {
+                    return true;
+                }
+            }
+            if let Ok(output) = Command::new("xdotool").args(["search", "--name", pat, "windowactivate"]).output() {
+                if output.status.success() {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
 mod win_focus {
     pub fn focus(_: Option<&str>) -> bool {
         false
@@ -403,6 +464,22 @@ pub fn play_system_alert() {
             fn MessageBeep(uType: u32) -> i32;
         }
         let _ = MessageBeep(0x00000040); // MB_ICONASTERISK (Notification chime)
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let _ = std::process::Command::new("afplay")
+            .args(["/System/Library/Sounds/Ping.aiff"])
+            .spawn();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        if std::process::Command::new("canberra-gtk-play")
+            .args(["--id", "message"])
+            .spawn()
+            .is_err()
+        {
+            print!("\x07");
+        }
     }
 }
 

@@ -38,6 +38,8 @@ export interface StatusUpdate {
   completionKey?: string;
   /** True when rebuilt from history at startup — must never notify. */
   replay?: boolean;
+  /** Structured approval details when waiting for user action */
+  approval?: ApprovalInfo | null;
 }
 
 /** Application presence from process scanning. Not agent status. */
@@ -74,6 +76,30 @@ export interface HistoryEntry {
   timestamp: number;
   source: string;
   detail?: string;
+  confidence?: Confidence;
+  method?: DetectionMethod;
+  sessionId?: string;
+  approvalTitle?: string;
+  approvalType?: ApprovalType;
+  durationMs?: number;
+}
+
+export type ApprovalType = 'command' | 'edit' | 'question' | 'action';
+
+export interface ApprovalAction {
+  id: string;
+  label: string;
+  variant: 'open' | 'allow' | 'approve' | 'reject' | 'reply' | 'skip' | 'focus';
+  primary?: boolean;
+}
+
+export interface ApprovalInfo {
+  type: ApprovalType;
+  title: string;
+  summary: string;
+  toolName?: string;
+  targetDetail?: string;
+  actions: ApprovalAction[];
 }
 
 /** Display state broadcast to the companion window. */
@@ -82,6 +108,7 @@ export interface CompanionState {
   label: string;
   agentName: string | null;
   monitoring: boolean;
+  approval?: ApprovalInfo | null;
 }
 
 export interface CelebrationEvent {

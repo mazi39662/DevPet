@@ -22,102 +22,299 @@
     <div class="monitor-columns">
       <!-- Left Column: Status Hero + Activity Feed -->
       <div class="monitor-col primary-col">
-        <!-- Active Status Hero Card & Codi Preview -->
+        <!-- Active Status Hero Card & Codi Preview (Fitted, Compact) -->
         <section class="arcade-panel status-hero-card">
-        <div class="panel-header">
-          <div class="panel-title-group">
-            <span class="panel-icon">🐾</span>
-            <h2 class="panel-title">Codi Status Feed</h2>
-          </div>
-          <span class="last-updated" v-if="lastUpdateTime">
-            {{ lastUpdateTime }}
-          </span>
-        </div>
-
-        <div class="hero-body">
-          <div class="hero-pet-preview codi-glow">
-            <CompanionPet
-              :status="currentStatus.status"
-              :label="currentStatus.detail"
-              agent-name="Codi"
-              :show-bubble="false"
-              :sound-enabled="settings.soundEnabled"
-            />
-          </div>
-
-          <div class="hero-details">
-            <div class="status-row">
-              <span class="label-muted">Active Agent</span>
-              <span class="value-highlight">{{ activeAgentAdapter?.displayName || 'None' }}</span>
+          <div class="panel-header compact-header">
+            <div class="panel-title-group">
+              <span class="panel-icon">🐾</span>
+              <h2 class="panel-title">Codi Status Feed</h2>
+              <span class="live-dot" :class="currentStatus.status" title="Real-time status stream active"></span>
             </div>
-
-            <div class="status-row">
-              <span class="label-muted">Current State</span>
-              <StatusBadge :status="currentStatus.status" size="lg" />
-            </div>
-
-            <div class="status-row">
-              <span class="label-muted">Confidence</span>
-              <span class="badge-confidence" :class="currentStatus.confidence">
-                {{ currentStatus.confidence }}
+            <div class="header-actions">
+              <span class="last-updated" v-if="lastUpdateTime">
+                <span class="time-icon">🕒</span> {{ lastUpdateTime }}
               </span>
-            </div>
-
-            <div class="status-row">
-              <span class="label-muted">Signal Source</span>
-              <span class="source-text">{{ currentStatus.source }}</span>
-            </div>
-
-            <div class="detail-box" v-if="currentStatus.detail">
-              <span class="detail-label">Status Summary</span>
-              <p class="detail-content">{{ currentStatus.detail }}</p>
+              <button
+                class="arcade-btn btn-xs ghost-deploy"
+                :class="{ active: agentCompanionVisible }"
+                @click="$emit('toggle-agent')"
+                title="Toggle desktop floating Codi"
+              >
+                {{ agentCompanionVisible ? '🐾 Floating' : '🪟 Docked' }}
+              </button>
             </div>
           </div>
-        </div>
 
-        <!-- Dev Simulator (Local Testing) -->
-        <div class="mock-simulator" v-if="isDevMode">
-          <span class="mock-title">⚡ Dev Simulator (Local State Testing):</span>
-          <div class="mock-buttons">
+          <div class="hero-body fitted-hero">
+            <div class="hero-pet-preview codi-glow fitted-pet">
+              <CompanionPet
+                :status="currentStatus.status"
+                :label="currentStatus.detail"
+                agent-name="Codi"
+                :show-bubble="false"
+                :sound-enabled="settings.soundEnabled"
+                mini
+              />
+            </div>
+
+            <div class="hero-details fitted-details">
+              <!-- 2x2 Fitted Metadata Grid -->
+              <div class="meta-grid">
+                <div class="meta-card">
+                  <span class="meta-label">Active Agent</span>
+                  <div class="meta-val">
+                    <span class="agent-avatar-mini">{{ activeAgentAdapter?.id === 'antigravity' ? '🪐' : '🔷' }}</span>
+                    <span class="value-highlight">{{ activeAgentAdapter?.displayName || 'None' }}</span>
+                  </div>
+                </div>
+
+                <div class="meta-card">
+                  <span class="meta-label">Current State</span>
+                  <div class="meta-val">
+                    <StatusBadge :status="currentStatus.status" size="sm" />
+                  </div>
+                </div>
+
+                <div class="meta-card">
+                  <span class="meta-label">Confidence</span>
+                  <div class="meta-val">
+                    <span class="badge-confidence" :class="currentStatus.confidence">
+                      {{ currentStatus.confidence }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="meta-card">
+                  <span class="meta-label">Signal Source</span>
+                  <div class="meta-val">
+                    <span class="source-text" :title="currentStatus.source">{{ currentStatus.source }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Compact Status Summary Banner -->
+              <div class="compact-detail-banner" :class="currentStatus.status" v-if="currentStatus.detail">
+                <span class="detail-lead">💬</span>
+                <span class="detail-lead-text">{{ currentStatus.detail }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actionable Micro-Controls Banner when WAITING for approval -->
+          <div class="approval-action-banner compact-approval" v-if="currentStatus.status === 'waiting'">
+            <div class="banner-header">
+              <span class="banner-badge">⏳ ACTION REQUIRED</span>
+              <span class="banner-title">{{ currentStatus.approval?.title || 'Waiting for Approval' }}</span>
+            </div>
+            <p class="banner-summary">{{ currentStatus.approval?.summary || currentStatus.detail }}</p>
+            <div class="banner-controls">
+              <button
+                class="banner-btn primary btn-sm"
+                @click="$emit('focus-app'); $emit('approval-action', 'open')"
+              >
+                🚀 Open
+              </button>
+            </div>
+          </div>
+
+          <!-- Dev Simulator (Local Testing) - Fitted Strip -->
+          <div class="mock-simulator compact-sim" v-if="isDevMode">
+            <span class="mock-title">⚡ Test Simulation:</span>
+            <div class="mock-buttons">
+              <button
+                v-for="st in testStates"
+                :key="st"
+                class="mock-btn mini"
+                :class="{ active: currentStatus.status === st }"
+                @click="$emit('simulate-state', st)"
+              >
+                {{ st }}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Activity Feed (Rich Details) -->
+        <section class="arcade-panel history-card rich-feed">
+          <div class="panel-header feed-header">
+            <div class="panel-title-group">
+              <span class="panel-icon">📜</span>
+              <h2 class="panel-title">Activity Feed</h2>
+              <span class="count-badge">{{ filteredHistory.length }} of {{ history.length }}</span>
+            </div>
+            <div class="feed-header-actions">
+              <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Filter events, tools, files..."
+                  class="search-input"
+                />
+                <button
+                  v-if="searchQuery"
+                  class="clear-search-btn"
+                  @click="searchQuery = ''"
+                  title="Clear search"
+                >
+                  ✕
+                </button>
+              </div>
+              <button
+                v-if="history.length > 0"
+                class="arcade-btn btn-xs secondary clear-feed-btn"
+                @click="$emit('clear-history')"
+                title="Clear activity feed"
+              >
+                🗑️ Clear
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter Pills -->
+          <div class="feed-filters">
             <button
-              v-for="st in testStates"
-              :key="st"
-              class="mock-btn"
-              :class="{ active: currentStatus.status === st }"
-              @click="$emit('simulate-state', st)"
+              class="filter-chip"
+              :class="{ active: activeFilter === 'all' }"
+              @click="activeFilter = 'all'"
             >
-              {{ st }}
+              All ({{ counts.all }})
+            </button>
+            <button
+              class="filter-chip"
+              :class="{ active: activeFilter === 'working' }"
+              @click="activeFilter = 'working'"
+            >
+              ⚡ Working ({{ counts.working }})
+            </button>
+            <button
+              class="filter-chip"
+              :class="{ active: activeFilter === 'waiting' }"
+              @click="activeFilter = 'waiting'"
+            >
+              ⏳ Approvals ({{ counts.waiting }})
+            </button>
+            <button
+              class="filter-chip"
+              :class="{ active: activeFilter === 'completed' }"
+              @click="activeFilter = 'completed'"
+            >
+              ✅ Completed ({{ counts.completed }})
+            </button>
+            <button
+              class="filter-chip"
+              :class="{ active: activeFilter === 'error' }"
+              @click="activeFilter = 'error'"
+            >
+              ❌ Errors ({{ counts.error }})
             </button>
           </div>
-        </div>
-      </section>
 
-      <!-- Activity Feed -->
-      <section class="arcade-panel history-card">
-        <div class="panel-header">
-          <div class="panel-title-group">
-            <span class="panel-icon">📜</span>
-            <h2 class="panel-title">Activity Feed</h2>
-          </div>
-          <span class="count-badge">{{ history.length }} events</span>
-        </div>
+          <!-- Rich History List -->
+          <div class="history-list detailed-list" v-if="filteredHistory.length > 0">
+            <div
+              v-for="item in filteredHistory"
+              :key="item.id"
+              class="rich-history-card"
+              :class="item.to"
+            >
+              <!-- Top Row: Time, Agent, Status Transition, Duration, Origin -->
+              <div class="card-top-row">
+                <div class="card-left-group">
+                  <span class="event-icon" :title="item.to">{{ getStateIcon(item.to) }}</span>
+                  <div class="time-block">
+                    <span class="full-time">{{ formatTime(item.timestamp) }}</span>
+                    <span class="rel-time">({{ formatRelativeTime(item.timestamp) }})</span>
+                  </div>
+                  <span class="agent-tag-pill" :class="item.agentId">
+                    {{ getAgentName(item.agentId) }}
+                  </span>
+                  <div class="status-flow">
+                    <span class="flow-from" v-if="item.from">{{ item.from }}</span>
+                    <span class="flow-arrow" v-if="item.from">➔</span>
+                    <StatusBadge :status="item.to" size="sm" />
+                  </div>
+                </div>
 
-        <div class="history-list" v-if="history.length > 0">
-          <div v-for="item in history" :key="item.id" class="history-item">
-            <span class="history-time">{{ formatTime(item.timestamp) }}</span>
-            <span class="history-agent">{{ getAgentName(item.agentId) }}</span>
-            <div class="history-transition">
-              <span class="transition-from" v-if="item.from">{{ item.from }}</span>
-              <span class="arrow" v-if="item.from">→</span>
-              <StatusBadge :status="item.to" size="sm" />
+                <div class="card-right-group">
+                  <!-- Duration badge if available -->
+                  <span class="duration-badge" v-if="item.durationMs" title="Task execution duration">
+                    ⏱️ {{ formatDuration(item.durationMs) }}
+                  </span>
+                  <!-- Method / Source badge -->
+                  <span class="source-badge" :title="'Source: ' + item.source">
+                    {{ item.method ? item.method : item.source.split(' ')[0] }}
+                  </span>
+                  <!-- Confidence tag -->
+                  <span
+                    v-if="item.confidence && item.confidence !== 'none'"
+                    class="badge-confidence-mini"
+                    :class="item.confidence"
+                  >
+                    {{ item.confidence }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Detail / Body Row -->
+              <div class="card-detail-body" v-if="item.detail || item.approvalTitle">
+                <!-- Approval Lead Callout -->
+                <div class="approval-callout" v-if="item.approvalTitle">
+                  <span class="callout-icon">🚨</span>
+                  <span class="callout-title">{{ item.approvalTitle }}</span>
+                </div>
+
+                <!-- Detail Text / Code block -->
+                <div
+                  v-if="item.detail"
+                  class="detail-text-box"
+                  :class="{
+                    'command-style': isCommandLike(item.detail),
+                    expanded: expandedEntries.has(item.id)
+                  }"
+                >
+                  <code class="code-snippet">{{ item.detail }}</code>
+                  <button
+                    v-if="item.detail.length > 130"
+                    class="expand-toggle"
+                    @click.stop="toggleExpand(item.id)"
+                  >
+                    {{ expandedEntries.has(item.id) ? '▲ Less' : '▼ More' }}
+                  </button>
+                </div>
+
+                <!-- Metadata Footer (Session ID / File Origin) -->
+                <div class="card-meta-footer" v-if="item.sessionId || (item.source && item.source !== item.method)">
+                  <span class="meta-tag session" v-if="item.sessionId">
+                    🆔 {{ item.sessionId.slice(0, 10) }}...
+                  </span>
+                  <span class="meta-tag origin" v-if="item.source && item.source !== item.method">
+                    📡 {{ item.source }}
+                  </span>
+                </div>
+              </div>
             </div>
-            <span class="history-detail" :title="item.detail || ''">{{ item.detail || '—' }}</span>
           </div>
-        </div>
-        <div class="empty-state" v-else>
-          <p>No status changes recorded yet.</p>
-        </div>
-      </section>
+
+          <!-- Empty State -->
+          <div class="empty-state" v-else>
+            <div class="empty-icon">🐾</div>
+            <p class="empty-title">{{ history.length === 0 ? 'No activity events recorded yet' : 'No matching events found' }}</p>
+            <p class="empty-sub">
+              {{ history.length === 0
+                ? 'Events will stream in live as you code with Antigravity, Codex, or VS Code.'
+                : 'Try clearing your search query or selecting a different status filter.'
+              }}
+            </p>
+            <button
+              v-if="history.length > 0"
+              class="arcade-btn btn-xs secondary reset-btn"
+              @click="activeFilter = 'all'; searchQuery = ''"
+            >
+              Reset Filters
+            </button>
+          </div>
+        </section>
     </div>
 
     <!-- Right Column: Monitored Agents & System Integrations + Preferences -->
@@ -249,8 +446,9 @@
 /**
  * CodiMonitorView Component
  * Displays live tracking for AI coding agents (Antigravity, Codex, VS Code),
- * tool hook integrations, activity timeline, and local dev simulator.
+ * tool hook integrations, activity timeline with rich details, and local dev simulator.
  */
+import { ref, computed } from 'vue';
 import CompanionPet from './CompanionPet.vue';
 import StatusBadge from './StatusBadge.vue';
 import PetProfileBanner from './PetProfileBanner.vue';
@@ -258,7 +456,7 @@ import type { AgentAdapter } from '../adapters/types';
 import type { AgentId, AgentStatus, AppDetection, HistoryEntry, StatusUpdate } from '../types/status';
 import type { Settings } from '../types/settings';
 
-defineProps<{
+const props = defineProps<{
   currentStatus: StatusUpdate;
   activeAgentId: AgentId;
   activeAgentAdapter?: AgentAdapter;
@@ -283,35 +481,251 @@ defineEmits<{
   (e: 'toggle-agent'): void;
   (e: 'simulate-state', status: AgentStatus): void;
   (e: 'test-chime'): void;
+  (e: 'approval-action', actionId: string): void;
+  (e: 'focus-app'): void;
   (e: 'update:monitoringEnabled', val: boolean): void;
   (e: 'update:notificationsEnabled', val: boolean): void;
   (e: 'update:soundEnabled', val: boolean): void;
+  (e: 'clear-history'): void;
 }>();
+
+// Filter and search state for Activity Feed
+type HistoryFilter = 'all' | 'working' | 'waiting' | 'completed' | 'error';
+const activeFilter = ref<HistoryFilter>('all');
+const searchQuery = ref('');
+const expandedEntries = ref<Set<number>>(new Set());
+
+function toggleExpand(id: number) {
+  if (expandedEntries.value.has(id)) {
+    expandedEntries.value.delete(id);
+  } else {
+    expandedEntries.value.add(id);
+  }
+}
+
+const counts = computed(() => {
+  const h = props.history;
+  return {
+    all: h.length,
+    working: h.filter(e => e.to === 'working').length,
+    waiting: h.filter(e => e.to === 'waiting').length,
+    completed: h.filter(e => e.to === 'completed').length,
+    error: h.filter(e => e.to === 'error').length,
+  };
+});
+
+const filteredHistory = computed(() => {
+  let list = props.history;
+
+  if (activeFilter.value !== 'all') {
+    list = list.filter(item => item.to === activeFilter.value);
+  }
+
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase().trim();
+    list = list.filter(item => {
+      const agent = props.getAgentName(item.agentId).toLowerCase();
+      const detail = (item.detail || '').toLowerCase();
+      const source = (item.source || '').toLowerCase();
+      const toState = item.to.toLowerCase();
+      const fromState = (item.from || '').toLowerCase();
+      return (
+        agent.includes(q) ||
+        detail.includes(q) ||
+        source.includes(q) ||
+        toState.includes(q) ||
+        fromState.includes(q)
+      );
+    });
+  }
+
+  return list;
+});
+
+function formatRelativeTime(ts: number): string {
+  const diffSec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (diffSec < 8) return 'Just now';
+  if (diffSec < 60) return `${diffSec}s ago`;
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  return `${Math.floor(diffHr / 24)}d ago`;
+}
+
+function formatDuration(ms?: number): string {
+  if (!ms || ms <= 0) return '';
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+  const mins = Math.floor(ms / 60000);
+  const secs = Math.round((ms % 60000) / 1000);
+  return `${mins}m ${secs}s`;
+}
+
+function getStateIcon(status: AgentStatus): string {
+  switch (status) {
+    case 'working': return '⚡';
+    case 'thinking': return '💡';
+    case 'waiting': return '⏳';
+    case 'completed': return '✅';
+    case 'error': return '❌';
+    case 'idle': return '💤';
+    default: return '🐾';
+  }
+}
+
+function isCommandLike(text?: string): boolean {
+  if (!text) return false;
+  const t = text.trim();
+  return (
+    t.startsWith('npm ') ||
+    t.startsWith('npx ') ||
+    t.startsWith('cargo ') ||
+    t.startsWith('git ') ||
+    t.startsWith('node ') ||
+    t.startsWith('pnpm ') ||
+    t.startsWith('yarn ') ||
+    t.includes('run ') ||
+    t.includes('test') ||
+    t.includes('.vue') ||
+    t.includes('.ts') ||
+    t.includes('.rs') ||
+    t.includes('.json')
+  );
+}
 </script>
 
 <style scoped>
+/* ==========================================================================
+   Actionable Approval Banner
+   ========================================================================== */
+.approval-action-banner {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: rgba(243, 156, 18, 0.08);
+  border: 1px solid rgba(243, 156, 18, 0.4);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: bannerPulse 1.4s ease-in-out infinite alternate;
+}
+@keyframes bannerPulse {
+  0% { box-shadow: 0 0 6px rgba(243, 156, 18, 0.2); }
+  100% { box-shadow: 0 0 16px rgba(243, 156, 18, 0.45); }
+}
+
+.banner-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.banner-badge {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #f39c12;
+  color: #1e272e;
+  letter-spacing: 0.5px;
+}
+
+.banner-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f1f2f6;
+}
+
+.banner-summary {
+  margin: 0;
+  font-size: 11.5px;
+  color: #dfe6e9;
+  line-height: 1.35;
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 5px 8px;
+  border-radius: 5px;
+  word-break: break-all;
+}
+
+.banner-controls {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.banner-btn {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.banner-btn.primary {
+  background: linear-gradient(135deg, #00b894, #00cec9);
+  color: #0c2b23;
+  box-shadow: 0 0 8px rgba(0, 206, 201, 0.35);
+}
+.banner-btn.primary:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+  box-shadow: 0 0 12px rgba(0, 206, 201, 0.55);
+}
+
+.banner-btn.danger {
+  background: rgba(214, 48, 49, 0.2);
+  color: #ff7675;
+  border: 1px solid rgba(214, 48, 49, 0.5);
+}
+.banner-btn.danger:hover {
+  background: rgba(214, 48, 49, 0.45);
+  color: #fff;
+}
+
+.banner-btn.secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: #dfe6e9;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.banner-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+/* ==========================================================================
+   Layout Columns & Fitted Panels
+   ========================================================================== */
 .monitor-columns {
   display: grid;
   grid-template-columns: 1.15fr 1fr;
-  gap: 22px;
+  gap: 18px;
   align-items: start;
 }
 
 .monitor-col {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 18px;
   min-width: 0;
 }
 
 .arcade-panel {
   background: #2b2d31;
   border: 1px solid #383a40;
-  border-radius: 16px;
-  padding: 22px;
+  border-radius: 14px;
+  padding: 16px 18px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   box-sizing: border-box;
 }
 
@@ -319,8 +733,8 @@ defineEmits<{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 18px;
-  padding-bottom: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
   border-bottom: 1px solid #313338;
 }
 
@@ -336,23 +750,89 @@ defineEmits<{
 
 .panel-title {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
   color: #ffffff;
 }
 
-.hero-body {
+.header-actions {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 10px;
 }
 
-.hero-pet-preview {
-  width: 140px;
-  height: 140px;
+.ghost-deploy {
   background: #1e1f22;
-  border-radius: 16px;
-  border: 2px solid #383a40;
+  border: 1px solid #383a40;
+  color: #949ba4;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ghost-deploy.active {
+  background: rgba(88, 101, 242, 0.2);
+  border-color: #5865f2;
+  color: #74b9ff;
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #949ba4;
+  display: inline-block;
+  box-shadow: 0 0 6px rgba(148, 155, 164, 0.4);
+}
+.live-dot.working {
+  background: #00b894;
+  box-shadow: 0 0 8px #00b894;
+  animation: livePulse 1.2s infinite alternate;
+}
+.live-dot.thinking {
+  background: #0984e3;
+  box-shadow: 0 0 8px #0984e3;
+  animation: livePulse 1.2s infinite alternate;
+}
+.live-dot.waiting {
+  background: #f39c12;
+  box-shadow: 0 0 8px #f39c12;
+  animation: livePulse 0.8s infinite alternate;
+}
+.live-dot.completed {
+  background: #23a55a;
+  box-shadow: 0 0 8px #23a55a;
+}
+.live-dot.error {
+  background: #f23f43;
+  box-shadow: 0 0 8px #f23f43;
+}
+@keyframes livePulse {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  100% { transform: scale(1.3); opacity: 1; }
+}
+
+/* ==========================================================================
+   Fitted Hero Card (Codi Status Feed)
+   ========================================================================== */
+.status-hero-card {
+  padding: 14px 16px;
+}
+
+.hero-body.fitted-hero {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.hero-pet-preview.fitted-pet {
+  width: 90px;
+  height: 90px;
+  min-width: 90px;
+  background: #1e1f22;
+  border-radius: 12px;
+  border: 1.5px solid #383a40;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -361,41 +841,70 @@ defineEmits<{
 }
 
 .hero-pet-preview.codi-glow {
-  box-shadow: inset 0 0 20px rgba(88, 101, 242, 0.2);
+  box-shadow: inset 0 0 16px rgba(88, 101, 242, 0.25);
 }
 
-.hero-details {
+.hero-details.fitted-details {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  justify-content: space-between;
+  gap: 6px;
 }
 
-.status-row {
+.meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 10px;
+}
+
+.meta-card {
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  padding: 5px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.meta-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #949ba4;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.meta-val {
   display: flex;
   align-items: center;
-  gap: 14px;
-  font-size: 13px;
+  gap: 5px;
+  font-size: 11.5px;
+  min-width: 0;
+  overflow: hidden;
 }
 
-.label-muted {
-  width: 95px;
-  color: #949ba4;
-  font-weight: 700;
+.agent-avatar-mini {
   font-size: 12px;
 }
 
 .value-highlight {
   font-weight: 700;
   color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .badge-confidence {
   text-transform: uppercase;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 800;
-  padding: 3px 8px;
-  border-radius: 6px;
+  padding: 2px 6px;
+  border-radius: 4px;
   font-family: 'JetBrains Mono', monospace;
 }
 .badge-confidence.high { background: rgba(35, 165, 90, 0.2); color: #23a55a; border: 1px solid rgba(35, 165, 90, 0.4); }
@@ -405,82 +914,445 @@ defineEmits<{
 
 .source-text {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 10px;
   color: #dbdee1;
   background: #111214;
-  padding: 3px 8px;
-  border-radius: 6px;
+  padding: 2px 6px;
+  border-radius: 4px;
   border: 1px solid #383a40;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
-.detail-box {
-  margin-top: 6px;
-  background: #1e1f22;
-  border: 1px solid #383a40;
-  border-radius: 10px;
-  padding: 10px 14px;
-}
-.detail-label {
-  font-size: 11px;
-  color: #949ba4;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.detail-content {
-  margin: 4px 0 0;
-  font-size: 13px;
+.compact-detail-banner {
+  margin-top: 4px;
+  padding: 5px 8px;
+  background: rgba(0, 0, 0, 0.32);
+  border-radius: 6px;
+  border-left: 3px solid #5865f2;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 11.5px;
   color: #dbdee1;
-  line-height: 1.4;
+  word-break: break-word;
+}
+.compact-detail-banner.working { border-left-color: #00b894; }
+.compact-detail-banner.thinking { border-left-color: #0984e3; }
+.compact-detail-banner.waiting { border-left-color: #f39c12; }
+.compact-detail-banner.completed { border-left-color: #23a55a; }
+.compact-detail-banner.error { border-left-color: #f23f43; }
+
+.detail-lead {
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.detail-lead-text {
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: #dbdee1;
 }
 
 .last-updated {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   color: #949ba4;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.time-icon {
+  font-size: 11px;
 }
 
-.mock-simulator {
-  margin-top: 20px;
-  padding-top: 16px;
+.mock-simulator.compact-sim {
+  margin-top: 10px;
+  padding-top: 8px;
   border-top: 1px dashed #383a40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .mock-title {
-  display: block;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #949ba4;
-  margin-bottom: 10px;
 }
 .mock-buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 5px;
 }
-.mock-btn {
+.mock-btn.mini {
   background: #1e1f22;
   border: 1px solid #383a40;
   color: #dbdee1;
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: 4px;
+  font-size: 10.5px;
   font-weight: 700;
-  padding: 5px 10px;
+  padding: 3px 7px;
   cursor: pointer;
   text-transform: capitalize;
   transition: all 0.15s ease;
   font-family: inherit;
 }
-.mock-btn:hover {
+.mock-btn.mini:hover {
   background: #313338;
   color: #ffffff;
 }
-.mock-btn.active {
+.mock-btn.mini.active {
   background: #5865f2;
   border-color: #5865f2;
   color: #ffffff;
-  box-shadow: 0 0 10px rgba(88, 101, 242, 0.4);
+  box-shadow: 0 0 8px rgba(88, 101, 242, 0.4);
 }
 
+/* ==========================================================================
+   Activity Feed (Rich Details & Controls)
+   ========================================================================== */
+.history-card.rich-feed {
+  padding: 14px 16px;
+}
+
+.feed-header {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+}
+
+.feed-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #1e1f22;
+  border: 1px solid #383a40;
+  border-radius: 6px;
+  padding: 2px 7px;
+}
+.search-icon {
+  font-size: 10px;
+  opacity: 0.7;
+}
+.search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #dbdee1;
+  font-size: 11px;
+  width: 140px;
+  font-family: inherit;
+}
+.search-input::placeholder {
+  color: #6d727b;
+}
+.clear-search-btn {
+  background: transparent;
+  border: none;
+  color: #949ba4;
+  font-size: 10px;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.clear-search-btn:hover {
+  color: #fff;
+}
+
+.clear-feed-btn {
+  background: transparent;
+  border-color: #383a40;
+  color: #949ba4;
+  padding: 3px 7px;
+}
+.clear-feed-btn:hover {
+  background: rgba(242, 63, 67, 0.15);
+  border-color: rgba(242, 63, 67, 0.4);
+  color: #f23f43;
+}
+
+.feed-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.filter-chip {
+  background: #1e1f22;
+  border: 1px solid #383a40;
+  color: #949ba4;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+.filter-chip:hover {
+  border-color: #5865f2;
+  color: #ffffff;
+}
+.filter-chip.active {
+  background: #5865f2;
+  border-color: #5865f2;
+  color: #ffffff;
+}
+
+.history-list.detailed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.rich-history-card {
+  background: #1e1f22;
+  border: 1px solid #383a40;
+  border-radius: 8px;
+  padding: 9px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-left: 3px solid #383a40;
+  transition: all 0.15s ease;
+}
+.rich-history-card:hover {
+  border-color: #4e5058;
+}
+.rich-history-card.working {
+  border-left-color: #00b894;
+}
+.rich-history-card.thinking {
+  border-left-color: #0984e3;
+}
+.rich-history-card.waiting {
+  border-left-color: #f39c12;
+  background: rgba(243, 156, 18, 0.04);
+}
+.rich-history-card.completed {
+  border-left-color: #23a55a;
+}
+.rich-history-card.error {
+  border-left-color: #f23f43;
+  background: rgba(242, 63, 67, 0.04);
+}
+
+.card-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.card-left-group {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.event-icon {
+  font-size: 13px;
+}
+
+.time-block {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+.full-time {
+  color: #dbdee1;
+  font-weight: 700;
+}
+.rel-time {
+  color: #6d727b;
+  font-size: 10px;
+}
+
+.agent-tag-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f2f6;
+}
+.agent-tag-pill.antigravity {
+  background: rgba(88, 101, 242, 0.2);
+  color: #74b9ff;
+}
+.agent-tag-pill.codex {
+  background: rgba(0, 184, 148, 0.2);
+  color: #55efc4;
+}
+
+.status-flow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+.flow-from {
+  color: #949ba4;
+  font-size: 10.5px;
+  text-transform: capitalize;
+}
+.flow-arrow {
+  color: #4e5058;
+  font-size: 9px;
+}
+
+.card-right-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.duration-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #55efc4;
+  background: rgba(85, 239, 196, 0.12);
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(85, 239, 196, 0.3);
+}
+
+.source-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  color: #949ba4;
+  background: #111214;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid #383a40;
+}
+
+.badge-confidence-mini {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.badge-confidence-mini.high { background: rgba(35, 165, 90, 0.2); color: #23a55a; border: 1px solid rgba(35, 165, 90, 0.4); }
+.badge-confidence-mini.medium { background: rgba(88, 101, 242, 0.2); color: #5865f2; border: 1px solid rgba(88, 101, 242, 0.4); }
+.badge-confidence-mini.low { background: rgba(240, 178, 50, 0.2); color: #f0b232; border: 1px solid rgba(240, 178, 50, 0.4); }
+
+.card-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.approval-callout {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fdcb6e;
+  background: rgba(243, 156, 18, 0.12);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(243, 156, 18, 0.3);
+}
+
+.detail-text-box {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #dbdee1;
+  word-break: break-word;
+}
+.detail-text-box.command-style {
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 5px 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: #00cec9;
+}
+.code-snippet {
+  font-family: inherit;
+}
+
+.expand-toggle {
+  background: none;
+  border: none;
+  color: #74b9ff;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 4px;
+  margin-left: 4px;
+}
+.expand-toggle:hover {
+  text-decoration: underline;
+}
+
+.card-meta-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 9.5px;
+  color: #6d727b;
+  font-family: 'JetBrains Mono', monospace;
+}
+.meta-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.empty-state {
+  padding: 28px 0;
+  text-align: center;
+  color: #949ba4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.empty-icon {
+  font-size: 24px;
+  opacity: 0.6;
+}
+.empty-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #dbdee1;
+  margin: 0;
+}
+.empty-sub {
+  font-size: 11.5px;
+  color: #949ba4;
+  margin: 0;
+  max-width: 320px;
+}
+.reset-btn {
+  margin-top: 6px;
+}
+
+/* ==========================================================================
+   Monitored Agents List & Settings
+   ========================================================================== */
 .agents-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
@@ -563,74 +1435,17 @@ defineEmits<{
 .hook-status-tag.success { color: #23a55a; }
 .hook-status-tag.warning { color: #f0b232; }
 
-.history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 320px;
-  overflow-y: auto;
-}
-.history-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 12px;
-  padding: 8px 12px;
-  background: #1e1f22;
-  border-radius: 8px;
-  border: 1px solid #383a40;
-}
-.history-time {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: #949ba4;
-}
-.history-agent {
-  font-weight: 700;
-  color: #ffffff;
-  min-width: 80px;
-}
-.history-transition {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.transition-from {
-  color: #949ba4;
-  font-size: 11px;
-  text-transform: capitalize;
-}
-.arrow {
-  color: #4e5058;
-}
-.history-detail {
-  margin-left: auto;
-  color: #949ba4;
-  font-size: 11px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 150px;
-}
-
-.empty-state {
-  padding: 36px 0;
-  text-align: center;
-  color: #949ba4;
-  font-size: 13px;
-}
-
 .settings-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 .setting-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  padding: 6px 0;
+  padding: 4px 0;
 }
 .toggle-info {
   display: flex;
@@ -699,21 +1514,21 @@ defineEmits<{
 }
 
 .arcade-btn.btn-sm {
-  padding: 5px 12px;
-  font-size: 12px;
+  padding: 4px 10px;
+  font-size: 11.5px;
 }
 
 .arcade-btn.btn-xs {
-  padding: 4px 9px;
-  font-size: 11px;
+  padding: 3px 8px;
+  font-size: 10.5px;
 }
 
 .count-badge {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   background: #1e1f22;
   color: #949ba4;
-  padding: 3px 8px;
+  padding: 2px 7px;
   border-radius: 12px;
   border: 1px solid #383a40;
 }
@@ -731,51 +1546,41 @@ defineEmits<{
 @media (max-width: 1080px) {
   .monitor-columns {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 16px;
   }
 }
 
 @media (max-width: 640px) {
   .arcade-panel {
-    padding: 16px;
+    padding: 14px;
   }
 
-  .hero-body {
+  .hero-body.fitted-hero {
     flex-direction: column;
+    align-items: center;
     text-align: center;
-    gap: 16px;
+    gap: 12px;
   }
 
-  .hero-pet-preview {
+  .hero-pet-preview.fitted-pet {
     margin: 0 auto;
   }
 
-  .hero-details {
-    width: 100%;
-  }
-
-  .status-row {
-    justify-content: space-between;
-  }
-
-  .label-muted {
-    width: auto;
+  .meta-grid {
+    grid-template-columns: 1fr;
   }
 
   .agents-list {
     grid-template-columns: 1fr;
   }
 
-  .history-item {
-    flex-wrap: wrap;
-    gap: 6px;
+  .card-top-row {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
-  .history-detail {
+  .card-right-group {
     margin-left: 0;
-    width: 100%;
-    max-width: none;
-    white-space: normal;
   }
 }
 </style>

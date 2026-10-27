@@ -23,7 +23,13 @@ export const EVENTS = {
   celebrate: 'devpet://celebrate',
   settings: 'devpet://settings',
   userTyping: 'devpet://user-typing',
+  approvalAction: 'devpet://approval-action',
 } as const;
+
+export interface ApprovalActionEvent {
+  agentId?: string;
+  actionId: string;
+}
 
 export type RawSourceName = 'antigravity-hook' | 'codex-rollout';
 
@@ -94,6 +100,7 @@ export interface EventPayloads {
   [EVENTS.celebrate]: CelebrationEvent;
   [EVENTS.settings]: Settings;
   [EVENTS.userTyping]: { timestamp: number; key?: string };
+  [EVENTS.approvalAction]: ApprovalActionEvent;
 }
 
 export type EventName = keyof EventPayloads;

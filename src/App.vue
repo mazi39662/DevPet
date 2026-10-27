@@ -100,9 +100,12 @@
           @toggle-agent="toggleAgentCompanion"
           @simulate-state="simulateState"
           @test-chime="testChime"
+          @approval-action="handleApprovalAction"
+          @focus-app="focusAgentApp"
           @update:monitoring-enabled="settings.monitoringEnabled = $event"
           @update:notifications-enabled="settings.notificationsEnabled = $event"
           @update:sound-enabled="settings.soundEnabled = $event"
+          @clear-history="clearActivityHistory"
         />
       </section>
 
@@ -487,6 +490,19 @@ async function toggleAntigravityHook() {
 }
 
 function simulateState(status: AgentStatus) {
+  let approval = null;
+  if (status === 'waiting') {
+    approval = {
+      type: 'command' as const,
+      title: 'Command Approval',
+      summary: 'cargo build --release',
+      toolName: 'run_command',
+      targetDetail: 'cargo build --release',
+      actions: [
+        { id: 'open', label: 'Open', variant: 'open' as const, primary: true },
+      ],
+    };
+  }
   coordinator.handleStatusUpdate({
     agentId: activeAgentId.value,
     status,
@@ -494,7 +510,8 @@ function simulateState(status: AgentStatus) {
     source: 'Dev Simulator Mock',
     method: 'dev-mock',
     confidence: 'high',
-    detail: `Simulated state: ${status}`,
+    detail: status === 'waiting' ? 'Approval needed: Command waiting for run/allow' : `Simulated state: ${status}`,
+    approval,
   });
   if (status === 'completed') {
     notificationService.notifyCompletion(
@@ -503,6 +520,19 @@ function simulateState(status: AgentStatus) {
       'Mock task celebration'
     );
   }
+}
+
+function handleApprovalAction(actionId: string) {
+  coordinator.resolveApproval(activeAgentId.value, actionId);
+  if (settings.value.soundEnabled) {
+    notificationService.playChime();
+  }
+  focusAgentApp();
+}
+
+function clearActivityHistory() {
+  coordinator.clearHistory();
+  history.value = [];
 }
 
 // Global keyboard listener (Windows hook). Applied as soon as the dashboard
@@ -519,6 +549,11 @@ onMounted(async () => {
   await notificationService.init();
   // Listen for actions sent by the Momo pet window!
   pomodoro.initListeners();
+
+  // Listen for actionable approval micro-controls from floating Codi window
+  await onEvent(EVENTS.approvalAction, (ev: { agentId?: string; actionId: string }) => {
+    coordinator.resolveApproval(ev.agentId as AgentId, ev.actionId);
+  });
 
   // Coordinator reactivity
   coordinator.registerListener({

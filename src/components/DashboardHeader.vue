@@ -70,8 +70,8 @@
               <div class="drawer-title-group">
                 <div class="drawer-avatar">🐾</div>
                 <div>
-                  <h3 class="drawer-title">DevPet Fleet Menu</h3>
-                  <p class="drawer-subtitle">Scalable Navigation & Mascot Controls</p>
+                  <h3 class="drawer-title">Menu</h3>
+                  <p class="drawer-subtitle">Dashboard & Companion Controls</p>
                 </div>
               </div>
               <button class="drawer-close-btn" @click="closeBurger" title="Close menu">✕</button>
@@ -79,13 +79,35 @@
 
             <!-- Drawer Body -->
             <div class="drawer-content">
-              <!-- SECTION 1: Quick Toggles for Adding Pets in Burger Menu -->
+              <!-- SECTION: Desktop Companions & Pet Manager -->
               <div class="drawer-section">
                 <div class="section-label-row">
                   <span class="section-tag">DESKTOP COMPANIONS</span>
                   <span class="section-status-pill">{{ activeDesktopPetsCount }} DEPLOYED</span>
                 </div>
                 <p class="section-hint">Toggle floating companions directly to your desktop screen</p>
+
+                <!-- Pet Manager Button in Desktop Companions -->
+                <button
+                  class="burger-pet-manager-btn"
+                  :class="{ active: currentTab === 'pets' }"
+                  @click="navigateFromBurger('pets')"
+                  title="Open Pet Manager Roster & Overview"
+                >
+                  <div class="bpm-left">
+                    <div class="bpm-icon-box">
+                      <span class="bpm-icon">🎮</span>
+                    </div>
+                    <div class="bpm-meta">
+                      <div class="bpm-title-line">
+                        <span class="bpm-title">Pet Manager</span>
+                        <span class="bpm-badge">OVERVIEW</span>
+                      </div>
+                      <span class="bpm-sub">Fleet Roster, Stats & Habitats</span>
+                    </div>
+                  </div>
+                  <span class="bpm-arrow">➔</span>
+                </button>
 
                 <div class="burger-pets-list">
                   <div
@@ -125,95 +147,56 @@
                 </div>
               </div>
 
-              <!-- SECTION 2: Navigation Destinations -->
+              <!-- SECTION 2: System, Settings & Info -->
               <div class="drawer-section">
                 <div class="section-label-row">
-                  <span class="section-tag">NAVIGATION DESTINATIONS</span>
+                  <span class="section-tag">SYSTEM & PREFERENCES</span>
                 </div>
 
-                <div class="burger-nav-grid">
+                <div class="burger-menu-list">
                   <button
-                    class="burger-nav-item"
-                    :class="{ active: currentTab === 'pets' }"
-                    @click="navigateFromBurger('pets')"
-                  >
-                    <span class="b-nav-icon">🎮</span>
-                    <div class="b-nav-text">
-                      <span class="b-nav-title">Pet Manager</span>
-                      <span class="b-nav-sub">Roster & Overview</span>
-                    </div>
-                  </button>
-
-                  <button
-                    class="burger-nav-item"
-                    :class="{ active: currentTab === 'monitor' }"
-                    @click="navigateFromBurger('monitor')"
-                  >
-                    <span class="b-nav-icon">🐾</span>
-                    <div class="b-nav-text">
-                      <span class="b-nav-title">Codi Monitor</span>
-                      <span class="b-nav-sub">AI Agent Status & IDE Hook</span>
-                    </div>
-                  </button>
-
-                  <button
-                    class="burger-nav-item"
-                    :class="{ active: currentTab === 'pomodoro' }"
-                    @click="navigateFromBurger('pomodoro')"
-                  >
-                    <span class="b-nav-icon">🍅</span>
-                    <div class="b-nav-text">
-                      <span class="b-nav-title">Momo Focus</span>
-                      <span class="b-nav-sub">Pomodoro Sprint Timer</span>
-                    </div>
-                  </button>
-
-                  <button
-                    class="burger-nav-item"
-                    :class="{ active: currentTab === 'moki' }"
-                    @click="navigateFromBurger('moki')"
-                  >
-                    <span class="b-nav-icon">✨</span>
-                    <div class="b-nav-text">
-                      <span class="b-nav-title">Moki Station</span>
-                      <span class="b-nav-sub">Typing WPM & Keyboard</span>
-                    </div>
-                  </button>
-
-                  <button
-                    class="burger-nav-item"
-                    :class="{ active: currentTab === 'tutorials' }"
-                    @click="navigateFromBurger('tutorials')"
-                  >
-                    <span class="b-nav-icon">🎓</span>
-                    <div class="b-nav-text">
-                      <span class="b-nav-title">Tutorials & Academy</span>
-                      <span class="b-nav-sub">Interactive Playground & Guides</span>
-                    </div>
-                  </button>
-
-                  <button
-                    class="burger-nav-item"
+                    class="burger-menu-item"
                     :class="{ active: currentTab === 'settings' }"
                     @click="navigateFromBurger('settings')"
                   >
-                    <span class="b-nav-icon">⚙️</span>
-                    <div class="b-nav-text">
-                      <span class="b-nav-title">Settings & Audio</span>
-                      <span class="b-nav-sub">Volume Slider & Preferences</span>
+                    <div class="bmi-left">
+                      <span class="bmi-icon">⚙️</span>
+                      <div class="bmi-meta">
+                        <span class="bmi-title">Settings & Audio</span>
+                        <span class="bmi-sub">Volume, Window & Preferences</span>
+                      </div>
                     </div>
+                    <span class="bmi-arrow">➔</span>
                   </button>
 
                   <button
-                    class="burger-nav-item"
+                    class="burger-menu-item"
+                    :class="{ active: currentTab === 'tutorials' }"
+                    @click="navigateFromBurger('tutorials')"
+                  >
+                    <div class="bmi-left">
+                      <span class="bmi-icon">🎓</span>
+                      <div class="bmi-meta">
+                        <span class="bmi-title">Tutorials & Academy</span>
+                        <span class="bmi-sub">Interactive Guides & Shortcuts</span>
+                      </div>
+                    </div>
+                    <span class="bmi-arrow">➔</span>
+                  </button>
+
+                  <button
+                    class="burger-menu-item"
                     :class="{ active: currentTab === 'about' }"
                     @click="navigateFromBurger('about')"
                   >
-                    <span class="b-nav-icon">ℹ️</span>
-                    <div class="b-nav-text">
-                      <span class="b-nav-title">About DevPet</span>
-                      <span class="b-nav-sub">Creator: Terence Franz Indenerio</span>
+                    <div class="bmi-left">
+                      <span class="bmi-icon">ℹ️</span>
+                      <div class="bmi-meta">
+                        <span class="bmi-title">About DevPet</span>
+                        <span class="bmi-sub">Creator: Terence Franz Indenerio</span>
+                      </div>
                     </div>
+                    <span class="bmi-arrow">➔</span>
                   </button>
                 </div>
               </div>
@@ -450,6 +433,7 @@ function onPetToggle(pet: PetConfigItem) {
   cursor: pointer;
   background: linear-gradient(135deg, #ffffff 40%, #38bdf8 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   transition: opacity 0.2s;
 }
@@ -861,6 +845,7 @@ function onPetToggle(pet: PetConfigItem) {
   letter-spacing: -0.3px;
   background: linear-gradient(135deg, #ffffff 40%, #38bdf8 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -1070,18 +1055,126 @@ function onPetToggle(pet: PetConfigItem) {
   background: #0f172a;
 }
 
-/* Burger Nav Grid */
-.burger-nav-grid {
-  display: grid;
-  grid-template-columns: 1fr;
+/* Pet Manager Action Card in Desktop Companions */
+.burger-pet-manager-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  background: linear-gradient(135deg, rgba(88, 101, 242, 0.12), rgba(139, 92, 246, 0.1));
+  border: 1px solid rgba(88, 101, 242, 0.35);
+  border-radius: 12px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+  user-select: none;
+  font-family: 'Outfit', sans-serif;
+  margin-bottom: 2px;
+}
+
+.burger-pet-manager-btn:hover {
+  background: linear-gradient(135deg, rgba(88, 101, 242, 0.22), rgba(139, 92, 246, 0.2));
+  border-color: rgba(88, 101, 242, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(88, 101, 242, 0.25);
+}
+
+.burger-pet-manager-btn:active {
+  transform: translateY(0);
+}
+
+.burger-pet-manager-btn.active {
+  background: linear-gradient(135deg, rgba(88, 101, 242, 0.3), rgba(139, 92, 246, 0.32));
+  border-color: #5865f2;
+  box-shadow: 0 0 16px rgba(88, 101, 242, 0.45);
+}
+
+.bpm-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bpm-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(88, 101, 242, 0.2);
+  border: 1px solid rgba(88, 101, 242, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.burger-pet-manager-btn:hover .bpm-icon-box {
+  transform: scale(1.06);
+}
+
+.bpm-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bpm-title-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bpm-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.2px;
+}
+
+.bpm-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(88, 101, 242, 0.25);
+  color: #a5b4fc;
+  letter-spacing: 0.5px;
+}
+
+.bpm-sub {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.bpm-arrow {
+  font-size: 14px;
+  color: #818cf8;
+  transition: transform 0.2s ease;
+}
+
+.burger-pet-manager-btn:hover .bpm-arrow {
+  transform: translateX(3px);
+  color: #ffffff;
+}
+
+/* System & Preferences Items in Menu */
+.burger-menu-list {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 
-.burger-nav-item {
+.burger-menu-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 14px;
+  justify-content: space-between;
+  padding: 10px 14px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
@@ -1090,42 +1183,66 @@ function onPetToggle(pet: PetConfigItem) {
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: 'Outfit', sans-serif;
+  user-select: none;
 }
 
-.burger-nav-item:hover {
+.burger-menu-item:hover {
   background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
   color: #ffffff;
-  transform: translateX(3px);
+  transform: translateX(2px);
 }
 
-.burger-nav-item.active {
+.burger-menu-item.active {
   background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(139, 92, 246, 0.15));
   border-color: rgba(56, 189, 248, 0.4);
   color: #ffffff;
 }
 
-.b-nav-icon {
-  font-size: 20px;
+.bmi-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.b-nav-text {
+.bmi-icon {
+  font-size: 18px;
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bmi-meta {
   display: flex;
   flex-direction: column;
+  gap: 1px;
 }
 
-.b-nav-title {
+.bmi-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
   color: #ffffff;
   letter-spacing: -0.2px;
 }
 
-.b-nav-sub {
+.bmi-sub {
   font-family: 'Outfit', sans-serif;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 500;
   color: #94a3b8;
+}
+
+.bmi-arrow {
+  font-size: 12px;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.burger-menu-item:hover .bmi-arrow {
+  color: #38bdf8;
+  transform: translateX(3px);
 }
 
 /* Drawer Footer */

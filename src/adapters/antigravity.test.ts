@@ -80,12 +80,17 @@ describe('Antigravity Hook Adapter', () => {
       ts: 1690000001200,
       conversationId: 'conv-123',
       toolName: 'run_command',
+      targetDetail: 'npm test',
     };
     const rec = parseAntigravityRecord(raw);
     const mapped = mapAntigravityRecord(rec!);
     expect(mapped).not.toBeNull();
     expect(mapped?.status).toBe('waiting');
     expect(mapped?.detail).toBe('Approval needed: Command waiting for run/allow');
+    expect(mapped?.approval).not.toBeNull();
+    expect(mapped?.approval?.type).toBe('command');
+    expect(mapped?.approval?.summary).toBe('npm test');
+    expect(mapped?.approval?.actions.some(a => a.variant === 'open')).toBe(true);
   });
 
   it('maps PreToolUse with ask_question to waiting state', () => {
@@ -95,12 +100,15 @@ describe('Antigravity Hook Adapter', () => {
       ts: 1690000001200,
       conversationId: 'conv-123',
       toolName: 'ask_question',
+      toolSummary: 'Confirm deployment target',
     };
     const rec = parseAntigravityRecord(raw);
     const mapped = mapAntigravityRecord(rec!);
     expect(mapped).not.toBeNull();
     expect(mapped?.status).toBe('waiting');
     expect(mapped?.detail).toBe('Action needed: Question waiting for reply');
+    expect(mapped?.approval?.type).toBe('question');
+    expect(mapped?.approval?.summary).toBe('Confirm deployment target');
   });
 
   it('maps PreToolUse with safe tool like view_file to working state', () => {

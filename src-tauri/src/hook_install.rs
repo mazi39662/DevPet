@@ -164,14 +164,24 @@ fn deploy_hook_exe() -> Result<PathBuf, String> {
     }
     // Copy to a temp name, then swap in, so a hook that is executing right now
     // keeps its image while the new one is placed.
-    let tmp = target.with_extension("exe.new");
+    let tmp = target.with_extension(if cfg!(windows) { "exe.new" } else { "new" });
     std::fs::copy(&current, &tmp).map_err(|e| format!("Copy hook exe failed: {e}"))?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = std::fs::set_permissions(&tmp, std::fs::Permissions::from_mode(0o755));
+    }
     if target.exists() {
-        let old = target.with_extension("exe.old");
+        let old = target.with_extension(if cfg!(windows) { "exe.old" } else { "old" });
         let _ = std::fs::remove_file(&old);
         let _ = std::fs::rename(&target, &old);
     }
     std::fs::rename(&tmp, &target).map_err(|e| format!("Place hook exe failed: {e}"))?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = std::fs::set_permissions(&target, std::fs::Permissions::from_mode(0o755));
+    }
     Ok(target)
 }
 

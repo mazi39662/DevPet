@@ -60,6 +60,10 @@ export class MonitoringCoordinator {
     return [...this.history];
   }
 
+  public clearHistory(): void {
+    this.history = [];
+  }
+
   public getActiveAgentId(): AgentId {
     return this.activeAgentId;
   }
@@ -106,8 +110,22 @@ export class MonitoringCoordinator {
     const prev = this.statuses.get(update.agentId);
     this.statuses.set(update.agentId, update);
 
+    const statusChanged = !prev || prev.status !== update.status;
+    const detailChanged = Boolean(
+      update.detail && (!prev || prev.detail !== update.detail) && update.detail !== prev?.status
+    );
+
     // If status changed or significant detail changed
-    if (!prev || prev.status !== update.status) {
+    if (statusChanged || detailChanged) {
+      let durationMs: number | undefined;
+      if (
+        prev &&
+        statusChanged &&
+        (prev.status === 'working' || prev.status === 'thinking' || prev.status === 'waiting')
+      ) {
+        durationMs = Math.max(0, update.timestamp - prev.timestamp);
+      }
+
       const entry: HistoryEntry = {
         id: this.nextHistoryId++,
         agentId: update.agentId,
@@ -116,9 +134,15 @@ export class MonitoringCoordinator {
         timestamp: update.timestamp,
         source: update.source,
         detail: update.detail,
+        confidence: update.confidence,
+        method: update.method,
+        sessionId: update.sessionId,
+        approvalTitle: update.approval?.title,
+        approvalType: update.approval?.type,
+        durationMs,
       };
       this.history.unshift(entry);
-      if (this.history.length > 50) {
+      if (this.history.length > 80) {
         this.history.pop();
       }
       this.listeners.forEach((l) => l.onHistoryAdd?.(entry));
@@ -177,6 +201,23 @@ export class MonitoringCoordinator {
       label: current?.detail || status,
       agentName: adapter ? adapter.displayName : this.activeAgentId,
       monitoring: true,
+      approval: current?.status === 'waiting' ? (current.approval ?? null) : null,
     });
+  }
+
+  public resolveApproval(agentId?: AgentId, actionId: string = 'open'): void {
+    const id = agentId || this.activeAgentId;
+    const current = this.statuses.get(id);
+    if (current && current.status === 'waiting') {
+      const isDismiss = actionId === 'dismiss' || actionId === 'reject';
+      const detail = isDismiss ? 'Alert dismissed' : 'Opened in IDE';
+      this.handleStatusUpdate({
+        ...current,
+        status: isDismiss ? 'idle' : 'working',
+        detail,
+        approval: null,
+        timestamp: Date.now(),
+      });
+    }
   }
 }

@@ -1016,12 +1016,6 @@ let startX = 0;
 let startY = 0;
 
 // Rapid mousemove tracking for scratch detection (Base Codi)
-interface MouseSample {
-  x: number;
-  y: number;
-  time: number;
-}
-const mouseHistory: MouseSample[] = [];
 let scratchTimeout: ReturnType<typeof setTimeout> | null = null;
 let blissTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -1069,7 +1063,6 @@ function onMouseLeave() {
   isHovered.value = false;
   eyeLookX.value = 0;
   eyeLookY.value = 0;
-  mouseHistory.length = 0;
   if (isScratching.value) {
     stopScratching();
   }
@@ -1127,7 +1120,6 @@ function onMouseUp(e: MouseEvent) {
 function onMouseMove(e: MouseEvent) {
   if (!props.interactive) return;
   isHovered.value = true;
-  const now = Date.now();
 
   // 1. Interactive Eye Look Tracking (Base Codi)
   if (containerRef.value) {
@@ -1136,28 +1128,6 @@ function onMouseMove(e: MouseEvent) {
     const centerY = rect.top + rect.height / 2;
     eyeLookX.value = Math.max(-2, Math.min(2, ((e.clientX - centerX) / (rect.width / 2)) * 2));
     eyeLookY.value = Math.max(-1.5, Math.min(1.5, ((e.clientY - centerY) / (rect.height / 2)) * 1.5));
-  }
-
-  // 2. Rapid movement tracking for affection / scratch reaction (Base Codi)
-  mouseHistory.push({ x: e.clientX, y: e.clientY, time: now });
-  while (mouseHistory.length > 0 && now - mouseHistory[0].time > 360) {
-    mouseHistory.shift();
-  }
-
-  if (mouseHistory.length >= 4) {
-    let totalDist = 0;
-    for (let i = 1; i < mouseHistory.length; i++) {
-      totalDist += Math.hypot(
-        mouseHistory[i].x - mouseHistory[i - 1].x,
-        mouseHistory[i].y - mouseHistory[i - 1].y
-      );
-    }
-
-    const timeSpan = now - mouseHistory[0].time;
-    if (totalDist >= 110 && timeSpan >= 60) {
-      clearCurrentIdleAction();
-      startScratching();
-    }
   }
 }
 
@@ -1217,6 +1187,10 @@ onUnmounted(() => {
   if (blissTimeout) clearTimeout(blissTimeout);
   if (idleActionTimer) clearTimeout(idleActionTimer);
   if (idleActionTimeout) clearTimeout(idleActionTimeout);
+});
+
+defineExpose({
+  startScratching,
 });
 </script>
 

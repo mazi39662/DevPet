@@ -28,12 +28,14 @@
         :status="state.status"
         :label="state.label"
         :agent-name="state.agentName || 'Codi'"
-        :show-bubble="showBubble"
+        :show-bubble="showBubble || state.status === 'waiting'"
         :mini="settings.companionMini"
         :sound-enabled="settings.soundEnabled"
+        :approval-info="state.approval"
         @open-dashboard="openDashboard"
         @focus-app="focusAgentApp"
         @peek-bubble="triggerBubble(3000)"
+        @approval-action="handleApprovalAction"
       />
 
       <!-- Quick action buttons on hover (Codi) -->
@@ -62,7 +64,7 @@ import type { CelebrationEvent, CompanionState } from './types/status';
 import type { Settings } from './types/settings';
 import { DEFAULT_SETTINGS } from './types/settings';
 import { EVENTS } from './types/events';
-import { native, onEvent } from './services/native';
+import { native, onEvent, emitEvent } from './services/native';
 import { notificationService } from './services/notifications';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 
@@ -200,6 +202,21 @@ async function openDashboard() {
 
 async function focusAgentApp() {
   await native.focusTargetApp(state.value.agentName?.toLowerCase() || 'antigravity');
+}
+
+async function handleApprovalAction(actionId: string) {
+  if (settings.value.soundEnabled) {
+    notificationService.playChime();
+  }
+
+  // Focus target IDE window so the user is directly viewing the terminal/diff
+  await focusAgentApp();
+
+  // Notify coordinator in the dashboard
+  emitEvent(EVENTS.approvalAction, {
+    agentId: state.value.agentName?.toLowerCase() || 'antigravity',
+    actionId,
+  });
 }
 
 async function hideCompanion() {

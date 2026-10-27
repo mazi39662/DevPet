@@ -59,7 +59,86 @@ mod platform {
     }
 }
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "macos")]
+mod platform {
+    use std::path::PathBuf;
+    use crate::paths;
+
+    fn plist_path() -> Option<PathBuf> {
+        paths::home_dir().map(|h| h.join("Library").join("LaunchAgents").join("com.devpet.app.plist"))
+    }
+
+    pub fn is_autostart_enabled() -> bool {
+        plist_path().map(|p| p.exists()).unwrap_or(false)
+    }
+
+    pub fn set_autostart_enabled(enabled: bool) -> Result<(), String> {
+        let path = plist_path().ok_or("Cannot resolve home directory")?;
+        if enabled {
+            let current_exe = std::env::current_exe().map_err(|e| e.to_string())?;
+            let exe_str = current_exe.to_string_lossy();
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+            }
+            let plist_content = format!(
+                r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.devpet.app</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>{}</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+</dict>
+</plist>"#,
+                exe_str
+            );
+            std::fs::write(&path, plist_content).map_err(|e| e.to_string())?;
+        } else if path.exists() {
+            let _ = std::fs::remove_file(&path);
+        }
+        Ok(())
+    }
+}
+
+#[cfg(target_os = "linux")]
+mod platform {
+    use std::path::PathBuf;
+    use crate::paths;
+
+    fn desktop_path() -> Option<PathBuf> {
+        paths::home_dir().map(|h| h.join(".config").join("autostart").join("devpet.desktop"))
+    }
+
+    pub fn is_autostart_enabled() -> bool {
+        desktop_path().map(|p| p.exists()).unwrap_or(false)
+    }
+
+    pub fn set_autostart_enabled(enabled: bool) -> Result<(), String> {
+        let path = desktop_path().ok_or("Cannot resolve home directory")?;
+        if enabled {
+            let current_exe = std::env::current_exe().map_err(|e| e.to_string())?;
+            let exe_str = current_exe.to_string_lossy();
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+            }
+            let desktop_content = format!(
+                "[Desktop Entry]\nType=Application\nName=DevPet\nExec=\"{}\"\nTerminal=false\nX-GNOME-Autostart-enabled=true\n",
+                exe_str
+            );
+            std::fs::write(&path, desktop_content).map_err(|e| e.to_string())?;
+        } else if path.exists() {
+            let _ = std::fs::remove_file(&path);
+        }
+        Ok(())
+    }
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
 mod platform {
     pub fn is_autostart_enabled() -> bool {
         false

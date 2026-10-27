@@ -20,22 +20,64 @@
     @mouseenter="onMouseEnter"
     @mouseleave="onMouseLeave"
   >
-    <!-- Speech bubble for status summary or scratching affection -->
+    <!-- Speech bubble for status summary, scratching affection, or actionable micro-controls -->
     <Transition name="bubble">
       <div
         class="speech-bubble"
-        :class="[status, { 'scratch-bubble': isScratching || isBlissful }]"
-        v-if="((showBubble && displayBubbleLabel && !mini) || isScratching || isBlissful)"
-        @click.stop="registerClick"
+        :class="[
+          status,
+          {
+            'scratch-bubble': isScratching || isBlissful,
+            'approval-bubble': status === 'waiting' && !isScratching && !isBlissful,
+          }
+        ]"
+        v-if="((showBubble && (displayBubbleLabel || status === 'waiting') && !mini) || isScratching || isBlissful)"
+        @click.stop="status === 'waiting' ? null : registerClick()"
         @mousedown.stop
       >
-        <span v-if="isScratching || isBlissful" class="bubble-alert-badge heart-bounce">💖</span>
-        <span v-else-if="status === 'waiting'" class="bubble-alert-badge">⏳</span>
-        <span v-else-if="status === 'working'" class="bubble-alert-badge">⚡</span>
-        <span v-else-if="status === 'thinking'" class="bubble-alert-badge">💡</span>
-        <span v-else-if="status === 'completed'" class="bubble-alert-badge">🎉</span>
-        <span v-else-if="status === 'error'" class="bubble-alert-badge">⚠️</span>
-        <span class="bubble-text">{{ (isScratching || isBlissful) ? scratchQuip : displayBubbleLabel }}</span>
+        <!-- Scratching affection -->
+        <template v-if="isScratching || isBlissful">
+          <span class="bubble-alert-badge heart-bounce">💖</span>
+          <span class="bubble-text">{{ scratchQuip }}</span>
+        </template>
+
+        <!-- Actionable Micro-Controls for WAITING approval -->
+        <template v-else-if="status === 'waiting'">
+          <!-- Temporary feedback on button click -->
+          <div v-if="actionFeedbackText" class="approval-feedback-row">
+            <span class="feedback-badge">✨</span>
+            <span class="feedback-text">{{ actionFeedbackText }}</span>
+          </div>
+
+          <div v-else class="approval-card-content">
+            <div class="approval-header">
+              <span class="bubble-alert-badge">⏳</span>
+              <span class="approval-title">{{ resolvedApproval.title }}</span>
+            </div>
+            <div class="approval-summary" :title="resolvedApproval.summary">
+              {{ resolvedApproval.summary }}
+            </div>
+            <div class="approval-micro-actions" @mousedown.stop @click.stop>
+              <button
+                class="micro-btn open primary"
+                @mousedown.stop
+                @click.stop="triggerApprovalAction('open')"
+              >
+                <span class="btn-icon">🚀</span>
+                Open
+              </button>
+            </div>
+          </div>
+        </template>
+
+        <!-- Standard status bubbles (working, thinking, completed, error, idle) -->
+        <template v-else>
+          <span v-if="status === 'working'" class="bubble-alert-badge">⚡</span>
+          <span v-else-if="status === 'thinking'" class="bubble-alert-badge">💡</span>
+          <span v-else-if="status === 'completed'" class="bubble-alert-badge">🎉</span>
+          <span v-else-if="status === 'error'" class="bubble-alert-badge">⚠️</span>
+          <span class="bubble-text">{{ displayBubbleLabel }}</span>
+        </template>
       </div>
     </Transition>
 
@@ -336,7 +378,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import type { AgentStatus } from '../types/status';
+import type { AgentStatus, ApprovalInfo } from '../types/status';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { notificationService } from '../services/notifications';
 import { onEvent } from '../services/native';
@@ -350,6 +392,7 @@ const props = withDefaults(
     showBubble?: boolean;
     mini?: boolean;
     soundEnabled?: boolean;
+    approvalInfo?: ApprovalInfo | null;
   }>(),
   {
     status: 'idle',
@@ -358,6 +401,7 @@ const props = withDefaults(
     showBubble: true,
     mini: false,
     soundEnabled: true,
+    approvalInfo: null,
   }
 );
 
@@ -496,13 +540,6 @@ const SCRATCH_QUIPS = [
 ];
 const scratchQuip = ref(SCRATCH_QUIPS[0]);
 
-// Rapid mousemove tracking for scratch detection
-interface MouseSample {
-  x: number;
-  y: number;
-  time: number;
-}
-const mouseHistory: MouseSample[] = [];
 let scratchTimeout: ReturnType<typeof setTimeout> | null = null;
 let blissTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -544,7 +581,83 @@ const emit = defineEmits<{
   (e: 'focus-app'): void;
   (e: 'peek-bubble'): void;
   (e: 'scratch'): void;
+  (e: 'approval-action', actionId: string): void;
 }>();
+
+// Actionable Micro-Controls for WAITING approval state
+const actionFeedbackText = ref<string | null>(null);
+let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+const resolvedApproval = computed<ApprovalInfo>(() => {
+  if (props.approvalInfo) {
+    return {
+      ...props.approvalInfo,
+      actions: [{ id: 'open', label: 'Open', variant: 'open', primary: true }],
+    };
+  }
+  // Smart fallback parser from props.label when approvalInfo wasn't directly passed
+  const lbl = (props.label || '').toLowerCase();
+  const isQuestion = lbl.includes('question') || lbl.includes('reply') || lbl.includes('ask') || lbl.includes('prompt');
+  const isCommand = lbl.includes('command') || lbl.includes('run') || lbl.includes('allow') || lbl.includes('exec') || lbl.includes('bash') || lbl.includes('terminal');
+  const isEdit = lbl.includes('edit') || lbl.includes('replace') || lbl.includes('write') || lbl.includes('review');
+
+  if (isQuestion) {
+    return {
+      type: 'question',
+      title: 'Input Needed',
+      summary: props.label.replace(/^action needed:\s*/i, '').replace(/^question:\s*/i, '') || 'Question waiting for reply in IDE',
+      actions: [
+        { id: 'open', label: 'Open', variant: 'open', primary: true },
+      ],
+    };
+  }
+  if (isCommand) {
+    return {
+      type: 'command',
+      title: 'Command Approval',
+      summary: props.label.replace(/^approval needed:\s*/i, '') || 'Run terminal command',
+      actions: [
+        { id: 'open', label: 'Open', variant: 'open', primary: true },
+      ],
+    };
+  }
+  if (isEdit) {
+    return {
+      type: 'edit',
+      title: 'Review Required',
+      summary: props.label.replace(/^action needed:\s*/i, '') || 'File modification awaiting review',
+      actions: [
+        { id: 'open', label: 'Open', variant: 'open', primary: true },
+      ],
+    };
+  }
+  return {
+    type: 'action',
+    title: 'Action Required',
+    summary: props.label || 'Action awaiting your review in IDE',
+    actions: [
+      { id: 'open', label: 'Open', variant: 'open', primary: true },
+    ],
+  };
+});
+
+function triggerApprovalAction(actionId: string) {
+  actionFeedbackText.value = 'Opening IDE... 🚀';
+
+  isBooped.value = true;
+  setTimeout(() => {
+    isBooped.value = false;
+  }, 280);
+
+  if (feedbackTimer) clearTimeout(feedbackTimer);
+  feedbackTimer = setTimeout(() => {
+    actionFeedbackText.value = null;
+    feedbackTimer = null;
+  }, 2200);
+
+  emit('focus-app');
+  emit('approval-action', actionId);
+}
 
 let clickCount = 0;
 let clickTimer: ReturnType<typeof setTimeout> | null = null;
@@ -597,7 +710,6 @@ function onMouseLeave() {
   isHovered.value = false;
   eyeLookX.value = 0;
   eyeLookY.value = 0;
-  mouseHistory.length = 0;
   if (isScratching.value) {
     stopScratching();
   }
@@ -605,36 +717,14 @@ function onMouseLeave() {
 
 function onMouseMove(e: MouseEvent) {
   isHovered.value = true;
-  const now = Date.now();
 
-  // 1. Interactive eye tracking
+  // Interactive eye tracking: eyes follow the mouse cursor smoothly
   if (containerRef.value) {
     const rect = containerRef.value.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
     eyeLookX.value = Math.max(-2, Math.min(2, ((e.clientX - centerX) / (rect.width / 2)) * 2));
     eyeLookY.value = Math.max(-1.5, Math.min(1.5, ((e.clientY - centerY) / (rect.height / 2)) * 1.5));
-  }
-
-  // 2. Rapid movement tracking (scratch reaction)
-  mouseHistory.push({ x: e.clientX, y: e.clientY, time: now });
-  while (mouseHistory.length > 0 && now - mouseHistory[0].time > 360) {
-    mouseHistory.shift();
-  }
-
-  if (mouseHistory.length >= 4) {
-    let totalDist = 0;
-    for (let i = 1; i < mouseHistory.length; i++) {
-      totalDist += Math.hypot(
-        mouseHistory[i].x - mouseHistory[i - 1].x,
-        mouseHistory[i].y - mouseHistory[i - 1].y
-      );
-    }
-
-    const timeSpan = now - mouseHistory[0].time;
-    if (totalDist >= 110 && timeSpan >= 60) {
-      startScratching();
-    }
   }
 }
 
@@ -729,6 +819,10 @@ onUnmounted(() => {
     workingParticleInterval = null;
   }
 });
+
+defineExpose({
+  startScratching,
+});
 </script>
 
 <style scoped>
@@ -784,6 +878,171 @@ onUnmounted(() => {
 @keyframes bubblePulse {
   0% { box-shadow: 0 0 8px rgba(243, 156, 18, 0.3); }
   100% { box-shadow: 0 0 18px rgba(243, 156, 18, 0.65); }
+}
+
+/* Actionable Approval Card Bubble */
+.speech-bubble.approval-bubble {
+  top: 4px;
+  max-width: 154px;
+  width: 146px;
+  white-space: normal;
+  overflow: visible;
+  padding: 5px 7px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  cursor: default;
+  z-index: 25;
+  background: rgba(22, 18, 14, 0.97);
+  border: 1px solid rgba(243, 156, 18, 0.85);
+  box-shadow: 0 0 16px rgba(243, 156, 18, 0.35), 0 4px 14px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+}
+
+.approval-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+.approval-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.approval-title {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #fdcb6e;
+  line-height: 1;
+}
+
+.approval-summary {
+  font-size: 10px;
+  line-height: 1.25;
+  color: #f1f2f6;
+  font-weight: 500;
+  max-height: 26px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+}
+
+.approval-micro-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.micro-btn {
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 700;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.micro-btn .btn-icon {
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.micro-btn.open,
+.micro-btn.allow,
+.micro-btn.approve {
+  background: linear-gradient(135deg, #00b894, #00cec9);
+  color: #0c2b23;
+  box-shadow: 0 0 8px rgba(0, 206, 201, 0.35);
+  font-weight: 700;
+  padding: 0 10px;
+  height: 22px;
+}
+
+.micro-btn.open:hover,
+.micro-btn.allow:hover,
+.micro-btn.approve:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+  box-shadow: 0 0 12px rgba(0, 206, 201, 0.6);
+}
+
+.micro-btn.open:active,
+.micro-btn.allow:active,
+.micro-btn.approve:active {
+  transform: translateY(0);
+}
+
+.micro-btn.reject,
+.micro-btn.skip {
+  background: rgba(214, 48, 49, 0.22);
+  color: #ff7675;
+  border: 1px solid rgba(214, 48, 49, 0.5);
+}
+
+.micro-btn.reject:hover,
+.micro-btn.skip:hover {
+  background: rgba(214, 48, 49, 0.5);
+  color: #ffffff;
+  border-color: rgba(214, 48, 49, 0.8);
+}
+
+.micro-btn.reply {
+  background: linear-gradient(135deg, #0984e3, #74b9ff);
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(116, 185, 255, 0.35);
+}
+
+.micro-btn.reply:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.12);
+}
+
+.micro-btn.focus-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #dfe6e9;
+  width: 20px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.micro-btn.focus-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.approval-feedback-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: #55efc4;
+}
+
+.approval-feedback-row .feedback-badge {
+  animation: heartBounce 0.4s infinite alternate;
 }
 
 .bubble-alert-badge {
