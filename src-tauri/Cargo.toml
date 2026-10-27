@@ -1,6 +1,6 @@
 [package]
 name = "devpet"
-version = "0.2.0"
+version = "0.3.0"
 description = "DevPet - a desktop companion that monitors AI coding agents"
 authors = ["DevPet"]
 edition = "2021"
