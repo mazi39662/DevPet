@@ -37,11 +37,17 @@ pub struct HookStatus {
 
 fn hook_command(exe: &Path, event: &str) -> String {
     let exe_str = exe.to_string_lossy();
+    let mut cmd = String::new();
     if exe_str.contains(' ') {
-        format!("\"{exe_str}\" hook {event}")
+        cmd.push('"');
+        cmd.push_str(&exe_str);
+        cmd.push('"');
     } else {
-        format!("{exe_str} hook {event}")
+        cmd.push_str(&exe_str);
     }
+    cmd.push_str(" hook ");
+    cmd.push_str(event);
+    cmd
 }
 
 /// Builds DevPet's hook spec. PreToolUse and PostToolUse use the grouped (matcher) format,

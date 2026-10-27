@@ -109,8 +109,10 @@ pub fn build_record(event: &str, raw: &str, ts: u64, pid: u32) -> Result<Value, 
         })
         .and_then(Value::as_str)
         .map(|s| {
-            if s.len() > 80 {
-                format!("{}...", &s[..77])
+            if s.chars().count() > 80 {
+                let mut truncated: String = s.chars().take(77).collect();
+                truncated.push_str("...");
+                truncated
             } else {
                 s.to_string()
             }
