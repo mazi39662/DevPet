@@ -1,10 +1,12 @@
 //! `devpet hook <Event>` — the command Antigravity runs at lifecycle points.
 //!
 //! Contract (see Antigravity `hooks.md`): JSON context on stdin, JSON result on
-//! stdout. We only *observe*: every event gets `{}` back, which means "default
-//! behaviour" for PreInvocation / PreToolUse / PostToolUse / PostInvocation / Stop.
-//! Returning `{}` on PreToolUse allows normal tool execution or default UI permission prompt
-//! without forcing any deny or silent bypass.
+//! stdout. DevPet only *observes*. PreToolUse requires a `decision`; `{}` counts
+//! as a missing decision and blocks the call. We return `"allow"`, which the docs
+//! define as pass-through ("delegating to the next hook or default policy"), so
+//! Antigravity's own Ask/Deny rules and approval prompts still apply.
+//! NEVER return "auto_approve", and never add `permissionOverrides`: those would
+//! skip the user's approval prompt. All other events get `{}`.
 //!
 //! This path must be fast and must never fail loudly: any error is swallowed so
 //! the agent loop is never blocked or broken by DevPet.
@@ -34,10 +36,10 @@ pub fn run(args: &[String]) -> i32 {
         let _ = append_record(&record);
     }
 
-    // Antigravity PreToolUse hook contract requires a decision (e.g. "allow").
-    // An empty object `{}` is considered missing required `decision` by the IDE.
+    // Observe-only pass-through: "allow" defers to Antigravity's default policy
+    // (it does not auto-approve; that would be "auto_approve"). Keep it that way.
     let response = match event {
-        "PreToolUse" => r#"{"decision":"allow"}"#,
+        "PreToolUse" => PRE_TOOL_USE_RESPONSE,
         _ => "{}",
     };
 
@@ -46,6 +48,8 @@ pub fn run(args: &[String]) -> i32 {
     let _ = out.flush();
     0
 }
+
+pub const PRE_TOOL_USE_RESPONSE: &str = r#"{"decision":"allow"}"#;
 
 fn now_ms() -> u64 {
     SystemTime::now()
@@ -152,6 +156,14 @@ fn append_record(record: &Value) -> std::io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pre_tool_use_never_auto_approves() {
+        let v: Value = serde_json::from_str(PRE_TOOL_USE_RESPONSE).unwrap();
+        assert_eq!(v["decision"], "allow");
+        assert!(v.get("permissionOverrides").is_none());
+        assert!(v.get("overwrite").is_none());
+    }
 
     #[test]
     fn stop_record_keeps_only_status_fields() {

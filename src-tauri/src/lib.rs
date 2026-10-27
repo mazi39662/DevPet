@@ -176,9 +176,8 @@ pub fn run() {
                 let _ = c.set_always_on_top(true);
             }
 
-            // Task 4: Ensure DevPet is configured to run on Windows startup
-            let _ = autostart::set_autostart_enabled(true);
-
+            // Autostart is applied from the user's saved setting (useSettings /
+            // SettingsView); do not force it on every launch.
             let st = hook_install::status();
             if st.installed && !st.up_to_date {
                 let _ = hook_install::install();
